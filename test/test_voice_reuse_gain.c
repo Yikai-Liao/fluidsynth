@@ -1,6 +1,5 @@
 #include "test.h"
 #include "fluidsynth.h"
-#include "rvoice/fluid_rvoice.h"
 
 /* Two blocks cover the gain ramp and its steady state. */
 enum { Frames = 128, SampleFrames = 256, Channels = 2 };
