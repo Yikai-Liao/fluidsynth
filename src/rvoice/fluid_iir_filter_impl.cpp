@@ -24,6 +24,16 @@
 #include <algorithm>
 #include <cmath>
 
+template<typename R>
+static inline signed fluid_iir_filter_table_index(R fres)
+{
+    signed tab_idx = (static_cast<signed>(fres) - FRES_MIN) / CENTS_STEP;
+#ifndef DBG_FILTER
+    fluid_clip(tab_idx, 0, SINCOS_TAB_SIZE - 1);
+#endif
+    return tab_idx;
+}
+
 
 // Calculating the sine and cosine coefficients for every possible cutoff frequency is too CPU expensive and can harm realtime playback.
 // Therefore, we precalculate the coefficients with a precision of CENTS_STEP and store them in a table.
@@ -62,10 +72,7 @@ static inline void fluid_iir_filter_calculate_coefficients(R fres,
      * into account for both significant frequency relocation and for
      * bandwidth readjustment'. */
 
-    signed tab_idx = (static_cast<signed>(fres) - FRES_MIN) / CENTS_STEP;
-#ifndef DBG_FILTER
-    fluid_clip(tab_idx, 0, SINCOS_TAB_SIZE - 1);
-#endif
+    signed tab_idx = fluid_iir_filter_table_index(fres);
     R sin_coeff = sincos_table[tab_idx].sin;
     R cos_coeff = sincos_table[tab_idx].cos;
     R alpha_coeff = sin_coeff / (2.0f * q);
@@ -183,6 +190,9 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID
         fluid_real_t dsp_amp_incr = iir_filter->amp_incr;
         IIR_COEFF_T fres = static_cast<IIR_COEFF_T>(iir_filter->last_fres);
         IIR_COEFF_T q = static_cast<IIR_COEFF_T>(iir_filter->last_q);
+        signed coeff_tab_idx = fluid_iir_filter_table_index(fres);
+        // Preserve the first smoothed recalculation before reusing indices in this block.
+        bool can_reuse_coefficients = false;
         
         const IIR_COEFF_T fres_incr = static_cast<IIR_COEFF_T>(iir_filter->fres_incr);
         const IIR_COEFF_T q_incr = static_cast<IIR_COEFF_T>(iir_filter->q_incr);
@@ -224,10 +234,24 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID
 
             if(fres_incr_count > 0 || q_incr_count > 0)
             {
+                const bool q_changes = q_incr_count > 0;
+                bool coefficients_changed = q_changes || !can_reuse_coefficients;
+
                 if(fres_incr_count > 0)
                 {
                     --fres_incr_count;
                     fres += fres_incr;
+
+                    if(q_changes)
+                    {
+                        coeff_tab_idx = fluid_iir_filter_table_index(fres);
+                    }
+                    else
+                    {
+                        const signed next_tab_idx = fluid_iir_filter_table_index(fres);
+                        coefficients_changed = coefficients_changed || next_tab_idx != coeff_tab_idx;
+                        coeff_tab_idx = next_tab_idx;
+                    }
                 }
                 if(q_incr_count > 0)
                 {
@@ -245,7 +269,11 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID
 
                 LOG_FILTER("fres: %.2f Hz  | target_fres: %.2f Hz | fres_incr: %f\t| fres_incr_count: %d\t|---| q: %f\t| target_q: %f\t| q_incr: %f\t| q_incr_count: %d", fres, iir_filter->target_fres, fres_incr, fres_incr_count, q, iir_filter->target_q, q_incr, q_incr_count);
                 
-                fluid_iir_filter_calculate_coefficients<IIR_COEFF_T, GAIN_NORM, TYPE>(fres, q, iir_filter->sincos_table, &dsp_a1, &dsp_a2, &dsp_b02, &dsp_b1);
+                if(coefficients_changed)
+                {
+                    fluid_iir_filter_calculate_coefficients<IIR_COEFF_T, GAIN_NORM, TYPE>(fres, q, iir_filter->sincos_table, &dsp_a1, &dsp_a2, &dsp_b02, &dsp_b1);
+                }
+                can_reuse_coefficients = true;
             }
         }
 
