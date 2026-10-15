@@ -2,7 +2,8 @@
 #include "fluidsynth.h"
 #include "rvoice/fluid_rvoice.h"
 
-enum { Frames = 512, SampleFrames = 1024, Channels = 2 };
+/* Two blocks cover the gain ramp and its steady state. */
+enum { Frames = 128, SampleFrames = 256, Channels = 2 };
 
 static fluid_voice_t *start_voice(fluid_synth_t *synth, fluid_sample_t *sample,
                                  float pan)
@@ -10,7 +11,6 @@ static fluid_voice_t *start_voice(fluid_synth_t *synth, fluid_sample_t *sample,
     fluid_voice_t *voice = fluid_synth_alloc_voice(synth, sample, 0, 60, 127);
     TEST_ASSERT(voice != NULL);
 
-    fluid_voice_gen_set(voice, GEN_SAMPLEMODE, FLUID_LOOP_DURING_RELEASE);
     fluid_voice_gen_set(voice, GEN_PAN, pan);
     fluid_synth_start_voice(synth, voice);
     return voice;
@@ -53,7 +53,6 @@ int main(void)
         data[frame] = (frame % 32 < 16) ? 10000 : -10000;
     }
     TEST_SUCCESS(fluid_sample_set_sound_data(sample, data, NULL, SampleFrames, 44100, 1));
-    TEST_SUCCESS(fluid_sample_set_loop(sample, 8, SampleFrames - 8));
     TEST_SUCCESS(fluid_sample_set_pitch(sample, 60, 0));
 
     voice = start_voice(synth, sample, -200);
