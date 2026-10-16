@@ -371,10 +371,14 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
     auto interp_cubic = [&](fluid_real_t s0, fluid_real_t s1, fluid_real_t s2, fluid_real_t s3)
     {
         const fluid_real_t *FLUID_RESTRICT coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];
-        return (coeffs[0] * s0
-                + coeffs[1] * s1
-                + coeffs[2] * s2
-                + coeffs[3] * s3);
+        const fluid_real_t samples[CUBIC_INTERP_ORDER] = {s0, s1, s2, s3};
+        fluid_real_t sample = 0;
+#pragma omp simd reduction(+:sample)
+        for(int tap = 0; tap < CUBIC_INTERP_ORDER; ++tap)
+        {
+            sample += coeffs[tap] * samples[tap];
+        }
+        return sample;
     };
 
     while(1)
