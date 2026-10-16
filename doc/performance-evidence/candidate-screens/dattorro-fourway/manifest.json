@@ -1,0 +1,52 @@
+{
+  "base_commit": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "wrap_commit": "33c269f4b951a70e3453eadcca7df51ade877697",
+  "guard_commit": "89ec2230120a1f4383e2093b105316202f180a40",
+  "combined_commit": "d933ba93291c9990418e0372eb9e7d5700764800",
+  "probe_sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+  "libraries": {
+    "base": "0e42fbf40f7fbafd0cdec6cf39d21accf5242843356f9a67cdf991d2838d66dc",
+    "wrap": "9b6e5a8c924f7aff70f228a900ae907c7b8eb990fa0e6e68fdec13de5586c957",
+    "guard": "7b05fc435db6c232b10418ecf1072c68630bcdb9f6f5057851f41329bc08aeef",
+    "both": "ef9b1c558cecc53bcd48030d214b8b666e3cb94096eb4af6bfa12f450ce0e6b1"
+  },
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 60,
+    "reverb_engine": "default Dattorro",
+    "reverb_active": true,
+    "chorus_active": true,
+    "block": 64,
+    "OMP_NUM_THREADS": 1,
+    "OMP_DYNAMIC": false,
+    "cpu_affinity": 0,
+    "build": "Release double, GCC 14.2, OpenMP; equal CMake flags"
+  },
+  "repetitions": 3,
+  "order": [
+    [
+      "base",
+      "wrap",
+      "guard",
+      "both"
+    ],
+    [
+      "both",
+      "guard",
+      "wrap",
+      "base"
+    ],
+    [
+      "wrap",
+      "base",
+      "both",
+      "guard"
+    ]
+  ]
+}

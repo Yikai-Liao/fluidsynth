@@ -1,0 +1,26 @@
+diff --git a/src/rvoice/fluid_rev_dattorro.cpp b/src/rvoice/fluid_rev_dattorro.cpp
+index f0f253fe..fc276037 100644
+--- a/src/rvoice/fluid_rev_dattorro.cpp
++++ b/src/rvoice/fluid_rev_dattorro.cpp
+@@ -84,17 +84,13 @@ static int fluid_dattorro_seconds_to_samples(float seconds, fluid_real_t sample_
+ 
+ static float fluid_dattorro_read_tap(const fluid_reverb_delay_line<float> &delay, int tap)
+ {
++    /* Tap-bearing delay lines are initialized with positive lengths in setup(). */
+     int size = delay.size();
+-    if(size <= 0)
+-    {
+-        return 0.0f;
+-    }
+-
+     int index = delay.line_out + tap;
+-    index %= size;
+-    if(index < 0)
++    /* Configured taps are nonnegative and shorter than their delay lines. */
++    if(index >= size)
+     {
+-        index += size;
++        index -= size;
+     }
+     return delay.line[index];
+ }
