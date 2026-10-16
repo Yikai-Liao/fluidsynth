@@ -1,0 +1,10 @@
+{
+  "path": "/root/code/fluidsynth-analysis-20261015/modulator/dense-20000.mid",
+  "note_ons": 20000,
+  "tempo_bpm": 120,
+  "ticks_per_quarter": 480,
+  "ticks_per_note": 2,
+  "duration_seconds": 41.665625,
+  "bytes": 160036,
+  "sha256": "059252d02780c336ae37cc785795ee005281828c6063446a88e73449f066fc9b"
+}
