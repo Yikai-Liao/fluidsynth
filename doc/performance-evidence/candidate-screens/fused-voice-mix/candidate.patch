@@ -1,0 +1,86 @@
+diff --git a/src/rvoice/fluid_rvoice_mixer.c b/src/rvoice/fluid_rvoice_mixer.c
+index 20ba28fd..77e24788 100644
+--- a/src/rvoice/fluid_rvoice_mixer.c
++++ b/src/rvoice/fluid_rvoice_mixer.c
+@@ -455,6 +455,81 @@ fluid_rvoice_buffers_mix(fluid_rvoice_buffers_t *buffers,
+     FLUID_ASSERT((uintptr_t)dsp_buf % FLUID_DEFAULT_ALIGNMENT == 0);
+     FLUID_ASSERT((uintptr_t)(&dsp_buf[start_block * FLUID_BUFSIZE]) % FLUID_DEFAULT_ALIGNMENT == 0);
+ 
++    /* For a full block with multiple destinations, load the mono source once
++     * and reuse it while mixing every mapped output. Keep the short final
++     * block on the scalar path below because its gain ramp is accumulated
++     * sample by sample there.
++     */
++    if(sample_count >= FLUID_BUFSIZE && bufcount > 1)
++    {
++        fluid_real_t *mix_bufs[FLUID_RVOICE_MAX_BUFS];
++        fluid_real_t target_amps[FLUID_RVOICE_MAX_BUFS];
++        fluid_real_t current_amps[FLUID_RVOICE_MAX_BUFS];
++        fluid_real_t amp_incrs[FLUID_RVOICE_MAX_BUFS];
++        int mix_enabled[FLUID_RVOICE_MAX_BUFS];
++        const int base = start_block * FLUID_BUFSIZE;
++
++        for(i = 0; i < bufcount; i++)
++        {
++            mix_bufs[i] = get_dest_buf(buffers, i, dest_bufs, dest_bufcount);
++            target_amps[i] = buffers->bufs[i].target_amp;
++            current_amps[i] = buffers->bufs[i].current_amp;
++            mix_enabled[i] = mix_bufs[i] != NULL &&
++                             !(current_amps[i] == 0.0f && target_amps[i] == 0.0f);
++
++            if(!mix_enabled[i])
++            {
++                amp_incrs[i] = 0.0f;
++                continue;
++            }
++
++            amp_incrs[i] = (target_amps[i] - current_amps[i]) / FLUID_BUFSIZE;
++            FLUID_ASSERT((uintptr_t)mix_bufs[i] % FLUID_DEFAULT_ALIGNMENT == 0);
++        }
++
++        #pragma omp simd aligned(dsp_buf:FLUID_DEFAULT_ALIGNMENT)
++        for(dsp_i = 0; dsp_i < FLUID_BUFSIZE; dsp_i++)
++        {
++            fluid_real_t sample = dsp_buf[base + dsp_i];
++
++            for(i = 0; i < bufcount; i++)
++            {
++                if(mix_enabled[i])
++                {
++                    mix_bufs[i][base + dsp_i] +=
++                        (current_amps[i] + amp_incrs[i] * dsp_i) * sample;
++                }
++            }
++        }
++
++        if(sample_count > FLUID_BUFSIZE)
++        {
++            #pragma omp simd aligned(dsp_buf:FLUID_DEFAULT_ALIGNMENT)
++            for(dsp_i = FLUID_BUFSIZE; dsp_i < sample_count; dsp_i++)
++            {
++                fluid_real_t sample = dsp_buf[base + dsp_i];
++
++                for(i = 0; i < bufcount; i++)
++                {
++                    if(mix_enabled[i] && target_amps[i] > 0)
++                    {
++                        mix_bufs[i][base + dsp_i] += target_amps[i] * sample;
++                    }
++                }
++            }
++        }
++
++        for(i = 0; i < bufcount; i++)
++        {
++            if(mix_enabled[i])
++            {
++                buffers->bufs[i].current_amp = target_amps[i];
++            }
++        }
++
++        return;
++    }
++
+     /* mixdown for each buffer */
+     for(i = 0; i < bufcount; i++)
+     {

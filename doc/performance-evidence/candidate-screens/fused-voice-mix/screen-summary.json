@@ -1,0 +1,111 @@
+{
+  "workload": "All The Small Things",
+  "block": 64,
+  "effects": "Dattorro reverb + chorus",
+  "wall_candidate_over_baseline": [
+    1.1017498495066962,
+    1.0926760521321284,
+    1.2085612049095453
+  ],
+  "wall_median_ratio": 1.1017498495066962,
+  "wall_median_improvement_percent": -10.174984950669618,
+  "cpu_candidate_over_baseline": [
+    1.1002898105996894,
+    1.0912393371002291,
+    1.209598118267547
+  ],
+  "pcm_equal": true,
+  "pcm_hash_fnv1a64": "124f8cd830b16bbe",
+  "rows": [
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.268808525,
+      "render_wall": 1.715795609,
+      "render_cpu": 1.709458179,
+      "maxrss_kib": 250232,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "baseline",
+      "tag": "pair-0"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.249170548,
+      "render_wall": 1.890377554,
+      "render_cpu": 1.880899416,
+      "maxrss_kib": 250220,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "candidate",
+      "tag": "pair-0"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.252581643,
+      "render_wall": 1.911001031,
+      "render_cpu": 1.89841457,
+      "maxrss_kib": 250356,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "candidate",
+      "tag": "pair-1"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.286618026,
+      "render_wall": 1.748918197,
+      "render_cpu": 1.739686708,
+      "maxrss_kib": 250352,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "baseline",
+      "tag": "pair-1"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.267663657,
+      "render_wall": 1.622409456,
+      "render_cpu": 1.619106263,
+      "maxrss_kib": 250328,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "baseline",
+      "tag": "pair-2"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.288548232,
+      "render_wall": 1.960781127,
+      "render_cpu": 1.958467889,
+      "maxrss_kib": 250256,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "candidate",
+      "tag": "pair-2"
+    }
+  ]
+}

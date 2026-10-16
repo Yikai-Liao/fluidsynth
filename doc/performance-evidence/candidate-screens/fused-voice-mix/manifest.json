@@ -1,0 +1,150 @@
+{
+  "date": "2026-10-16",
+  "candidate": "sample-major fused loop in fluid_rvoice_buffers_mix",
+  "decision": "rejected; exact PCM but consistent end-to-end regression",
+  "source_base_commit": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "branch": "perf/fused-voice-mix-20261016",
+  "final_worktree_state": "clean at base commit; candidate change reverted",
+  "candidate_patch_sha256": "acfa874def01cb6dd46c156f693274f6fcb7b445441d919ba2d396bc463e70f8",
+  "build": {
+    "type": "Release",
+    "dsp_precision": "double",
+    "compiler": "GCC 14.2.0",
+    "openmp": true,
+    "libsndfile": false,
+    "signalsmith": false,
+    "baseline_library_sha256": "0e42fbf40f7fbafd0cdec6cf39d21accf5242843356f9a67cdf991d2838d66dc",
+    "candidate_library_sha256": "68ebe04c63e32b672fe2cd6211c9b0349be2494b0b21b5c7e49ec52b9028c3ce"
+  },
+  "host": {
+    "cpu": "Intel Xeon Gold 6140 @ 2.30 GHz",
+    "visible_cpus": 6
+  },
+  "render": {
+    "midi": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+    "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+    "soundfont": "/root/code/fluidsynth-analysis-20261015/assets/MuseScore_General.sf2",
+    "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+    "sample_rate_hz": 44100,
+    "block_frames": 64,
+    "duration_seconds": 60,
+    "synth_cores": 1,
+    "OMP_NUM_THREADS": 1,
+    "effects": true,
+    "chorus": true,
+    "warmups_per_arm_seconds": 10,
+    "paired_repetitions": 3,
+    "probe_sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59"
+  },
+  "result": {
+    "workload": "All The Small Things",
+    "block": 64,
+    "effects": "Dattorro reverb + chorus",
+    "wall_candidate_over_baseline": [
+      1.1017498495066962,
+      1.0926760521321284,
+      1.2085612049095453
+    ],
+    "wall_median_ratio": 1.1017498495066962,
+    "wall_median_improvement_percent": -10.174984950669618,
+    "cpu_candidate_over_baseline": [
+      1.1002898105996894,
+      1.0912393371002291,
+      1.209598118267547
+    ],
+    "pcm_equal": true,
+    "pcm_hash_fnv1a64": "124f8cd830b16bbe",
+    "rows": [
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 1,
+        "frames": 2646000,
+        "setup_wall": 0.268808525,
+        "render_wall": 1.715795609,
+        "render_cpu": 1.709458179,
+        "maxrss_kib": 250232,
+        "hash": "124f8cd830b16bbe",
+        "rms": 0.0528080814,
+        "peak": 0.507304907,
+        "arm": "baseline",
+        "tag": "pair-0"
+      },
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 1,
+        "frames": 2646000,
+        "setup_wall": 0.249170548,
+        "render_wall": 1.890377554,
+        "render_cpu": 1.880899416,
+        "maxrss_kib": 250220,
+        "hash": "124f8cd830b16bbe",
+        "rms": 0.0528080814,
+        "peak": 0.507304907,
+        "arm": "candidate",
+        "tag": "pair-0"
+      },
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 1,
+        "frames": 2646000,
+        "setup_wall": 0.252581643,
+        "render_wall": 1.911001031,
+        "render_cpu": 1.89841457,
+        "maxrss_kib": 250356,
+        "hash": "124f8cd830b16bbe",
+        "rms": 0.0528080814,
+        "peak": 0.507304907,
+        "arm": "candidate",
+        "tag": "pair-1"
+      },
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 1,
+        "frames": 2646000,
+        "setup_wall": 0.286618026,
+        "render_wall": 1.748918197,
+        "render_cpu": 1.739686708,
+        "maxrss_kib": 250352,
+        "hash": "124f8cd830b16bbe",
+        "rms": 0.0528080814,
+        "peak": 0.507304907,
+        "arm": "baseline",
+        "tag": "pair-1"
+      },
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 1,
+        "frames": 2646000,
+        "setup_wall": 0.267663657,
+        "render_wall": 1.622409456,
+        "render_cpu": 1.619106263,
+        "maxrss_kib": 250328,
+        "hash": "124f8cd830b16bbe",
+        "rms": 0.0528080814,
+        "peak": 0.507304907,
+        "arm": "baseline",
+        "tag": "pair-2"
+      },
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 1,
+        "frames": 2646000,
+        "setup_wall": 0.288548232,
+        "render_wall": 1.960781127,
+        "render_cpu": 1.958467889,
+        "maxrss_kib": 250256,
+        "hash": "124f8cd830b16bbe",
+        "rms": 0.0528080814,
+        "peak": 0.507304907,
+        "arm": "candidate",
+        "tag": "pair-2"
+      }
+    ]
+  }
+}
