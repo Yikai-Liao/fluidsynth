@@ -1,0 +1,40 @@
+{
+  "baseline_commit": "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+  "candidate_branch": "perf/interpolation-block-safe-count-20261016",
+  "candidate_source_diff": "diff --git a/src/rvoice/fluid_rvoice_dsp.cpp b/src/rvoice/fluid_rvoice_dsp.cpp\nindex 3452ea4d..f38919f2 100644\n--- a/src/rvoice/fluid_rvoice_dsp.cpp\n+++ b/src/rvoice/fluid_rvoice_dsp.cpp\n@@ -80,6 +80,38 @@ compute_interpolation_steps(fluid_phase_t dsp_phase, fluid_phase_t dsp_phase_inc\n     // How many steps until phase_index > limit?\n     fluid_phase_t boundary;\n     fluid_phase_set_int(boundary, dsp_end_index + 1);\n+\n+    /* In the common case, the rest of this output block fits before the\n+     * boundary. Prove that without dividing by the phase increment. The\n+     * product is formed from 32-bit limbs so the comparison remains exact\n+     * without relying on compiler-specific 128-bit integer types.\n+     */\n+    const unsigned short remaining = static_cast<unsigned short>(FLUID_BUFSIZE - dsp_i);\n+    if(remaining > 0 && dsp_phase < boundary && dsp_phase_incr > 0)\n+    {\n+        const fluid_phase_t distance = boundary - dsp_phase;\n+\n+        /* The original ceil-division expression first adds distance and the\n+         * increment. Avoid changing its unsigned-overflow behavior.\n+         */\n+        if(distance <= (~static_cast<fluid_phase_t>(0) - dsp_phase_incr))\n+        {\n+            const fluid_phase_t factor = remaining - 1;\n+            const fluid_phase_t low_product = factor * (dsp_phase_incr & 0xffffffffULL);\n+            const fluid_phase_t high_product = factor * (dsp_phase_incr >> 32);\n+            const fluid_phase_t product_high = high_product + (low_product >> 32);\n+\n+            if(product_high <= 0xffffffffULL)\n+            {\n+                const fluid_phase_t span = (product_high << 32) | (low_product & 0xffffffffULL);\n+                if(span < distance)\n+                {\n+                    return remaining;\n+                }\n+            }\n+        }\n+    }\n+\n     fluid_phase_t steps = dsp_phase > boundary ? 0 : ((boundary - dsp_phase + dsp_phase_incr - 1) / dsp_phase_incr);\n     unsigned short iters = static_cast<unsigned short>(std::min<fluid_phase_t>(steps, (FLUID_BUFSIZE - dsp_i)));\n     return iters;\n@@ -818,4 +850,4 @@ fluid_rvoice_dsp_interpolate(fluid_rvoice_t *rvoice, fluid_real_t *FLUID_RESTRIC\n     case FLUID_INTERP_HIGHEST:\n         return dsp_invoker<InterpolateSinc<25>>(rvoice, dsp_buf, looping);\n     }\n-}\n\\ No newline at end of file\n+}\n",
+  "probe_sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+  "libraries": {
+    "baseline": "502e32e465f12829f08c93c0672bf22202cdeb45c921e8f18826bfa471f40b08",
+    "candidate": "cf443ce76c2d6406ae6b8c334001fec9e3a68a188af719c4bc3d624e0ef4434b"
+  },
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 10,
+    "effects": true,
+    "block": 64,
+    "OMP_NUM_THREADS": 1,
+    "OMP_DYNAMIC": false,
+    "cpu_affinity": 0
+  },
+  "repetitions": 3,
+  "order": "AB/BA alternation",
+  "host": {
+    "platform": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "compiler": "c++ (Debian 14.2.0-19) 14.2.0",
+    "affinity_available": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  }
+}

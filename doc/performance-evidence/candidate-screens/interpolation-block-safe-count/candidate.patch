@@ -1,0 +1,50 @@
+diff --git a/src/rvoice/fluid_rvoice_dsp.cpp b/src/rvoice/fluid_rvoice_dsp.cpp
+index 3452ea4d..f38919f2 100644
+--- a/src/rvoice/fluid_rvoice_dsp.cpp
++++ b/src/rvoice/fluid_rvoice_dsp.cpp
+@@ -80,6 +80,38 @@ compute_interpolation_steps(fluid_phase_t dsp_phase, fluid_phase_t dsp_phase_inc
+     // How many steps until phase_index > limit?
+     fluid_phase_t boundary;
+     fluid_phase_set_int(boundary, dsp_end_index + 1);
++
++    /* In the common case, the rest of this output block fits before the
++     * boundary. Prove that without dividing by the phase increment. The
++     * product is formed from 32-bit limbs so the comparison remains exact
++     * without relying on compiler-specific 128-bit integer types.
++     */
++    const unsigned short remaining = static_cast<unsigned short>(FLUID_BUFSIZE - dsp_i);
++    if(remaining > 0 && dsp_phase < boundary && dsp_phase_incr > 0)
++    {
++        const fluid_phase_t distance = boundary - dsp_phase;
++
++        /* The original ceil-division expression first adds distance and the
++         * increment. Avoid changing its unsigned-overflow behavior.
++         */
++        if(distance <= (~static_cast<fluid_phase_t>(0) - dsp_phase_incr))
++        {
++            const fluid_phase_t factor = remaining - 1;
++            const fluid_phase_t low_product = factor * (dsp_phase_incr & 0xffffffffULL);
++            const fluid_phase_t high_product = factor * (dsp_phase_incr >> 32);
++            const fluid_phase_t product_high = high_product + (low_product >> 32);
++
++            if(product_high <= 0xffffffffULL)
++            {
++                const fluid_phase_t span = (product_high << 32) | (low_product & 0xffffffffULL);
++                if(span < distance)
++                {
++                    return remaining;
++                }
++            }
++        }
++    }
++
+     fluid_phase_t steps = dsp_phase > boundary ? 0 : ((boundary - dsp_phase + dsp_phase_incr - 1) / dsp_phase_incr);
+     unsigned short iters = static_cast<unsigned short>(std::min<fluid_phase_t>(steps, (FLUID_BUFSIZE - dsp_i)));
+     return iters;
+@@ -818,4 +850,4 @@ fluid_rvoice_dsp_interpolate(fluid_rvoice_t *rvoice, fluid_real_t *FLUID_RESTRIC
+     case FLUID_INTERP_HIGHEST:
+         return dsp_invoker<InterpolateSinc<25>>(rvoice, dsp_buf, looping);
+     }
+-}
+\ No newline at end of file
++}
