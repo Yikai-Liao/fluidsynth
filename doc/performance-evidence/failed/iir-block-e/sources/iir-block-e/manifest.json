@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-16",
+  "baseline_source_commit": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+  "baseline_source_clean": true,
+  "analysis_compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+  "compile_flags": "-O3 -DNDEBUG -std=c++17 -ffp-contract=off -Wall -Wextra -Wpedantic",
+  "machine": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41",
+  "cpu": "Intel Xeon Gold 6140, CPU 2 affinity",
+  "inputs": {
+    "deterministic generated noise and sine/impulse vectors": "seed 0x9e3779b97f4a7c15"
+  },
+  "outputs": {
+    "iir_block_screen.cpp": "79cd5fe09801465f34b2278d2cf836ccaed3075dd0ff949095ea737cd954fb31",
+    "run.sh": "706650a8b82184d1a20e0665d538368804abc6d456117cfda54554e06c5775bc",
+    "summarize.py": "70a6ced6c0067030f33b2f7ad25197e40a77e2360ec06204ed1651c2f52a8a08",
+    "REPORT.md": "ace10d2d15df43194b35025f5965f11b85d6c21382cd81017d9bbeb1e42b624b",
+    "summary.json": "47134a2b04615ea5f82a57dd42740bc05109f8cc596e4bcbe5d85181f476af7a",
+    "iir_block_screen": "cf6a7536286c45bf3706a4e40c77f2a8f1fde811eff0acdc925f1732db9e0128",
+    "final/bench.csv": "17f179517965980ec2bb367b165c35200dcf843ed324e9ffd78d49b5312a6419",
+    "final/dynamic.csv": "802bd276b0e7eed73145a8632c1e9f8165cb6d0aba13b8c24a30fb5ac22b3496",
+    "final/quality.csv": "c743e9bbfc4266c1cdda890d1c7d7a7cb7be86daae51b7ad70190777c62e3d99"
+  },
+  "production_source_changed": false,
+  "performance_benchmarks_run": true
+}

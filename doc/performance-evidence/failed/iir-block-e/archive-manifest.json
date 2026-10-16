@@ -1,0 +1,91 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-iir-block-e-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/ARCHIVE.md",
+      "sha256": "d82bb3c1e2f48fd6dd93098fb50e1209e4431ae3bbe78db658c0476a29edd26d",
+      "size_bytes": 1147
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/REPORT.md",
+      "sha256": "ace10d2d15df43194b35025f5965f11b85d6c21382cd81017d9bbeb1e42b624b",
+      "size_bytes": 4976
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/bench.csv",
+      "sha256": "724feb0e8354f121088a5c538b17ef2aa10dea27f29d709123b72a066608ee4d",
+      "size_bytes": 1261
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/dynamic.csv",
+      "sha256": "802bd276b0e7eed73145a8632c1e9f8165cb6d0aba13b8c24a30fb5ac22b3496",
+      "size_bytes": 1511
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/final/bench.csv",
+      "sha256": "17f179517965980ec2bb367b165c35200dcf843ed324e9ffd78d49b5312a6419",
+      "size_bytes": 1260
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/final/dynamic.csv",
+      "sha256": "802bd276b0e7eed73145a8632c1e9f8165cb6d0aba13b8c24a30fb5ac22b3496",
+      "size_bytes": 1511
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/final/quality.csv",
+      "sha256": "c743e9bbfc4266c1cdda890d1c7d7a7cb7be86daae51b7ad70190777c62e3d99",
+      "size_bytes": 15475
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/iir_block_screen.cpp",
+      "sha256": "79cd5fe09801465f34b2278d2cf836ccaed3075dd0ff949095ea737cd954fb31",
+      "size_bytes": 15128
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/manifest.json",
+      "sha256": "aefda279ed5b31bdc130d4be5e0c86be3fa1197d112e7a671ead79cf4508dba5",
+      "size_bytes": 1401
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/quality.csv",
+      "sha256": "89d7b6feb17094fb1dba6548e261228c88e75e1db2bffda7e7534d88860052aa",
+      "size_bytes": 13716
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/run.sh",
+      "sha256": "706650a8b82184d1a20e0665d538368804abc6d456117cfda54554e06c5775bc",
+      "size_bytes": 466
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/summarize.py",
+      "sha256": "70a6ced6c0067030f33b2f7ad25197e40a77e2360ec06204ed1651c2f52a8a08",
+      "size_bytes": 5714
+    },
+    {
+      "path": "doc/performance-evidence/failed/iir-block-e/sources/iir-block-e/summary.json",
+      "sha256": "47134a2b04615ea5f82a57dd42740bc05109f8cc596e4bcbe5d85181f476af7a",
+      "size_bytes": 5194
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/iir-block-e/iir_block_screen",
+      "reason": "unsupported file type",
+      "sha256": "cf6a7536286c45bf3706a4e40c77f2a8f1fde811eff0acdc925f1732db9e0128",
+      "size_bytes": 82728
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "iir-block-e"
+  ],
+  "status": "stopped at float-quality gate",
+  "summary": "Float W=2 and W=4 failed the frozen active-error and 0.1 dB gain gates at a legal 1500-cent/Q=20 case. W=4's prepared microkernel was faster in isolation, but omitted block preparation and render integration; float quality is mandatory. No production change was accepted.",
+  "title": "Fixed-coefficient IIR block recurrence W=2/4"
+}

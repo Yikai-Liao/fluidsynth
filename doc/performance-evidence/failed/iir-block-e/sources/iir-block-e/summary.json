@@ -1,0 +1,148 @@
+{
+  "date": "2026-10-16",
+  "baseline_source_commit": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+  "candidate": "fixed-coefficient DFII recurrence expansion, widths 2 and 4",
+  "method": {
+    "precision": [
+      "float",
+      "double"
+    ],
+    "sample_rate_hz": 44100,
+    "quality_frames": 131072,
+    "dynamic_coefficients": "smooth cutoff/Q changes at run lengths 1,2,3,4,5,31,64,127; short runs use scalar tail path where insufficient to fill a block",
+    "quality_gates": {
+      "active_relative_error_db_max": -60.0,
+      "quiet_reference_rms_dbfs_below": -60.0,
+      "quiet_absolute_error_dbfs_max": -80.0,
+      "static_gain_delta_db_max": 0.1
+    },
+    "bench": "7 scalar/candidate pairs per precision and width; 64-frame calls; precomputed coefficients and block polynomials; pinned to CPU 2"
+  },
+  "results": {
+    "float": {
+      "2": {
+        "quality_rows": 48,
+        "active_rows": 30,
+        "quiet_rows": 18,
+        "worst_active_relative_error_db": -37.5938,
+        "worst_active_case": {
+          "case": "sine",
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": "20"
+        },
+        "worst_abs_gain_delta_db": 0.113039,
+        "worst_gain_case": {
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": "20"
+        },
+        "worst_quiet_absolute_error_dbfs": -123.636,
+        "worst_terminal_state_difference": 1151.58,
+        "worst_dynamic_relative_error_db": -99.7549,
+        "all_outputs_and_states_finite": true,
+        "active_relative_gate_pass": false,
+        "static_gain_gate_pass": false,
+        "quiet_absolute_gate_pass": true,
+        "dynamic_transition_gate_pass": true,
+        "quality_gate_pass": false,
+        "bench_candidate_over_scalar_median": 1.13197,
+        "bench_candidate_over_scalar_min": 1.12907,
+        "bench_candidate_over_scalar_max": 1.13907
+      },
+      "4": {
+        "quality_rows": 48,
+        "active_rows": 30,
+        "quiet_rows": 18,
+        "worst_active_relative_error_db": -37.7027,
+        "worst_active_case": {
+          "case": "sine",
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": "20"
+        },
+        "worst_abs_gain_delta_db": 0.112005,
+        "worst_gain_case": {
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": "20"
+        },
+        "worst_quiet_absolute_error_dbfs": -125.222,
+        "worst_terminal_state_difference": 1072.98,
+        "worst_dynamic_relative_error_db": -99.7929,
+        "all_outputs_and_states_finite": true,
+        "active_relative_gate_pass": false,
+        "static_gain_gate_pass": false,
+        "quiet_absolute_gate_pass": true,
+        "dynamic_transition_gate_pass": true,
+        "quality_gate_pass": false,
+        "bench_candidate_over_scalar_median": 0.786301,
+        "bench_candidate_over_scalar_min": 0.714242,
+        "bench_candidate_over_scalar_max": 0.870277
+      }
+    },
+    "double": {
+      "2": {
+        "quality_rows": 48,
+        "active_rows": 30,
+        "quiet_rows": 18,
+        "worst_active_relative_error_db": -224.909,
+        "worst_active_case": {
+          "case": "noise",
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": ""
+        },
+        "worst_abs_gain_delta_db": 2.02104e-11,
+        "worst_gain_case": {
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": "20"
+        },
+        "worst_quiet_absolute_error_dbfs": -294.264,
+        "worst_terminal_state_difference": 1.02518e-06,
+        "worst_dynamic_relative_error_db": -270.296,
+        "all_outputs_and_states_finite": true,
+        "active_relative_gate_pass": true,
+        "static_gain_gate_pass": true,
+        "quiet_absolute_gate_pass": true,
+        "dynamic_transition_gate_pass": true,
+        "quality_gate_pass": true,
+        "bench_candidate_over_scalar_median": 0.721727,
+        "bench_candidate_over_scalar_min": 0.699854,
+        "bench_candidate_over_scalar_max": 0.752969
+      },
+      "4": {
+        "quality_rows": 48,
+        "active_rows": 30,
+        "quiet_rows": 18,
+        "worst_active_relative_error_db": -212.34,
+        "worst_active_case": {
+          "case": "noise",
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": ""
+        },
+        "worst_abs_gain_delta_db": 1.40273e-10,
+        "worst_gain_case": {
+          "cutoff_cents": "1500",
+          "q": "20",
+          "frequency_hz": "20"
+        },
+        "worst_quiet_absolute_error_dbfs": -282.173,
+        "worst_terminal_state_difference": 6.73134e-06,
+        "worst_dynamic_relative_error_db": -257.462,
+        "all_outputs_and_states_finite": true,
+        "active_relative_gate_pass": true,
+        "static_gain_gate_pass": true,
+        "quiet_absolute_gate_pass": true,
+        "dynamic_transition_gate_pass": true,
+        "quality_gate_pass": true,
+        "bench_candidate_over_scalar_median": 0.604001,
+        "bench_candidate_over_scalar_min": 0.553544,
+        "bench_candidate_over_scalar_max": 0.641607
+      }
+    }
+  },
+  "decision": "stop: float quality gates fail; no production change or end-to-end benchmark"
+}
