@@ -1,0 +1,171 @@
+{
+  "date": "2026-10-16",
+  "repository": "FluidSynth",
+  "branch": "perf/dattorro-tap-guard-20261016",
+  "candidate_commit": "89ec2230120a1f4383e2093b105316202f180a40",
+  "base_commit": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "source_change": {
+    "file": "src/rvoice/fluid_rev_dattorro.cpp",
+    "patch_sha256": "24c7c0be72b9afcafdfdc8dcb163e4c4652ec5e1aa15ac8ac29b153d3f4006e6"
+  },
+  "build": {
+    "compiler": "GCC 14.2",
+    "build_type": "Release",
+    "baseline_and_candidate_precision": "double for timing; float and double for test/PCM parity",
+    "openmp": "enabled",
+    "openmp_threads": 1,
+    "test_suites": {
+      "double": "41/41",
+      "float": "41/41"
+    },
+    "configuration_cache": {
+      "candidate_double": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "enable-alsa": "OFF",
+        "enable-aufile": "ON",
+        "enable-coverage": "OFF",
+        "enable-dbus": "OFF",
+        "enable-dsound": "ON",
+        "enable-floats": "OFF",
+        "enable-fpe-check": "OFF",
+        "enable-ipv6": "ON",
+        "enable-jack": "OFF",
+        "enable-ladspa": "ON",
+        "enable-libsndfile": "OFF",
+        "enable-midishare": "ON",
+        "enable-native-dls": "ON",
+        "enable-network": "ON",
+        "enable-oboe": "OFF",
+        "enable-openmp": "ON",
+        "enable-opensles": "OFF",
+        "enable-oss": "ON",
+        "enable-pipewire": "OFF",
+        "enable-portaudio": "OFF",
+        "enable-profiling": "OFF",
+        "enable-pulseaudio": "OFF",
+        "enable-readline": "OFF",
+        "enable-sdl3": "ON",
+        "enable-signalsmith": "OFF",
+        "enable-systemd": "OFF",
+        "enable-threads": "ON",
+        "enable-trap-on-fpe": "OFF",
+        "enable-ubsan": "OFF",
+        "enable-unicode": "ON",
+        "enable-wasapi": "ON",
+        "enable-waveout": "ON",
+        "enable-winmidi": "ON"
+      },
+      "candidate_float": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "enable-alsa": "OFF",
+        "enable-aufile": "ON",
+        "enable-coverage": "OFF",
+        "enable-dbus": "OFF",
+        "enable-dsound": "ON",
+        "enable-floats": "ON",
+        "enable-fpe-check": "OFF",
+        "enable-ipv6": "ON",
+        "enable-jack": "OFF",
+        "enable-ladspa": "ON",
+        "enable-libsndfile": "OFF",
+        "enable-midishare": "ON",
+        "enable-native-dls": "ON",
+        "enable-network": "ON",
+        "enable-oboe": "OFF",
+        "enable-openmp": "ON",
+        "enable-opensles": "OFF",
+        "enable-oss": "ON",
+        "enable-pipewire": "OFF",
+        "enable-portaudio": "OFF",
+        "enable-profiling": "OFF",
+        "enable-pulseaudio": "OFF",
+        "enable-readline": "OFF",
+        "enable-sdl3": "ON",
+        "enable-signalsmith": "OFF",
+        "enable-systemd": "OFF",
+        "enable-threads": "ON",
+        "enable-trap-on-fpe": "OFF",
+        "enable-ubsan": "OFF",
+        "enable-unicode": "ON",
+        "enable-wasapi": "ON",
+        "enable-waveout": "ON",
+        "enable-winmidi": "ON"
+      }
+    }
+  },
+  "benchmark": {
+    "probe": "<local path omitted>",
+    "arguments": "<soundfont> <midi> 64 1 60 1",
+    "sample_rate_hz": 44100,
+    "block_frames": 64,
+    "synth_cores": 1,
+    "effects": "Dattorro reverb + chorus",
+    "warmup_seconds_per_arm": 10,
+    "pairs_per_midi": 3,
+    "order": "AB/BA/AB",
+    "results": {
+      "All The Small Things": {
+        "midi": "<local path omitted>",
+        "summary": "screen-summary.json"
+      },
+      "POP909_010": {
+        "midi": "<local path omitted>",
+        "summary": "screen-pop909-summary.json"
+      }
+    },
+    "soundfont": "<local path omitted>",
+    "wall_candidate_over_baseline_median": 0.975359746684449,
+    "wall_reduction_percent_median": 2.4640253315550975,
+    "cpu_reduction_percent_median": 2.4902035393372324,
+    "timing_note": "Targeted screen only; All The Small Things was consistent, while POP909_010 had a wide pair range.",
+    "wall_pair_ratios": [
+      0.9756516195930481,
+      0.97506787377585,
+      0.9736225104746976,
+      1.0122904075061991,
+      0.9862427810195638,
+      0.9419598503102843
+    ],
+    "cpu_pair_ratios": [
+      0.9748243084302386,
+      0.9753716207830168,
+      0.971885868640881,
+      1.0128225986714097,
+      0.9902696672174408,
+      0.9424834282100023
+    ],
+    "cpu_candidate_over_baseline_median": 0.9750979646066277
+  },
+  "pcm_validation": {
+    "summary": "pcm-parity.json",
+    "inputs": [
+      "All The Small Things",
+      "POP909_010"
+    ],
+    "duration_seconds": 60,
+    "precision": [
+      "float",
+      "double"
+    ],
+    "all_bit_identical": true
+  },
+  "libraries": {
+    "baseline_double_sha256": "0e42fbf40f7fbafd0cdec6cf39d21accf5242843356f9a67cdf991d2838d66dc",
+    "candidate_double_sha256": "7b05fc435db6c232b10418ecf1072c68630bcdb9f6f5057851f41329bc08aeef",
+    "baseline_float_sha256": "98fef3bad95e3921e1ac74abd934b212da5e6bfb2b92e5f56a9ef5dfe5158d10",
+    "candidate_float_sha256": "25febf2cf8da363648d18a8a2003bb1bd769bf4f35b7f648a59fe71e2410769a"
+  },
+  "artifacts": [
+    "README.md",
+    "PR_DESCRIPTION.md",
+    "REVIEW.md",
+    "candidate.patch",
+    "screen.jsonl",
+    "screen-pop909.jsonl",
+    "screen-summary.json",
+    "screen-pop909-summary.json",
+    "pcm-parity.json",
+    "build-check-double.log",
+    "build-check-float.log"
+  ]
+}
