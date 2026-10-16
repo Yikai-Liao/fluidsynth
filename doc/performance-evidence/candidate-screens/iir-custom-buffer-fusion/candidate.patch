@@ -1,0 +1,175 @@
+diff --git a/src/rvoice/fluid_iir_filter_impl.cpp b/src/rvoice/fluid_iir_filter_impl.cpp
+index 281782ea..4e17f113 100644
+--- a/src/rvoice/fluid_iir_filter_impl.cpp
++++ b/src/rvoice/fluid_iir_filter_impl.cpp
+@@ -274,11 +274,170 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID
+     }
+ }
+ 
++/* Per-filter state used when the optional custom filter and the SoundFont
++ * filter can be applied in one pass over the sample buffer. */
++template<bool GAIN_NORM, bool AMPLIFY, enum fluid_iir_filter_type TYPE>
++class fluid_iir_filter_apply_state_t
++{
++public:
++    explicit fluid_iir_filter_apply_state_t(fluid_iir_filter_t *filter)
++        : iir_filter(filter),
++          dsp_hist1(filter->hist1), dsp_hist2(filter->hist2),
++          dsp_a1(filter->a1), dsp_a2(filter->a2),
++          dsp_b02(filter->b02), dsp_b1(filter->b1),
++          fres_incr_count(filter->fres_incr_count),
++          q_incr_count(filter->q_incr_count),
++          dsp_amp(filter->amp), dsp_amp_incr(filter->amp_incr),
++          fres(static_cast<IIR_COEFF_T>(filter->last_fres)),
++          q(static_cast<IIR_COEFF_T>(filter->last_q)),
++          fres_incr(static_cast<IIR_COEFF_T>(filter->fres_incr)),
++          q_incr(static_cast<IIR_COEFF_T>(filter->q_incr))
++    {
++    }
++
++    fluid_real_t apply(fluid_real_t input)
++    {
++        fluid_real_t dsp_centernode = input - dsp_a1 * dsp_hist1 - dsp_a2 * dsp_hist2;
++        fluid_real_t sample = dsp_b02 * (dsp_centernode + dsp_hist2) + dsp_b1 * dsp_hist1;
++        dsp_hist2 = dsp_hist1;
++        dsp_hist1 = dsp_centernode;
++
++        FLUID_ASSERT(dsp_hist1 == dsp_hist1);
++        FLUID_ASSERT(sample == sample);
++        FLUID_ASSERT(dsp_a1 == dsp_a1);
++        FLUID_ASSERT(dsp_a2 == dsp_a2);
++        FLUID_ASSERT(dsp_b02 == dsp_b02);
++        FLUID_ASSERT(dsp_b1 == dsp_b1);
++        FLUID_ASSERT(q >= Q_MIN);
++
++        if constexpr (AMPLIFY)
++        {
++            sample = dsp_amp * sample;
++            dsp_amp += dsp_amp_incr;
++        }
++
++        if(fres_incr_count > 0 || q_incr_count > 0)
++        {
++            if(fres_incr_count > 0)
++            {
++                --fres_incr_count;
++                fres += fres_incr;
++            }
++            if(q_incr_count > 0)
++            {
++                --q_incr_count;
++                q += q_incr;
++                if(q < Q_MIN)
++                {
++                    LOG_FILTER("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
++                    LOG_FILTER("!!!OOPS!!! limited Q to its minimum value, was: %f", q);
++                    LOG_FILTER("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
++                    q_incr_count = 0;
++                    q = Q_MIN;
++                }
++            }
++
++            LOG_FILTER("fres: %.2f Hz  | target_fres: %.2f Hz | fres_incr: %f\t| fres_incr_count: %d\t|---| q: %f\t| target_q: %f\t| q_incr: %f\t| q_incr_count: %d", fres, iir_filter->target_fres, fres_incr, fres_incr_count, q, iir_filter->target_q, q_incr, q_incr_count);
++
++            fluid_iir_filter_calculate_coefficients<IIR_COEFF_T, GAIN_NORM, TYPE>(
++                fres, q, iir_filter->sincos_table, &dsp_a1, &dsp_a2, &dsp_b02, &dsp_b1);
++        }
++
++        return sample;
++    }
++
++    void finish()
++    {
++        iir_filter->a1 = dsp_a1;
++        iir_filter->a2 = dsp_a2;
++        iir_filter->b02 = dsp_b02;
++        iir_filter->b1 = dsp_b1;
++
++        if (FLUID_FABS(dsp_hist1) < 1e-20f)
++        {
++            dsp_hist1 = 0.0f;
++        }
++        if (FLUID_FABS(dsp_hist2) < 1e-20f)
++        {
++            dsp_hist2 = 0.0f;
++        }
++        iir_filter->hist1 = dsp_hist1;
++        iir_filter->hist2 = dsp_hist2;
++
++        iir_filter->last_fres = fres;
++        iir_filter->fres_incr_count = fres_incr_count;
++        iir_filter->last_q = q;
++        iir_filter->q_incr_count = q_incr_count;
++        iir_filter->amp = dsp_amp;
++    }
++
++private:
++    fluid_iir_filter_t *iir_filter;
++    fluid_real_t dsp_hist1, dsp_hist2;
++    IIR_COEFF_T dsp_a1, dsp_a2, dsp_b02, dsp_b1;
++    int fres_incr_count, q_incr_count;
++    fluid_real_t dsp_amp, dsp_amp_incr;
++    IIR_COEFF_T fres, q, fres_incr, q_incr;
++};
++
++template<bool CUSTOM_GAIN_NORM, enum fluid_iir_filter_type CUSTOM_TYPE>
++static void
++fluid_iir_filter_apply_custom_and_sf2(fluid_iir_filter_t *custom_filter,
++                                      fluid_iir_filter_t *sf2_filter,
++                                      fluid_real_t *FLUID_RESTRICT dsp_buf,
++                                      unsigned int count)
++{
++    fluid_iir_filter_apply_state_t<CUSTOM_GAIN_NORM, false, CUSTOM_TYPE> custom_state(custom_filter);
++    fluid_iir_filter_apply_state_t<true, true, FLUID_IIR_LOWPASS> sf2_state(sf2_filter);
++
++    for(unsigned int i = 0; i < count; ++i)
++    {
++        fluid_real_t sample = custom_state.apply(dsp_buf[i]);
++        dsp_buf[i] = sf2_state.apply(sample);
++    }
++
++    custom_state.finish();
++    sf2_state.finish();
++}
++
+ extern "C" void fluid_iir_filter_apply(fluid_iir_filter_t *resonant_filter,
+                                        fluid_iir_filter_t *resonant_custom_filter,
+                                        fluid_real_t *dsp_buf,
+                                        unsigned int count)
+ {
++    const bool custom_is_active = resonant_custom_filter->type != FLUID_IIR_DISABLED
++                                  && !(resonant_custom_filter->last_q < Q_MIN);
++    const bool sf2_is_active = resonant_filter->type != FLUID_IIR_DISABLED
++                               && !(resonant_filter->last_q < Q_MIN);
++
++    if(custom_is_active && sf2_is_active)
++    {
++        const bool gain_norm = !(resonant_custom_filter->flags & FLUID_IIR_NO_GAIN_AMP);
++        if(resonant_custom_filter->type == FLUID_IIR_HIGHPASS)
++        {
++            if(gain_norm)
++            {
++                fluid_iir_filter_apply_custom_and_sf2<true, FLUID_IIR_HIGHPASS>(resonant_custom_filter, resonant_filter, dsp_buf, count);
++            }
++            else
++            {
++                fluid_iir_filter_apply_custom_and_sf2<false, FLUID_IIR_HIGHPASS>(resonant_custom_filter, resonant_filter, dsp_buf, count);
++            }
++        }
++        else
++        {
++            if(gain_norm)
++            {
++                fluid_iir_filter_apply_custom_and_sf2<true, FLUID_IIR_LOWPASS>(resonant_custom_filter, resonant_filter, dsp_buf, count);
++            }
++            else
++            {
++                fluid_iir_filter_apply_custom_and_sf2<false, FLUID_IIR_LOWPASS>(resonant_custom_filter, resonant_filter, dsp_buf, count);
++            }
++        }
++        return;
++    }
++
+     if(resonant_custom_filter->flags & FLUID_IIR_NO_GAIN_AMP)
+     {
+         if(resonant_custom_filter->type == FLUID_IIR_HIGHPASS)

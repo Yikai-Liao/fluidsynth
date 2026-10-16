@@ -1,0 +1,208 @@
+{
+  "summary": {
+    "case": "All The Small Things, 10 s, custom low-pass enabled (fc=9000 cents, Q generator=50 cB), 44.1 kHz, 64-frame calls, Release double, one pinned CPU, FX off",
+    "pairs": [
+      {
+        "rep": 0,
+        "wall_ratio_candidate_over_baseline": 1.0461755444567795,
+        "cpu_ratio_candidate_over_baseline": 1.0478952984594596,
+        "pcm_equal": false,
+        "baseline_hash": "b1ed47d11cd97539",
+        "candidate_hash": "fe4e8ee0a0110ed9"
+      },
+      {
+        "rep": 1,
+        "wall_ratio_candidate_over_baseline": 1.0513929116270444,
+        "cpu_ratio_candidate_over_baseline": 1.0501739199310776,
+        "pcm_equal": false,
+        "baseline_hash": "b1ed47d11cd97539",
+        "candidate_hash": "fe4e8ee0a0110ed9"
+      },
+      {
+        "rep": 2,
+        "wall_ratio_candidate_over_baseline": 1.0531310676779033,
+        "cpu_ratio_candidate_over_baseline": 1.0554768159350258,
+        "pcm_equal": false,
+        "baseline_hash": "b1ed47d11cd97539",
+        "candidate_hash": "fe4e8ee0a0110ed9"
+      }
+    ],
+    "median_wall_ratio": 1.0513929116270444,
+    "wall_ratio_range": [
+      1.0461755444567795,
+      1.0531310676779033
+    ],
+    "median_cpu_ratio": 1.0501739199310776,
+    "warmups": [
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 0,
+        "frames": 441000,
+        "setup_wall": 0.186635622,
+        "render_wall": 0.290659665,
+        "render_cpu": 0.289826881,
+        "maxrss_kib": 233076,
+        "hash": "b1ed47d11cd97539",
+        "rms": 0.0129789406,
+        "peak": 0.0569133423,
+        "variant": "baseline",
+        "rep": -1,
+        "warmup": true
+      },
+      {
+        "block": 64,
+        "cores": 1,
+        "fx": 0,
+        "frames": 441000,
+        "setup_wall": 0.172813919,
+        "render_wall": 0.291034868,
+        "render_cpu": 0.290464017,
+        "maxrss_kib": 232972,
+        "hash": "fe4e8ee0a0110ed9",
+        "rms": 0.0129789406,
+        "peak": 0.0569133423,
+        "variant": "candidate",
+        "rep": -1,
+        "warmup": true
+      }
+    ],
+    "identity": {
+      "sf2_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+      "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+      "probe_sha256": "c9b16873076c80cf95e6fbfdb018e80ce19232dcf9bdc7e7000a8b3f85f7be80",
+      "baseline_library_sha256": "6c3c4c5e1345eca83383ba940ed3febf582b714477fe4508b6e4c75af349b0ad",
+      "candidate_library_sha256": "cb58876daee046b409fa428ac2963b30e7bc79b0961ee3d01bc7a3c001b8069c"
+    }
+  },
+  "rows": [
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.186635622,
+      "render_wall": 0.290659665,
+      "render_cpu": 0.289826881,
+      "maxrss_kib": 233076,
+      "hash": "b1ed47d11cd97539",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "baseline",
+      "rep": -1,
+      "warmup": true
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.172813919,
+      "render_wall": 0.291034868,
+      "render_cpu": 0.290464017,
+      "maxrss_kib": 232972,
+      "hash": "fe4e8ee0a0110ed9",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "candidate",
+      "rep": -1,
+      "warmup": true
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.174194603,
+      "render_wall": 0.29250072,
+      "render_cpu": 0.291644534,
+      "maxrss_kib": 233164,
+      "hash": "b1ed47d11cd97539",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "baseline",
+      "rep": 0,
+      "warmup": false
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.1872128,
+      "render_wall": 0.3060071,
+      "render_cpu": 0.305612936,
+      "maxrss_kib": 232912,
+      "hash": "fe4e8ee0a0110ed9",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "candidate",
+      "rep": 0,
+      "warmup": false
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.172879579,
+      "render_wall": 0.306626495,
+      "render_cpu": 0.30615281,
+      "maxrss_kib": 232880,
+      "hash": "fe4e8ee0a0110ed9",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "candidate",
+      "rep": 1,
+      "warmup": false
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.171160269,
+      "render_wall": 0.291638351,
+      "render_cpu": 0.291525817,
+      "maxrss_kib": 233196,
+      "hash": "b1ed47d11cd97539",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "baseline",
+      "rep": 1,
+      "warmup": false
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.205239314,
+      "render_wall": 0.287822731,
+      "render_cpu": 0.286866734,
+      "maxrss_kib": 232968,
+      "hash": "b1ed47d11cd97539",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "baseline",
+      "rep": 2,
+      "warmup": false
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 0,
+      "frames": 441000,
+      "setup_wall": 0.172142887,
+      "render_wall": 0.30311506,
+      "render_cpu": 0.302781187,
+      "maxrss_kib": 233020,
+      "hash": "fe4e8ee0a0110ed9",
+      "rms": 0.0129789406,
+      "peak": 0.0569133423,
+      "variant": "candidate",
+      "rep": 2,
+      "warmup": false
+    }
+  ]
+}
