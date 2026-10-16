@@ -1,0 +1,99 @@
+{
+  "workload": "Maestro_1",
+  "block": 64,
+  "wall_ratios": [
+    0.9978585835271029,
+    1.0210733699767311,
+    0.9825649495948691
+  ],
+  "wall_median_ratio": 0.9978585835271029,
+  "wall_improvement_percent": 0.21414164728971175,
+  "cpu_ratios": [
+    0.9998896752774666,
+    1.0201791940554374,
+    0.9797938445965352
+  ],
+  "hashes": {
+    "baseline": "6d2a0ad7c57a9564",
+    "candidate": "2883b777aa467799"
+  },
+  "pcm_bit_exact": false,
+  "max_pcm_difference": 3.725290298461914e-09,
+  "rms_pcm_difference": 5.934037164114733e-11,
+  "rows": [
+    {
+      "tag": "pair-0",
+      "arm": "baseline",
+      "render_wall": 2.242748228,
+      "render_cpu": 2.232491452,
+      "hash": "6d2a0ad7c57a9564"
+    },
+    {
+      "tag": "pair-0",
+      "arm": "candidate",
+      "render_wall": 2.23794557,
+      "render_cpu": 2.232245153,
+      "hash": "2883b777aa467799"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.293887533,
+      "render_wall": 2.230033687,
+      "render_cpu": 2.225495794,
+      "maxrss_kib": 250196,
+      "hash": "2883b777aa467799",
+      "rms": 0.00700289262,
+      "peak": 0.0565971993,
+      "tag": "pair-1",
+      "arm": "candidate"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.254277451,
+      "render_wall": 2.184009252,
+      "render_cpu": 2.181475379,
+      "maxrss_kib": 250220,
+      "hash": "6d2a0ad7c57a9564",
+      "rms": 0.00700289262,
+      "peak": 0.0565971993,
+      "tag": "pair-1",
+      "arm": "baseline"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.264958737,
+      "render_wall": 2.30947322,
+      "render_cpu": 2.305028595,
+      "maxrss_kib": 250360,
+      "hash": "6d2a0ad7c57a9564",
+      "rms": 0.00700289262,
+      "peak": 0.0565971993,
+      "tag": "pair-2",
+      "arm": "baseline"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.289221229,
+      "render_wall": 2.269207438,
+      "render_cpu": 2.258452829,
+      "maxrss_kib": 250160,
+      "hash": "2883b777aa467799",
+      "rms": 0.00700289262,
+      "peak": 0.0565971993,
+      "tag": "pair-2",
+      "arm": "candidate"
+    }
+  ]
+}
