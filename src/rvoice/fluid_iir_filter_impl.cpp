@@ -130,6 +130,116 @@ static inline void fluid_iir_filter_calculate_coefficients(R fres,
     *b1_out = b1_temp;
 }
 
+#if !defined(WITH_FLOAT)
+static inline void
+fluid_iir_filter_apply_stable_w4(fluid_iir_filter_t *iir_filter,
+                                 fluid_real_t *FLUID_RESTRICT dsp_buf,
+                                 unsigned int count)
+{
+    fluid_real_t dsp_hist1 = iir_filter->hist1;
+    fluid_real_t dsp_hist2 = iir_filter->hist2;
+    const IIR_COEFF_T dsp_a1 = iir_filter->a1;
+    const IIR_COEFF_T dsp_a2 = iir_filter->a2;
+    const IIR_COEFF_T dsp_b02 = iir_filter->b02;
+    const IIR_COEFF_T dsp_b1 = iir_filter->b1;
+    const IIR_COEFF_T fres = static_cast<IIR_COEFF_T>(iir_filter->last_fres);
+    const IIR_COEFF_T q = static_cast<IIR_COEFF_T>(iir_filter->last_q);
+    int fres_incr_count = iir_filter->fres_incr_count;
+    int q_incr_count = iir_filter->q_incr_count;
+    fluid_real_t dsp_amp = iir_filter->amp;
+    const fluid_real_t dsp_amp_incr = iir_filter->amp_incr;
+
+    const double alpha = -static_cast<double>(dsp_a1);
+    const double beta = -static_cast<double>(dsp_a2);
+    const double p1 = alpha;
+    const double p2 = alpha * p1 + beta;
+    const double p3 = alpha * p2 + beta * p1;
+    const double u0 = alpha;
+    const double v0 = beta;
+    const double u1 = alpha * u0 + beta;
+    const double v1 = alpha * v0;
+    const double u2 = alpha * u1 + beta * u0;
+    const double v2 = alpha * v1 + beta * v0;
+    const double u3 = alpha * u2 + beta * u1;
+    const double v3 = alpha * v2 + beta * v1;
+
+    unsigned int dsp_i = 0;
+    for(; dsp_i + 4 <= count; dsp_i += 4)
+    {
+        // Read the full input group before writing any output in-place.
+        const double x0 = dsp_buf[dsp_i];
+        const double x1 = dsp_buf[dsp_i + 1];
+        const double x2 = dsp_buf[dsp_i + 2];
+        const double x3 = dsp_buf[dsp_i + 3];
+        const double h1 = dsp_hist1;
+        const double h2 = dsp_hist2;
+
+        const double w0 = x0 + u0 * h1 + v0 * h2;
+        const double w1 = x1 + p1 * x0 + u1 * h1 + v1 * h2;
+        const double w2 = x2 + p2 * x0 + p1 * x1 + u2 * h1 + v2 * h2;
+        const double w3 = x3 + p3 * x0 + p2 * x1 + p1 * x2 + u3 * h1 + v3 * h2;
+
+        const fluid_real_t sample0 = dsp_b02 * (w0 + h2) + dsp_b1 * h1;
+        const fluid_real_t sample1 = dsp_b02 * (w1 + h1) + dsp_b1 * w0;
+        const fluid_real_t sample2 = dsp_b02 * (w2 + w0) + dsp_b1 * w1;
+        const fluid_real_t sample3 = dsp_b02 * (w3 + w1) + dsp_b1 * w2;
+
+        FLUID_ASSERT(w0 == w0 && w1 == w1 && w2 == w2 && w3 == w3);
+        FLUID_ASSERT(sample0 == sample0 && sample1 == sample1
+                     && sample2 == sample2 && sample3 == sample3);
+        FLUID_ASSERT(dsp_a1 == dsp_a1 && dsp_a2 == dsp_a2);
+        FLUID_ASSERT(dsp_b02 == dsp_b02 && dsp_b1 == dsp_b1 && q >= Q_MIN);
+
+        dsp_buf[dsp_i] = dsp_amp * sample0;
+        dsp_amp += dsp_amp_incr;
+        dsp_buf[dsp_i + 1] = dsp_amp * sample1;
+        dsp_amp += dsp_amp_incr;
+        dsp_buf[dsp_i + 2] = dsp_amp * sample2;
+        dsp_amp += dsp_amp_incr;
+        dsp_buf[dsp_i + 3] = dsp_amp * sample3;
+        dsp_amp += dsp_amp_incr;
+
+        dsp_hist2 = w2;
+        dsp_hist1 = w3;
+    }
+
+    // Keep the original scalar order for a tail shorter than one W4 group.
+    for(; dsp_i < count; ++dsp_i)
+    {
+        fluid_real_t dsp_centernode = dsp_buf[dsp_i] - dsp_a1 * dsp_hist1 - dsp_a2 * dsp_hist2;
+        fluid_real_t sample = dsp_b02 * (dsp_centernode + dsp_hist2) + dsp_b1 * dsp_hist1;
+        dsp_hist2 = dsp_hist1;
+        dsp_hist1 = dsp_centernode;
+        FLUID_ASSERT(dsp_hist1 == dsp_hist1 && sample == sample);
+        FLUID_ASSERT(dsp_a1 == dsp_a1 && dsp_a2 == dsp_a2);
+        FLUID_ASSERT(dsp_b02 == dsp_b02 && dsp_b1 == dsp_b1 && q >= Q_MIN);
+        dsp_buf[dsp_i] = dsp_amp * sample;
+        dsp_amp += dsp_amp_incr;
+    }
+
+    if(FLUID_FABS(dsp_hist1) < 1e-20f)
+    {
+        dsp_hist1 = 0.0f;
+    }
+    if(FLUID_FABS(dsp_hist2) < 1e-20f)
+    {
+        dsp_hist2 = 0.0f;
+    }
+
+    iir_filter->a1 = dsp_a1;
+    iir_filter->a2 = dsp_a2;
+    iir_filter->b02 = dsp_b02;
+    iir_filter->b1 = dsp_b1;
+    iir_filter->hist1 = dsp_hist1;
+    iir_filter->hist2 = dsp_hist2;
+    iir_filter->last_fres = fres;
+    iir_filter->fres_incr_count = fres_incr_count;
+    iir_filter->last_q = q;
+    iir_filter->q_incr_count = q_incr_count;
+    iir_filter->amp = dsp_amp;
+}
+#endif
+
 /**
  * Applies a low- or high-pass filter with variable cutoff frequency and quality factor
  * for a given biquad transfer function:
@@ -166,6 +276,25 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID
     }
     else
     {
+#if !defined(WITH_FLOAT)
+        /*
+         * For the standard double-precision low-pass, stable coefficients let
+         * us evaluate four consecutive DF-II states from one input group and
+         * the two histories at its start. Smoothing remains on the scalar path
+         * so its per-sample state updates and coefficient changes are intact.
+         */
+        if constexpr(GAIN_NORM && AMPLIFY && TYPE == FLUID_IIR_LOWPASS)
+        {
+            if(iir_filter->type == TYPE
+               && iir_filter->fres_incr_count == 0
+               && iir_filter->q_incr_count == 0)
+            {
+                fluid_iir_filter_apply_stable_w4(iir_filter, dsp_buf, count);
+                return;
+            }
+        }
+#endif
+
         /* IIR filter sample history */
         fluid_real_t dsp_hist1 = iir_filter->hist1;
         fluid_real_t dsp_hist2 = iir_filter->hist2;
