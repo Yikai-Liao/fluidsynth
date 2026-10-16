@@ -1,0 +1,29 @@
+{
+  "baseline_commit": "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+  "candidate_branch": "perf/fdn-output-gain-20261016",
+  "candidate_source_diff": "diff --git a/src/rvoice/fluid_rev_fdn.cpp b/src/rvoice/fluid_rev_fdn.cpp\nindex cd43937a..a692ca49 100644\n--- a/src/rvoice/fluid_rev_fdn.cpp\n+++ b/src/rvoice/fluid_rev_fdn.cpp\n@@ -1135,11 +1135,10 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,\n             delay_out[i] = delay_out_s;   /* result in delay_out[] */\n             matrix_factor += delay_out_s; /* result in matrix_factor */\n \n-            /* Process stereo output */\n-            /* stereo left = left + out_left_gain * delay_out */\n-            out_left += this->late.out_left_gain[i] * delay_out_s;\n-            /* stereo right= right+ out_right_gain * delay_out */\n-            out_right += this->late.out_right_gain[i] * delay_out_s;\n+            /* The output projections share wet1. Accumulate their signed\n+             * delay-line sums, then apply that common gain once per channel. */\n+            out_left += (i & 1) ? -delay_out_s : delay_out_s;\n+            out_right += (i & 2) ? -delay_out_s : delay_out_s;\n         }\n \n         /* now we process the input delay line.Each input is a combination of\n@@ -1167,6 +1166,9 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,\n             push_in_delay_line(dl, delay_out[0] + matrix_factor);\n         }\n \n+        out_left *= this->wet1;\n+        out_right *= this->wet1;\n+\n         /*-------------------------------------------------------------------*/\n #ifdef DENORMALISING\n         /* Removes the DC offset */\n",
+  "probe_sha256": "7e82ae69c87faf9f14508c60534cd8daabeec1fe11797a939f9d4e793cd35924",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+  "libraries": {
+    "baseline": "6c3c4c5e1345eca83383ba940ed3febf582b714477fe4508b6e4c75af349b0ad",
+    "candidate": "2ef30c581a7385480c90e22ab501d69d7e209233bbec91f316a8422e67ecc810"
+  },
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 10,
+    "reverb_engine": "fdn",
+    "reverb_active": true,
+    "chorus_active": false,
+    "block": 64,
+    "OMP_NUM_THREADS": 1,
+    "OMP_DYNAMIC": false,
+    "cpu_affinity": 0
+  },
+  "repetitions": 3,
+  "order": "AB/BA alternation"
+}

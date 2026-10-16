@@ -1,0 +1,30 @@
+diff --git a/src/rvoice/fluid_rev_fdn.cpp b/src/rvoice/fluid_rev_fdn.cpp
+index cd43937a..a692ca49 100644
+--- a/src/rvoice/fluid_rev_fdn.cpp
++++ b/src/rvoice/fluid_rev_fdn.cpp
+@@ -1135,11 +1135,10 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
+             delay_out[i] = delay_out_s;   /* result in delay_out[] */
+             matrix_factor += delay_out_s; /* result in matrix_factor */
+ 
+-            /* Process stereo output */
+-            /* stereo left = left + out_left_gain * delay_out */
+-            out_left += this->late.out_left_gain[i] * delay_out_s;
+-            /* stereo right= right+ out_right_gain * delay_out */
+-            out_right += this->late.out_right_gain[i] * delay_out_s;
++            /* The output projections share wet1. Accumulate their signed
++             * delay-line sums, then apply that common gain once per channel. */
++            out_left += (i & 1) ? -delay_out_s : delay_out_s;
++            out_right += (i & 2) ? -delay_out_s : delay_out_s;
+         }
+ 
+         /* now we process the input delay line.Each input is a combination of
+@@ -1167,6 +1166,9 @@ void fluid_revmodel_fdn::process(const fluid_real_t *in, fluid_real_t *left_out,
+             push_in_delay_line(dl, delay_out[0] + matrix_factor);
+         }
+ 
++        out_left *= this->wet1;
++        out_right *= this->wet1;
++
+         /*-------------------------------------------------------------------*/
+ #ifdef DENORMALISING
+         /* Removes the DC offset */
