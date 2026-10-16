@@ -1,0 +1,29 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-phase-increment-cache-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/phase-increment-cache/ARCHIVE.md",
+      "sha256": "4d012529c5692e2f7a2c6fa8756f7636c4ae567f1d7cc663d12cf4f74acf22b8",
+      "size_bytes": 760
+    },
+    {
+      "path": "doc/performance-evidence/failed/phase-increment-cache/sources/phase-increment-cache/RESEARCH.md",
+      "sha256": "a8f620cd323a320382aa8e9da8e52e6209aa9c58d7b2b30b193b0f9023919539",
+      "size_bytes": 1079
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [],
+  "schema": 1,
+  "source_roots": [
+    "phase-increment-cache"
+  ],
+  "status": "stopped at Amdahl bound",
+  "summary": "The matched-shape profile put fluid_ct2hz_real() at 0.79% of sampled CPU time, bounding the whole-process gain below that before cache overhead. No source change was made.",
+  "title": "Pitch-to-phase increment cache"
+}
