@@ -1,0 +1,29 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-ivn-cost-screen-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/ivn-cost-screen/ARCHIVE.md",
+      "sha256": "022af7b3112e756eeef6bb14539a5f9fcd130975f7b6ce497247d06a82a309a9",
+      "size_bytes": 910
+    },
+    {
+      "path": "doc/performance-evidence/failed/ivn-cost-screen/sources/algorithm-route-profile/VELVET_NOISE_COST_SCREEN.md",
+      "sha256": "fd761aeb0882e6b4ec4f0126c821d251abdaab3abd0520f9e77cf8432d3e3039",
+      "size_bytes": 2732
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [],
+  "schema": 1,
+  "source_roots": [
+    "algorithm-route-profile/VELVET_NOISE_COST_SCREEN.md"
+  ],
+  "status": "stopped before implementation",
+  "summary": "The cited 802 FLOP/sample design is compared against a 16-line FDN, while its own discussion says FDN is cheaper at low order. FluidSynth's baseline has eight lines and one-pole damping, so the literature comparison did not establish a credible cost advantage. No performance claim is made.",
+  "title": "Interleaved velvet-noise reverb cost screen"
+}
