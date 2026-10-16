@@ -1,0 +1,4 @@
+filter_order 13 coefficient_count 6 transition_width_hz 5550.000000 designed_stopband_db 86.722885
+passband_hz 0 16500.000000 single_stage_db -9.23625615e-09 1.92865493e-15 two_stage_db -1.84725123e-08 3.85730987e-15
+alias_worst_22050_to_44100_db -6.02059991 alias_worst_27600_to_44100_db -86.7228849
+two_stage_group_delay_passband_samples 6.00849485 13.4470361 milliseconds 0.0681235243 0.152460727

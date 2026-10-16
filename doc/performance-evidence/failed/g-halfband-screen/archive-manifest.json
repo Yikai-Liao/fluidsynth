@@ -1,0 +1,825 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-g-halfband-screen-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/ARCHIVE.md",
+      "sha256": "ee11a9c9ef6821dc83a1b10772e91eea19b326479f778ad6a73b7633186426e0",
+      "size_bytes": 1380
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/REPORT.md",
+      "sha256": "46f26b2de54441ae11574d74cda76b3205b3fd4282cdbee194d0a263e5909c65",
+      "size_bytes": 3249
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/analyze_wet.cpp",
+      "sha256": "721eea3cab8cb2e7fcc2c99b845e466418b11e368390899054754e1e2797dec2",
+      "size_bytes": 5511
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/frequency_response.cpp",
+      "sha256": "65fe8a616042f84ccf612193b5e13702cfffce9ae97d6508cbb98efb89d8914f",
+      "size_bytes": 4372
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/g-hook.patch",
+      "sha256": "0235b621f2dba913fff6f7cbc356e4a8cf6d4d4ca9a37ac605f1c611ffcf00d8",
+      "size_bytes": 3390
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/g_probe.cpp",
+      "sha256": "bf7668513a82492d25c4d499b712f2f2b9eb5d16b66b3e63ffe26848a3249655",
+      "size_bytes": 6249
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x16Avx512.h",
+      "sha256": "1b86b353335e4d4a6c98b3826b49520659af547a6c8e610756531dc03ccbacc8",
+      "size_bytes": 3569
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x16Avx512.hpp",
+      "sha256": "3a9157730f85535c034737f51de404831a854e90354a28b60dfcb27c503066aa",
+      "size_bytes": 9947
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x2F64Neon.h",
+      "sha256": "2e7526e667289acef1902a9be7f524812959edee1437fc62c4956f64dbab8f90",
+      "size_bytes": 3658
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x2F64Neon.hpp",
+      "sha256": "93076adc20b11fc16cb3391dc4266b19ac0a6f43c8df581bef019582bd4d48fc",
+      "size_bytes": 9776
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x2F64Sse2.h",
+      "sha256": "e1be8be6d0c6d5f0f6b433e958f91e7397a7104b720313c33cd6303d77701993",
+      "size_bytes": 3679
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x2F64Sse2.hpp",
+      "sha256": "1c5beb91c4e9000167f26a239dea81a07b070baaeb0c9b184e95f3140a749ef4",
+      "size_bytes": 10002
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x3dnow.h",
+      "sha256": "48897bb8d451adbf809c01e2236626c53aec1039a38b8118f0fde4f6e7cb5194",
+      "size_bytes": 3322
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x3dnow.hpp",
+      "sha256": "31f3734cfa798e6eba99643c01f67772c6f868a7318fba767a3fcde03e78a622",
+      "size_bytes": 12033
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x4F64Avx.h",
+      "sha256": "5a3021b6572f03d3fa7857e1f106457de2d2e436feba10e72a502a512d4a7f69",
+      "size_bytes": 3657
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x4F64Avx.hpp",
+      "sha256": "1d8ecd29615f205367850c84e54c5214e21633939b8b670751311ae426f5f7b4",
+      "size_bytes": 10049
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x4Neon.h",
+      "sha256": "30b0621844abb8b64a79aebc0aadd02c6a746ccab376f4f86df5864c66293def",
+      "size_bytes": 3539
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x4Neon.hpp",
+      "sha256": "9bd408b1b4c19d8edd61df632194ea743856b8e0b53352fcbe3d66542f7532fd",
+      "size_bytes": 9668
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x4Sse.h",
+      "sha256": "2dc9cb04db45f4c40229eb79248f41c04166b96b075744a254052f1fe8cf8b68",
+      "size_bytes": 3492
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x4Sse.hpp",
+      "sha256": "b301e924133eea698bcce46d980ad10b1bd8ea3d018c85bf2572cacb9dbaa0f2",
+      "size_bytes": 9815
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x8Avx.h",
+      "sha256": "f21fe5aa9678e27d51c1a96802a19ce88ac013cc8f4bfa46557a39c4ff35a2f2",
+      "size_bytes": 3562
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x8Avx.hpp",
+      "sha256": "396bac2d0faa15cc5ec9a605a0a5cda08c3cc686c78c9efc281ed44d267a7f4d",
+      "size_bytes": 9954
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x8F64Avx512.h",
+      "sha256": "84ed737e853e911573fe2f80c9c00849cd1dcafc82a2413ef5e576a736f36e10",
+      "size_bytes": 3632
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2x8F64Avx512.hpp",
+      "sha256": "b6844be54abd72a0939a5cbaf8c16a19237cf82f159a93141ab7e8cfa8eebcbb",
+      "size_bytes": 10008
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xF64Fpu.h",
+      "sha256": "b6f501a34512bd482e10027110022295e1ac15df8952971d43dd8ec9f1b11a1a",
+      "size_bytes": 1102
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xF64Sse2.h",
+      "sha256": "170bcc1dc8554a5daed42a5795c8ad12b06699ab2e983827a474877e4ae3f9ed",
+      "size_bytes": 3107
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xF64Sse2.hpp",
+      "sha256": "bd9d81d429fb5329c1d013c1affedbd44468337e9cc65bcbf0d6e42153b1c031",
+      "size_bytes": 8117
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xFpu.h",
+      "sha256": "6c767cf1ed53530916e303832d82cf5cfc7e9ce0b205b745badbfee562335588",
+      "size_bytes": 1083
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xFpuTpl.h",
+      "sha256": "e5ba505762b4b68a42c16129a7ff16e947e0462fdc88c053af146f516c9004f6",
+      "size_bytes": 3185
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xFpuTpl.hpp",
+      "sha256": "b7959e4f186356d7673e18c1e948d6d070e09a7e304fd53cee15abd811d7ba61",
+      "size_bytes": 7962
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xNeon.h",
+      "sha256": "0143ae110eb83e2fdee22b238b88df6fbacc48527b4c2e759a30eb2c6ade1a1a",
+      "size_bytes": 3344
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xNeon.hpp",
+      "sha256": "3f8be3338f4d738ff1833145c182a2f25301ddcc7de5e63c4f7c6ec8bfa3d255",
+      "size_bytes": 7716
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xNeonOld.h",
+      "sha256": "246de63b338fe3509112934e970630fcd2cab45638f22847ec541e796c4a3db9",
+      "size_bytes": 3543
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xNeonOld.hpp",
+      "sha256": "ab0beecb09a0bcc9a63dd3b1bb60022ec7d06aa18b7b87e1239576ea58024168",
+      "size_bytes": 8534
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xSse.h",
+      "sha256": "7bc1216e5cdc7bb306d7866260202c911847b1767666822afa952bffb58963f2",
+      "size_bytes": 3197
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xSse.hpp",
+      "sha256": "aca2acb537a8a9e52b64ac053519f86f6cd8aa9bf4b54e7aab56a82d32c925a0",
+      "size_bytes": 8049
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xSseOld.h",
+      "sha256": "17b61cfdd7d660fce0ee96977d488c907eaaccb475a9c4a630413748da88f6ed",
+      "size_bytes": 3530
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Downsampler2xSseOld.hpp",
+      "sha256": "6eba8e04ff43c6c20a6bacf7f34470ac0589a8531abda27e3ebe31d5b19a8cf8",
+      "size_bytes": 8889
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi16Avx512.h",
+      "sha256": "ab8289de927b9806d2d3dd8c07389a111b14a206cef6cab120194a08bbb6c2ca",
+      "size_bytes": 3289
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi16Avx512.hpp",
+      "sha256": "737de8a173e7446d0165a8d661aef434abf2a818c8a3a7fb643a67378ee53f65",
+      "size_bytes": 6744
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi2F64Sse2.h",
+      "sha256": "1b78423b841e87865be6ded866d681149516f26430f7e019e3ac0a37f1251807",
+      "size_bytes": 3275
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi2F64Sse2.hpp",
+      "sha256": "f6d7a34fd779eec4893de916cc62a08d61b29ce3ec9786a0cb692407e1a360ab",
+      "size_bytes": 6658
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi3dnow.h",
+      "sha256": "26e34b460d15ff06dcf751b2dc389fefe7136f17de99f032aba1f25627c1ce39",
+      "size_bytes": 3269
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi3dnow.hpp",
+      "sha256": "1b0ba3d3dbedb47029450c302452e9d7a7d0e05f082ced4c74254e9cf21a4a94",
+      "size_bytes": 7432
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi4F64Avx.h",
+      "sha256": "295b3357e10fd5ebaa67b919a6becc4f9f66c921abea4bf599b1f7c91548cec2",
+      "size_bytes": 3259
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi4F64Avx.hpp",
+      "sha256": "882849c6ab62549f232f0516337a4f65204df0cca256720f94c4e832be295c79",
+      "size_bytes": 6734
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi4Neon.h",
+      "sha256": "f07a0f2856e9c76a13709b1278e1f5e569b436bc24ce51501f627ffb09284d8e",
+      "size_bytes": 3321
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi4Neon.hpp",
+      "sha256": "c6f2d6a8ffead823753f62ed9b9a2a5c055a7309be92548c3d54fd4bd682dd3a",
+      "size_bytes": 6493
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi4Sse.h",
+      "sha256": "0478e8ae1c7abfcc868412fe25bf480b0756d77f794aac41b508929527c72721",
+      "size_bytes": 3194
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi4Sse.hpp",
+      "sha256": "633a11d53fba10172ce6a79640e8b12c4c9be4dc9b7ec8f884ccdc7605ca3216",
+      "size_bytes": 6595
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi8Avx.h",
+      "sha256": "cb3059b30dd203f9e5249c50ffd548cb5377d2b8b3960f6b25f2dd27d9801b3a",
+      "size_bytes": 3201
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi8Avx.hpp",
+      "sha256": "306305d4d96da62ced56d712009b80178ce7cebc57b98ffdf5f562a5420af3fa",
+      "size_bytes": 6686
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi8F64Avx512.h",
+      "sha256": "8e926f51297c737898f0ddecc14abab6bd15a0107e2883ec539a2034cd41d040",
+      "size_bytes": 3326
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPi8F64Avx512.hpp",
+      "sha256": "2e6c3fdef477439c51b6b9ba4bef1ca965979a411257d58cf2333789badab627",
+      "size_bytes": 6776
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiF64Fpu.h",
+      "sha256": "d26279ac91c9f3969a3abbd8a88760c4934661b2c3fa07a953bf780c957403e5",
+      "size_bytes": 1086
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiF64Sse2.h",
+      "sha256": "6b30865ac0aa271507aa2d334e897a2a05b53f0eb24f53a93e168ecea381011b",
+      "size_bytes": 3036
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiF64Sse2.hpp",
+      "sha256": "37fb4cc6eb2914e195705c7c8dc0707609a75e1fb824ebeaca333812aebe36cb",
+      "size_bytes": 6212
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiFpu.h",
+      "sha256": "4008164363952d0e5b628094d8d00d41864236824848d5239b1a14f02981b8c8",
+      "size_bytes": 1067
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiFpuTpl.h",
+      "sha256": "2fd3d24e1b0a2f6701452c880caad6c1ff262e458fa81e61a9223c7fc1c00a62",
+      "size_bytes": 3183
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiFpuTpl.hpp",
+      "sha256": "6e864fbc9b62aa6a7bbe9a3048d7723d971f5e3763f4370443ad69d6e5c995e7",
+      "size_bytes": 6109
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiNeon.h",
+      "sha256": "56377a506d0f64c142c5a2a1a3e03589797d89a556eafc3d944d3b6f2ee1183b",
+      "size_bytes": 3477
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiNeon.hpp",
+      "sha256": "815554e9b9ca74a9f56891c8727cf42a70b37f5334ebb669dadb4abedff848bb",
+      "size_bytes": 5611
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiSse.h",
+      "sha256": "db2389e7e6925c48a09148a6cdb1946f2ddab6eb42c361b0dc79aecc5d7aeaef",
+      "size_bytes": 3462
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PhaseHalfPiSse.hpp",
+      "sha256": "a95bd7d4faf25f9ce9a03285dd6d675a38107702d5b18824385dc8b313519a54",
+      "size_bytes": 6080
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/PolyphaseIir2Designer.h",
+      "sha256": "7a5890666e1b7ee0dc904dc035f639e7c368c9bff7938532ad665fdd8b1eeaba",
+      "size_bytes": 15795
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/README.md",
+      "sha256": "4f939c19bb4b7412d5b079859b0185c58d9f39d55728cc461e9f9fe02453c6eb",
+      "size_bytes": 1641
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageData3dnow.h",
+      "sha256": "2e3e64ead360397dc19384726e8acbcbc1a818fbc4dd1937098509c329ddadfd",
+      "size_bytes": 1233
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataAvx.h",
+      "sha256": "289758d4bd95265fa0cd8f96bd4fa59d29bccedd9e3963ff78cad9d695462526",
+      "size_bytes": 1332
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataAvx512.h",
+      "sha256": "3b9712898ad58deb1a06e537871c662a6095b38f47c3b2ae55aeef58d5505827",
+      "size_bytes": 1358
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataF64Avx.h",
+      "sha256": "8e46c6079e02c9af5c99ca7628b15f8d9a642c11a47629a05636d100ff656b82",
+      "size_bytes": 1373
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataF64Avx512.h",
+      "sha256": "f527ff4325ea235b6e30c65f33841fea5c9aff3a33a748f318e1f6d9dffe567f",
+      "size_bytes": 1313
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataF64Sse2.h",
+      "sha256": "2ecf6aa8ed34847c0e3b9792c533510c491b558f8ccff27e43c2b2bdbb0d561b",
+      "size_bytes": 1380
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataNeonV2.h",
+      "sha256": "ba6c007bdead1a7afb96941a2722f8a0ee046889906e1cd9483d6823029b94ad",
+      "size_bytes": 1797
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataNeonV2F64.h",
+      "sha256": "162e2564cdae390fb7fa5450b444271fde8257a6661e5ff5e34d160e33327d68",
+      "size_bytes": 1867
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataNeonV4.h",
+      "sha256": "a42e99071307eebc2ac3e496e61b45d1e3dd7724852bfee4c1ba077d583864a6",
+      "size_bytes": 1838
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageDataSse.h",
+      "sha256": "39ec4128a2c833f0385ebd1aaf9931108569e62a735efdffe98aef71c37dc354",
+      "size_bytes": 1317
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc16Avx512.h",
+      "sha256": "285b8add6095c8b55cbde70b359b1d649d0c5874c61bd6e63be4424d915667f4",
+      "size_bytes": 2779
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc16Avx512.hpp",
+      "sha256": "1169b6767246594ac404bd22fc3b51a268cab18be423e3a5ee10475c93787a47",
+      "size_bytes": 5159
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc2F64Neon.h",
+      "sha256": "67c50ab7d934af1c469efd5b7fdfa56bb16e7ce5b4e94596dbdff830593d7a4d",
+      "size_bytes": 2819
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc2F64Neon.hpp",
+      "sha256": "7c3550b9366a37fa94d8d1b714c6f43f6032a3ac431cc823d9b8927b3458b567",
+      "size_bytes": 4601
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc2F64Sse2.h",
+      "sha256": "30f2fb8dfaf0f141f69548ed9893d6434a2fe86845fe47e073ce97ef42281520",
+      "size_bytes": 2845
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc2F64Sse2.hpp",
+      "sha256": "5a871842c98e8de7861a333aca34a42f7953a1b0e977916bfbc8381863c77a94",
+      "size_bytes": 5115
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc3dnow.h",
+      "sha256": "8316c7f8d3bbaad7699a729159ecc4d9d35cb546dcad027e5680419b442006b3",
+      "size_bytes": 2462
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc3dnow.hpp",
+      "sha256": "bebe645cfdb6cc88e974791a4edc3022912afe6de556ce3a3097b4b5e24d7a29",
+      "size_bytes": 2784
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc4F64Avx.h",
+      "sha256": "63f00241083c993e87f0050fccfc7af1d7ed2a33c9eb6727141dfbabb431d0a5",
+      "size_bytes": 2812
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc4F64Avx.hpp",
+      "sha256": "d3c31a7e9135658801e34f35a138c8f459890f09621a4fa20de6aaaa41bc2f6b",
+      "size_bytes": 5242
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc4Neon.h",
+      "sha256": "86e966a66f5ff38de08582c70f2c9a6c9144510b463c6d4113b4671f5d723f62",
+      "size_bytes": 2706
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc4Neon.hpp",
+      "sha256": "85c9aefc3d5bc181d99950d57de4caaf78636352cf326f4296c03144bac8a8da",
+      "size_bytes": 4427
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc4Sse.h",
+      "sha256": "b1e2c363419b22fb14fef2eda6a265d64d6af6b7568d2e623d1db41d6318a9d5",
+      "size_bytes": 2670
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc4Sse.hpp",
+      "sha256": "1ca1d08856b339f3fd76eb176f7d193ef1d8637ac613214cbec4df31573d44c8",
+      "size_bytes": 4924
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc8Avx.h",
+      "sha256": "fa6e39d2991879b7263a3f98e8692c70db3c26b9b12bcbb36cc5f6e33558c54e",
+      "size_bytes": 2763
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc8Avx.hpp",
+      "sha256": "9169eee9fcb81d14c97cba85e66967f90884f911c96dc026a0f89d4ec0330426",
+      "size_bytes": 5153
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc8F64Avx512.h",
+      "sha256": "d6c4d947b3c97a7448f31de96aa78e91ef1c32713b293d1fb9db4975051bd7ce",
+      "size_bytes": 2801
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProc8F64Avx512.hpp",
+      "sha256": "d48a6d408548eddf1d2560b1f78d2d57bbf290b2c229861c19f46aacfa0024f7",
+      "size_bytes": 5230
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcF64Sse2.h",
+      "sha256": "cff2d18ad613e5a73e2bd17a5ceb7ef18967f24f595e529f7ce637dd8c8c8c0f",
+      "size_bytes": 2620
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcF64Sse2.hpp",
+      "sha256": "b23ed1e8e1e16fb03938ff5eabd9b94c06fcafddaadf734a454f80464a1272a2",
+      "size_bytes": 2826
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcFpu.h",
+      "sha256": "bc4dd64ae6582a677b977a744fc5ff3f46c0819d3256984ce2ec53558760a077",
+      "size_bytes": 4818
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcFpu.hpp",
+      "sha256": "ddab413c2264f7627653067e76ccc6cf201159ccc0e7aec0077e11ab9b479c14",
+      "size_bytes": 3772
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcNeonV2.h",
+      "sha256": "5fe69a13c8f78849f8888b7bf910979abf169423ffcb75990d58a2b888da0be5",
+      "size_bytes": 2792
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcNeonV2.hpp",
+      "sha256": "479a737819f5f32ba0f31b37f977fd1f5f746d9c3ef982230cc3d292e0c7b80b",
+      "size_bytes": 2783
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcNeonV4.h",
+      "sha256": "0310e0ec620219d637222e031fd38bbbe98eae871dbe21af5161c65ff942d12c",
+      "size_bytes": 2864
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcNeonV4.hpp",
+      "sha256": "f22beb8c5e8a0128f831873791ed060a19b76a1ad5873000d969c974b3d9b9ac",
+      "size_bytes": 2862
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcSseV2.h",
+      "sha256": "38131159c836a5191a21d8439242afbbc6b2cd791bf0084bd21dfd12cc8540d6",
+      "size_bytes": 2558
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcSseV2.hpp",
+      "sha256": "f203e0b6318f4bc12eeeb948ed2ef58a3631544d07075c439ad7d588c0aefab6",
+      "size_bytes": 2810
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcSseV4.h",
+      "sha256": "d068e91247becb3c4d6db3bf66d0b69de7660de42ca5d983adeaee8856a5fa91",
+      "size_bytes": 2610
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/StageProcSseV4.hpp",
+      "sha256": "f750935e7036f7dd57ac24b03fb8099b43d536d78d5810c992dd296408d05771",
+      "size_bytes": 2736
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x16Avx512.h",
+      "sha256": "4b1ea97ccfeb69d07ba19143f34edc457e2b3a2b3a5e148b6bfd446301bc48f0",
+      "size_bytes": 3097
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x16Avx512.hpp",
+      "sha256": "d8595bcb5dabf5edba241f3b62189056480d6a30fb2a330e11ab7a1f351521a8",
+      "size_bytes": 4851
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x2F64Neon.h",
+      "sha256": "65c1dfcc1116d7a4cf3204b16ef0ea8d6b5df32845ae9835781f065412393934",
+      "size_bytes": 3164
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x2F64Neon.hpp",
+      "sha256": "6294bcc303893d5a5282b10268255946e6fa9f5c5cdd5056155e28f09cb3a54b",
+      "size_bytes": 4860
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x2F64Sse2.h",
+      "sha256": "fed47517d451bb8837ee86bb839dfc8babba6ee7de30656c1c2257ee4d11ca3f",
+      "size_bytes": 3186
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x2F64Sse2.hpp",
+      "sha256": "6669f59db9121f2e964798663f6267607b599626f17bc933c7fedb2ae255e9dd",
+      "size_bytes": 4908
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x3dnow.h",
+      "sha256": "dcf883ef427400d32e50e17c0cdb7a747db65d3f274fbf98c135327fb3f525bb",
+      "size_bytes": 3082
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x3dnow.hpp",
+      "sha256": "70ec56027f346e8dbd8f876c6a8ca8c751ef54d7578b1113c8d9ca4da71ccaac",
+      "size_bytes": 7692
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x4F64Avx.h",
+      "sha256": "69af3cada44f3700237477ca37bb7f3d2a0a1760b97da72b25d46102b3ecc7f2",
+      "size_bytes": 3164
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x4F64Avx.hpp",
+      "sha256": "04fb47592e3f18ad1dc493d9e6add04258af7c4f65610b6aa0eb40eacdfbddc8",
+      "size_bytes": 4937
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x4Neon.h",
+      "sha256": "f51fa5557566765bc73a677ebc5aa8f2b006b7058940d7534721f041ec6a9c70",
+      "size_bytes": 3050
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x4Neon.hpp",
+      "sha256": "373e40bcd3fc945630ff54f9a43d4b592e9a95d702884e8e1f4cf625152b5c34",
+      "size_bytes": 4776
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x4Sse.h",
+      "sha256": "2967c33b7aeaccd06957c66f1fe58ba90f271d8c1f4181e3f4779cd8890b901a",
+      "size_bytes": 3009
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x4Sse.hpp",
+      "sha256": "64b1c9bd9fef94682f55adb940c7b6df058e7945fec8cb8e8ea2815c03f5d7f0",
+      "size_bytes": 4755
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x8Avx.h",
+      "sha256": "b5cc5c8686c992c0a18c62a6d6135c16b97fb62b6431f58e58d126d986679fcf",
+      "size_bytes": 3082
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x8Avx.hpp",
+      "sha256": "9ead1337a7da1610e7e081b0c600527664f8d1a56d3a56144ea01f2d66b39548",
+      "size_bytes": 4879
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x8F64Avx512.h",
+      "sha256": "26c2da0661008da550768383a1004023623d5f81674a33b224b32f0ce78dc67c",
+      "size_bytes": 3147
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2x8F64Avx512.hpp",
+      "sha256": "0795a92ddab0440af3d610ca7a742cfd1d0bc6db7c6b842adfe61fab4a7374ff",
+      "size_bytes": 4889
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xF64Fpu.h",
+      "sha256": "df5507927842592f9ef52afc564d3d2fa2a81044634cc8fffaf06ccbf326e088",
+      "size_bytes": 1086
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xF64Sse2.h",
+      "sha256": "13a7d68e2c22a7dcccaf0f6508a444de9b0b7729f3e02acb5a146e56fbf7159a",
+      "size_bytes": 2857
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xF64Sse2.hpp",
+      "sha256": "ddf412e80bd132fcf675c6505d06a22c19a6660f0d8f2861c361b5bf3666aa88",
+      "size_bytes": 4640
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xFpu.h",
+      "sha256": "a6de311b9bd378a01d09ee28d0fb0d75f21907e255afffb4f52e1258621bf366",
+      "size_bytes": 1067
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xFpuTpl.h",
+      "sha256": "60846f91c360742c64a4ecf6cd6e7b00e3a4093ee9485a63ea202989422bb6ae",
+      "size_bytes": 2931
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xFpuTpl.hpp",
+      "sha256": "0a8500552a4bd319f5f12cd85856fb879d6d5776f1c13cacc53710bf98d9ae9f",
+      "size_bytes": 4761
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xNeon.h",
+      "sha256": "88b086c31d5b6b741fe5699ea218e11814cef649affce9626c602df2d00e2f7c",
+      "size_bytes": 3070
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xNeon.hpp",
+      "sha256": "b26f2d17250592d99e15c6da1ce38b8808841be99f3220b8c32ca639e26b1924",
+      "size_bytes": 4684
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xNeonOld.h",
+      "sha256": "8ee397234fdbd31e1eb1e7703be504e8d6d657d2742e5479b451cdcf7b310ed3",
+      "size_bytes": 3255
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xNeonOld.hpp",
+      "sha256": "50c7fcff1be98659b05f6bfb2a51e45992ac1e82e78fd5a9e1ece14ae8409642",
+      "size_bytes": 4918
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xSse.h",
+      "sha256": "f086efd6a9effed30b7300da626fbcf74501146d8ea8f4cc5b31648731372488",
+      "size_bytes": 3012
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xSse.hpp",
+      "sha256": "cf054eba52b4575e386a954a3bbd384a32ed52edfd2f5b5b0ac9c922a233f9b9",
+      "size_bytes": 4864
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xSseOld.h",
+      "sha256": "87a5a49c31e2a53ed9e5731cd76382dd66f4d69485d8e970cb4f27668a0c7a6d",
+      "size_bytes": 3329
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/Upsampler2xSseOld.hpp",
+      "sha256": "f51927f6b293446e9d225912bddd21924db2110e18ec0871120cc90592b35b0c",
+      "size_bytes": 5318
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/def.h",
+      "sha256": "2ed4f09aef72f37366a43af2ebe84283b882d20d05e773b0c555d6d8fb2cf7a6",
+      "size_bytes": 2224
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/fnc.h",
+      "sha256": "7c0629f5f23eafd1a7e87b4ce169b5aa855b6522d1f42581b7d9d07045a784a1",
+      "size_bytes": 1108
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/fnc.hpp",
+      "sha256": "fac11ac36118c4006bc051faf12e8795f5dfb4a78fab1a4dcbe6aa95f823255b",
+      "size_bytes": 1392
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/fnc_neon.h",
+      "sha256": "886e93167cf174f4813ef4ff0a1202478837dc5e3732cdf5c166ad023398cce7",
+      "size_bytes": 1465
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/fnc_neon.hpp",
+      "sha256": "588ef8a17dc6927b18f5d25040795c87b2d2d47005d8e11d13a89671e0cbe5da",
+      "size_bytes": 1748
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/license.txt",
+      "sha256": "40f2791ae84e097cc964b740cbd974e78296a36aa1490dcb76dcc004bf865ac8",
+      "size_bytes": 487
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/hiir/readme.txt",
+      "sha256": "6cd4b85ee8c9949c7a13b7651f3f2add1000df4f6e0b9c69e4ad27daaad09007",
+      "size_bytes": 11759
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/manifest.json",
+      "sha256": "e48107e5a58000d9fae301e2c9f3aef4883106eb4abec3a0f6deb05c4f506668",
+      "size_bytes": 2104
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/query.cpp",
+      "sha256": "e533fe37675b0ff36d2d023d447753a7c9b7b4f07b2fb91736d0e85280c7fd51",
+      "size_bytes": 345
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/raw-frequency-response.txt",
+      "sha256": "b6adb1c21dd3604825620fbbd94510c1e1102c906ef134d7ad587ac437bae88a",
+      "size_bytes": 400
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/raw-timing-mono-long.txt",
+      "sha256": "0b7594abf0187a43837169bc710603ecac2efdc693681632611f96c306326996",
+      "size_bytes": 484
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/raw-timing-mono.txt",
+      "sha256": "00e482ddd9845fcbe8a2ef76f2734c9337505c405439606d42d77c690286318d",
+      "size_bytes": 453
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/raw-timing.txt",
+      "sha256": "0563930a58afd0f744f7e479055d8c1f7fb3b666979391634709e55eb44d59f6",
+      "size_bytes": 453
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/raw-wet-quality.txt",
+      "sha256": "ba606509ebeea1bf95e15ab81076e1ddb34410a753fa6dbdd1a0eaabd6bfece0",
+      "size_bytes": 5443
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/raw-wet-render.txt",
+      "sha256": "4931b1e8c72217e99cc3863735565183b412e2852a23e04ea4dc8487220020e4",
+      "size_bytes": 70
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/run.sh",
+      "sha256": "7cd9ff95ecd153c2d45c36bde9e9020c93a81add95445a00d0e28b1655c5a481",
+      "size_bytes": 2413
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/wet_probe.cpp",
+      "sha256": "3b6a339ae42dd3211c94bd329ed4ade2784354bc90442494bd5a1122a883f998",
+      "size_bytes": 2964
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/g-halfband-screen/analyze_wet",
+      "reason": "unsupported file type",
+      "sha256": "27333110fef6e2bee60a87e0a5ec6efeda262871e8242d1a166790fd14e5372f",
+      "size_bytes": 26960
+    },
+    {
+      "path": "sources/g-halfband-screen/frequency_response",
+      "reason": "unsupported file type",
+      "sha256": "3908f226648da0e007e59db02fa664484dd69a1062789ba2408be910b441bf6c",
+      "size_bytes": 21288
+    },
+    {
+      "path": "sources/g-halfband-screen/query",
+      "reason": "unsupported file type",
+      "sha256": "1b4fa6536dbf1d9baef7dd7a23dfcb433b08692a693164c15ce2f196826584f1",
+      "size_bytes": 16056
+    },
+    {
+      "path": "sources/g-halfband-screen/wet-full.f64le",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "928177b25fa136934a91472d0794dc83e4a4a4113312997b822914cf07de8ec8",
+      "size_bytes": 16933888
+    },
+    {
+      "path": "sources/g-halfband-screen/wet-halfband.f64le",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "fb7afe1860e4aa5c7c9442434b492ea47385783ab576501b54f8226d0753b4ad",
+      "size_bytes": 16933888
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "g-halfband-screen"
+  ],
+  "status": "stopped at wet-quality gate",
+  "summary": "The first H+C median was 2.827 ms, below the 3.2 ms feasibility ceiling, but the 12-second wet impulse missed the response contract: total energy \u22123.011 dB, normalized one-third-octave color \u22123.013 to +13.251 dB, high-band T20 differences up to +35.32%, and late IACC delta \u22120.056. No integration was attempted.",
+  "title": "Polyphase IIR halfband wet-rate conversion"
+}

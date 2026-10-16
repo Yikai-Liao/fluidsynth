@@ -1,0 +1,41 @@
+{
+  "baseline_source_commit": "571bc72e72b756f25333b3e31fb3046161c27632",
+  "compiler": "GCC 14.2.0",
+  "build": "Release double, OpenMP ON, threads ON; optional readline/libsndfile OFF",
+  "converter": {
+    "type": "polyphase IIR halfband",
+    "sections_per_path": 6,
+    "transition_width_hz": 5550,
+    "designed_stopband_db": 86.722885
+  },
+  "timing_medians_ms": {
+    "full_rate_core": 3.20681,
+    "half_rate_core_H": 1.521298,
+    "converter_C": 1.305982,
+    "H_plus_C": 2.82728,
+    "complete_multirate": 2.887131
+  },
+  "wet_quality": {
+    "total_energy_delta_db_candidate_vs_full": -3.011269,
+    "normalized_color_delta_min_db": -3.013,
+    "normalized_color_delta_max_db": 13.251,
+    "max_abs_t20_delta_pct_reported": 35.32,
+    "late_iacc_delta_full_minus_candidate": -0.056
+  },
+  "files_sha256": {
+    "REPORT.md": "46f26b2de54441ae11574d74cda76b3205b3fd4282cdbee194d0a263e5909c65",
+    "run.sh": "7cd9ff95ecd153c2d45c36bde9e9020c93a81add95445a00d0e28b1655c5a481",
+    "g-hook.patch": "0235b621f2dba913fff6f7cbc356e4a8cf6d4d4ca9a37ac605f1c611ffcf00d8",
+    "g_probe.cpp": "bf7668513a82492d25c4d499b712f2f2b9eb5d16b66b3e63ffe26848a3249655",
+    "wet_probe.cpp": "3b6a339ae42dd3211c94bd329ed4ade2784354bc90442494bd5a1122a883f998",
+    "frequency_response.cpp": "65fe8a616042f84ccf612193b5e13702cfffce9ae97d6508cbb98efb89d8914f",
+    "analyze_wet.cpp": "721eea3cab8cb2e7fcc2c99b845e466418b11e368390899054754e1e2797dec2",
+    "raw-timing.txt": "0563930a58afd0f744f7e479055d8c1f7fb3b666979391634709e55eb44d59f6",
+    "raw-timing-mono.txt": "00e482ddd9845fcbe8a2ef76f2734c9337505c405439606d42d77c690286318d",
+    "raw-wet-render.txt": "4931b1e8c72217e99cc3863735565183b412e2852a23e04ea4dc8487220020e4",
+    "raw-wet-quality.txt": "ba606509ebeea1bf95e15ab81076e1ddb34410a753fa6dbdd1a0eaabd6bfece0",
+    "raw-frequency-response.txt": "b6adb1c21dd3604825620fbbd94510c1e1102c906ef134d7ad587ac437bae88a",
+    "wet-full.f64le": "928177b25fa136934a91472d0794dc83e4a4a4113312997b822914cf07de8ec8",
+    "wet-halfband.f64le": "fb7afe1860e4aa5c7c9442434b492ea47385783ab576501b54f8226d0753b4ad"
+  }
+}

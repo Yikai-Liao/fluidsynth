@@ -1,0 +1,38 @@
+frames 1058368 total_energy_full 1.63828716725 total_energy_halfband 0.818960823019 raw_delta_db 3.011269 gain_to_match 0.707027895
+left_right_ratio_db full -0.001432 halfband 0.000003 delta -0.001435
+band 31.50Hz raw_level_delta 0.001dB normalized_color_delta -3.011dB t20_full 5.401s t20_halfband 5.403s t20_delta -0.04% edt_full 5.139s edt_halfband 5.141s
+band 39.69Hz raw_level_delta -0.001dB normalized_color_delta -3.012dB t20_full 4.895s t20_halfband 4.897s t20_delta -0.05% edt_full 4.607s edt_halfband 4.607s
+band 50.00Hz raw_level_delta -0.001dB normalized_color_delta -3.013dB t20_full 4.591s t20_halfband 4.592s t20_delta -0.02% edt_full 4.485s edt_halfband 4.484s
+band 63.00Hz raw_level_delta 0.000dB normalized_color_delta -3.011dB t20_full 4.710s t20_halfband 4.714s t20_delta -0.08% edt_full 4.341s edt_halfband 4.338s
+band 79.38Hz raw_level_delta 0.001dB normalized_color_delta -3.010dB t20_full 4.537s t20_halfband 4.539s t20_delta -0.06% edt_full 4.330s edt_halfband 4.327s
+band 100.01Hz raw_level_delta -0.002dB normalized_color_delta -3.013dB t20_full 4.821s t20_halfband 4.829s t20_delta -0.16% edt_full 4.644s edt_halfband 4.647s
+band 126.00Hz raw_level_delta -0.008dB normalized_color_delta -3.020dB t20_full 4.818s t20_halfband 4.828s t20_delta -0.19% edt_full 4.803s edt_halfband 4.797s
+band 158.75Hz raw_level_delta -0.001dB normalized_color_delta -3.012dB t20_full 4.636s t20_halfband 4.642s t20_delta -0.12% edt_full 4.574s edt_halfband 4.571s
+band 200.01Hz raw_level_delta 0.002dB normalized_color_delta -3.009dB t20_full 4.619s t20_halfband 4.624s t20_delta -0.10% edt_full 4.405s edt_halfband 4.403s
+band 252.00Hz raw_level_delta 0.013dB normalized_color_delta -2.999dB t20_full 4.573s t20_halfband 4.573s t20_delta -0.01% edt_full 4.458s edt_halfband 4.450s
+band 317.50Hz raw_level_delta 0.035dB normalized_color_delta -2.976dB t20_full 4.516s t20_halfband 4.509s t20_delta 0.15% edt_full 4.476s edt_halfband 4.472s
+band 400.03Hz raw_level_delta 0.033dB normalized_color_delta -2.978dB t20_full 4.575s t20_halfband 4.565s t20_delta 0.22% edt_full 4.456s edt_halfband 4.442s
+band 504.00Hz raw_level_delta 0.047dB normalized_color_delta -2.964dB t20_full 4.539s t20_halfband 4.523s t20_delta 0.35% edt_full 4.419s edt_halfband 4.396s
+band 635.00Hz raw_level_delta 0.068dB normalized_color_delta -2.943dB t20_full 4.566s t20_halfband 4.540s t20_delta 0.56% edt_full 4.377s edt_halfband 4.347s
+band 800.05Hz raw_level_delta 0.074dB normalized_color_delta -2.937dB t20_full 4.547s t20_halfband 4.483s t20_delta 1.41% edt_full 4.337s edt_halfband 4.282s
+band 1008.00Hz raw_level_delta 0.107dB normalized_color_delta -2.905dB t20_full 4.563s t20_halfband 4.477s t20_delta 1.92% edt_full 4.406s edt_halfband 4.332s
+band 1270.00Hz raw_level_delta 0.152dB normalized_color_delta -2.860dB t20_full 4.550s t20_halfband 4.444s t20_delta 2.38% edt_full 4.348s edt_halfband 4.248s
+band 1600.10Hz raw_level_delta 0.184dB normalized_color_delta -2.827dB t20_full 4.550s t20_halfband 4.401s t20_delta 3.39% edt_full 4.340s edt_halfband 4.208s
+band 2016.00Hz raw_level_delta 0.257dB normalized_color_delta -2.754dB t20_full 4.492s t20_halfband 4.305s t20_delta 4.35% edt_full 4.351s edt_halfband 4.170s
+band 2540.00Hz raw_level_delta 0.359dB normalized_color_delta -2.652dB t20_full 4.432s t20_halfband 4.149s t20_delta 6.83% edt_full 4.316s edt_halfband 4.030s
+band 3200.20Hz raw_level_delta 0.477dB normalized_color_delta -2.534dB t20_full 4.358s t20_halfband 3.996s t20_delta 9.06% edt_full 4.260s edt_halfband 3.883s
+band 4032.00Hz raw_level_delta 0.649dB normalized_color_delta -2.362dB t20_full 4.277s t20_halfband 3.809s t20_delta 12.29% edt_full 4.188s edt_halfband 3.685s
+band 5080.00Hz raw_level_delta 0.837dB normalized_color_delta -2.175dB t20_full 4.173s t20_halfband 3.545s t20_delta 17.74% edt_full 4.045s edt_halfband 3.419s
+band 6400.40Hz raw_level_delta 1.033dB normalized_color_delta -1.978dB t20_full 4.018s t20_halfband 3.258s t20_delta 23.31% edt_full 3.875s edt_halfband 3.176s
+band 8064.00Hz raw_level_delta 1.151dB normalized_color_delta -1.860dB t20_full 3.819s t20_halfband 2.966s t20_delta 28.76% edt_full 3.693s edt_halfband 2.872s
+band 10160.00Hz raw_level_delta 1.259dB normalized_color_delta -1.752dB t20_full 3.569s t20_halfband 2.672s t20_delta 33.57% edt_full 3.459s edt_halfband 2.563s
+band 12800.80Hz raw_level_delta 1.250dB normalized_color_delta -1.762dB t20_full 3.267s t20_halfband 2.414s t20_delta 35.32% edt_full 3.181s edt_halfband 2.312s
+band 16128.00Hz raw_level_delta 1.234dB normalized_color_delta -1.777dB t20_full 2.968s t20_halfband 2.227s t20_delta 33.25% edt_full 2.890s edt_halfband 2.122s
+band 20320.01Hz raw_level_delta 1.842dB normalized_color_delta -1.170dB t20_full 2.674s t20_halfband 2.122s t20_delta 26.06% edt_full 2.608s edt_halfband 1.991s
+band 25601.60Hz raw_level_delta 9.949dB normalized_color_delta 6.938dB t20_full 2.425s t20_halfband 2.205s t20_delta 9.98% edt_full 2.349s edt_halfband 2.053s
+band 32256.00Hz raw_level_delta 16.262dB normalized_color_delta 13.251dB t20_full 2.212s t20_halfband 2.307s t20_delta -4.12% edt_full 2.111s edt_halfband 2.125s
+iacc 0.00-0.10s full 0.11047 halfband 0.09631 delta 0.01417
+iacc 0.10-0.50s full 0.02290 halfband 0.02566 delta -0.00276
+iacc 0.50-2.00s full 0.01847 halfband 0.01438 delta 0.00409
+iacc 2.00-8.00s full 0.03880 halfband 0.03619 delta 0.00261
+iacc 8.00-12.00s full 0.26018 halfband 0.31618 delta -0.05600
