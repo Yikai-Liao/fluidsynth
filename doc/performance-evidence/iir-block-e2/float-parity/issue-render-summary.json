@@ -1,0 +1,42 @@
+[
+  {
+    "file": "1415_the-nervous-filter.raw",
+    "bytes_baseline": 9146112,
+    "bytes_candidate": 9146112,
+    "bitwise_equal": true,
+    "baseline_sha256": "bd40f7a7710f841ada923944b06f10436fc00987f5f1b1ab2d723acf02f09bc8",
+    "candidate_sha256": "bd40f7a7710f841ada923944b06f10436fc00987f5f1b1ab2d723acf02f09bc8"
+  },
+  {
+    "file": "1417_filter-envelope-noise.raw",
+    "bytes_baseline": 2800896,
+    "bytes_candidate": 2800896,
+    "bitwise_equal": true,
+    "baseline_sha256": "3ad7c239e17d976cf755a4379333cd781a28a00aa0441fc2ebd39dfd7d47d5a7",
+    "candidate_sha256": "3ad7c239e17d976cf755a4379333cd781a28a00aa0441fc2ebd39dfd7d47d5a7"
+  },
+  {
+    "file": "1424_clicks-on-ModEnv-FilterFc-change.raw",
+    "bytes_baseline": 1051648,
+    "bytes_candidate": 1051648,
+    "bitwise_equal": true,
+    "baseline_sha256": "93fae89c7a67603b62cbf4de9a13fcc352b35d3da3bdb9670224aa4f93af9326",
+    "candidate_sha256": "93fae89c7a67603b62cbf4de9a13fcc352b35d3da3bdb9670224aa4f93af9326"
+  },
+  {
+    "file": "1427_high-Q-note-cutoff.raw",
+    "bytes_baseline": 1129984,
+    "bytes_candidate": 1129984,
+    "bitwise_equal": true,
+    "baseline_sha256": "c411cec41a9261f46505c535fe5bc7bc3a0a3fba5a2f923fb6f35618dffa531c",
+    "candidate_sha256": "c411cec41a9261f46505c535fe5bc7bc3a0a3fba5a2f923fb6f35618dffa531c"
+  },
+  {
+    "file": "1481_cutoff-resolution.raw",
+    "bytes_baseline": 10672896,
+    "bytes_candidate": 10672896,
+    "bitwise_equal": true,
+    "baseline_sha256": "7aa4c4aecdf868be31c0922390498279546c4840a842bec4e5685124a377d762",
+    "candidate_sha256": "7aa4c4aecdf868be31c0922390498279546c4840a842bec4e5685124a377d762"
+  }
+]

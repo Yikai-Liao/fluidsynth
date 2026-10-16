@@ -1,0 +1,1237 @@
+{
+  "cases": [
+    {
+      "n_pairs": 15,
+      "ratio_median": 0.8954376799667035,
+      "ratio_geomean": 0.8915900985167092,
+      "ratio_95ci": [
+        0.8522217498453123,
+        0.932777066435261
+      ],
+      "ratio_range": [
+        0.7473089011182488,
+        1.0159319505166238
+      ],
+      "setup_plus_render_ratio_median": 0.9474630965676767,
+      "setup_plus_render_ratio_geomean": 0.9361160415315064,
+      "setup_plus_render_ratio_95ci": [
+        0.9110974556523015,
+        0.9618216336530314
+      ],
+      "pairs_candidate_faster": 14,
+      "ratio_cpu_geomean": 0.8935462470621526,
+      "ratio_cpu_95ci": [
+        0.8550609468419664,
+        0.9337637259515997
+      ],
+      "pairs_candidate_hash_equal": 15,
+      "worst_pairwise_slowdown_ratio": 1.3381347371931909,
+      "ratios": [
+        0.9614231428964823,
+        0.9756914146961777,
+        0.889621515138904,
+        0.8954376799667035,
+        0.8873925587791223,
+        0.8076612850270106,
+        0.7473089011182488,
+        0.9092499924870153,
+        0.8164962411403419,
+        0.9445853504792785,
+        1.0159319505166238,
+        0.9199762153554542,
+        0.8326369136126013,
+        0.9446727782467084,
+        0.86677957402364
+      ],
+      "case": "all_b128",
+      "block": 128,
+      "sample_rate": 44100,
+      "duration_s": 10,
+      "polyphony_limit": 256,
+      "custom_filter_type": 0,
+      "quality": {
+        "baseline_pcm_sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+        "candidate_pcm_sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+        "bitwise_equal": true,
+        "frames": 441000,
+        "segments": [
+          {
+            "segment_index": 0,
+            "frames": 44100,
+            "reference_rms_dbfs": -6000.0,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 1,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.228862241672232,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 2,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.452737832398647,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 3,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.25141193569124,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 4,
+            "frames": 44100,
+            "reference_rms_dbfs": -26.92675942134246,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 5,
+            "frames": 44100,
+            "reference_rms_dbfs": -26.41951660206804,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 6,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.185885035563118,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 7,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.718859999269455,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 8,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.146357302203235,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 9,
+            "frames": 44100,
+            "reference_rms_dbfs": -26.994993776082296,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          }
+        ],
+        "all_segments_pass": true
+      },
+      "repeatable_over_3pct_regression": false
+    },
+    {
+      "n_pairs": 15,
+      "ratio_median": 0.8942629857051337,
+      "ratio_geomean": 0.9047892055065048,
+      "ratio_95ci": [
+        0.8683321227319488,
+        0.9427769455602698
+      ],
+      "ratio_range": [
+        0.8237319571763448,
+        1.0549989237656754
+      ],
+      "setup_plus_render_ratio_median": 0.9348346703809859,
+      "setup_plus_render_ratio_geomean": 0.9465391189452005,
+      "setup_plus_render_ratio_95ci": [
+        0.922925525375578,
+        0.9707568802249362
+      ],
+      "pairs_candidate_faster": 14,
+      "ratio_cpu_geomean": 0.9037243504600501,
+      "ratio_cpu_95ci": [
+        0.8679400279273035,
+        0.9409840257797691
+      ],
+      "pairs_candidate_hash_equal": 15,
+      "worst_pairwise_slowdown_ratio": 1.2139871365776327,
+      "ratios": [
+        0.8841624914316416,
+        0.8237319571763448,
+        0.9598191796434108,
+        0.8492938817213824,
+        0.9354164947206295,
+        0.9730833985621772,
+        0.8294569948053259,
+        0.8281936387942571,
+        1.0549989237656754,
+        0.9397018174740969,
+        0.8730082661101627,
+        0.8942629857051337,
+        0.9772378635229038,
+        0.9402187654874321,
+        0.844520102463809
+      ],
+      "case": "all_b256",
+      "block": 256,
+      "sample_rate": 44100,
+      "duration_s": 10,
+      "polyphony_limit": 256,
+      "custom_filter_type": 0,
+      "quality": {
+        "baseline_pcm_sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+        "candidate_pcm_sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+        "bitwise_equal": true,
+        "frames": 441000,
+        "segments": [
+          {
+            "segment_index": 0,
+            "frames": 44100,
+            "reference_rms_dbfs": -6000.0,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 1,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.228862241672232,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 2,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.452737832398647,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 3,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.25141193569124,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 4,
+            "frames": 44100,
+            "reference_rms_dbfs": -26.92675942134246,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 5,
+            "frames": 44100,
+            "reference_rms_dbfs": -26.41951660206804,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 6,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.185885035563118,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 7,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.718859999269455,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 8,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.146357302203235,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 9,
+            "frames": 44100,
+            "reference_rms_dbfs": -26.994993776082296,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          }
+        ],
+        "all_segments_pass": true
+      },
+      "repeatable_over_3pct_regression": false
+    },
+    {
+      "n_pairs": 15,
+      "ratio_median": 0.8975747238781365,
+      "ratio_geomean": 0.8910987653180046,
+      "ratio_95ci": [
+        0.859830803683226,
+        0.9235037941764811
+      ],
+      "ratio_range": [
+        0.7837640011822555,
+        0.9836541008395202
+      ],
+      "setup_plus_render_ratio_median": 0.9294623528402671,
+      "setup_plus_render_ratio_geomean": 0.9345536977933351,
+      "setup_plus_render_ratio_95ci": [
+        0.9063522548691945,
+        0.9636326377157244
+      ],
+      "pairs_candidate_faster": 15,
+      "ratio_cpu_geomean": 0.8910039863636218,
+      "ratio_cpu_95ci": [
+        0.8598299521561162,
+        0.9233082677860956
+      ],
+      "pairs_candidate_hash_equal": 15,
+      "worst_pairwise_slowdown_ratio": 1.2758942723722535,
+      "ratios": [
+        0.7837640011822555,
+        0.8866838756492141,
+        0.9809356478993638,
+        0.8779351201258977,
+        0.9187817040336776,
+        0.9836541008395202,
+        0.9180174986466996,
+        0.8111384768445666,
+        0.8419420159246119,
+        0.8481408298633277,
+        0.9410612873434251,
+        0.9248773720796865,
+        0.8975747238781365,
+        0.9154266496093967,
+        0.8623498193291462
+      ],
+      "case": "all_48k",
+      "block": 64,
+      "sample_rate": 48000,
+      "duration_s": 10,
+      "polyphony_limit": 256,
+      "custom_filter_type": 0,
+      "quality": {
+        "baseline_pcm_sha256": "0272fc2d911f6f790ebfe7ab2de49c3d28d6253baafb191d6e986894440df96f",
+        "candidate_pcm_sha256": "0272fc2d911f6f790ebfe7ab2de49c3d28d6253baafb191d6e986894440df96f",
+        "bitwise_equal": true,
+        "frames": 480000,
+        "segments": [
+          {
+            "segment_index": 0,
+            "frames": 48000,
+            "reference_rms_dbfs": -6000.0,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 1,
+            "frames": 48000,
+            "reference_rms_dbfs": -27.19478679214912,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 2,
+            "frames": 48000,
+            "reference_rms_dbfs": -27.535783627241347,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 3,
+            "frames": 48000,
+            "reference_rms_dbfs": -27.47148014810728,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 4,
+            "frames": 48000,
+            "reference_rms_dbfs": -26.918081440038257,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 5,
+            "frames": 48000,
+            "reference_rms_dbfs": -26.4369968243238,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 6,
+            "frames": 48000,
+            "reference_rms_dbfs": -28.226996613688176,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 7,
+            "frames": 48000,
+            "reference_rms_dbfs": -28.768737329373188,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 8,
+            "frames": 48000,
+            "reference_rms_dbfs": -27.21488552752062,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 9,
+            "frames": 48000,
+            "reference_rms_dbfs": -27.14912290786483,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          }
+        ],
+        "all_segments_pass": true
+      },
+      "repeatable_over_3pct_regression": false
+    },
+    {
+      "n_pairs": 15,
+      "ratio_median": 0.9228648091914967,
+      "ratio_geomean": 0.908848940613709,
+      "ratio_95ci": [
+        0.8600583619097663,
+        0.9604073786580105
+      ],
+      "ratio_range": [
+        0.7638451190637864,
+        1.1017628048718735
+      ],
+      "setup_plus_render_ratio_median": 0.9503460629156492,
+      "setup_plus_render_ratio_geomean": 0.9292591982825015,
+      "setup_plus_render_ratio_95ci": [
+        0.8810495059056922,
+        0.9801068518901923
+      ],
+      "pairs_candidate_faster": 13,
+      "ratio_cpu_geomean": 0.9123610467687369,
+      "ratio_cpu_95ci": [
+        0.8639835410771792,
+        0.9634473807488737
+      ],
+      "pairs_candidate_hash_equal": 15,
+      "worst_pairwise_slowdown_ratio": 1.3091659225703491,
+      "ratios": [
+        0.9683330500062511,
+        0.9923268356009369,
+        1.019276195807744,
+        0.8379452940549019,
+        0.9261975445513322,
+        0.9733166327095283,
+        0.7789890227056533,
+        0.8892168761377425,
+        0.9364717164847242,
+        1.1017628048718735,
+        0.9228648091914967,
+        0.7638451190637864,
+        0.8388248362444898,
+        0.8818362783691551,
+        0.8647813767299648
+      ],
+      "case": "all_96k",
+      "block": 64,
+      "sample_rate": 96000,
+      "duration_s": 10,
+      "polyphony_limit": 256,
+      "custom_filter_type": 0,
+      "quality": {
+        "baseline_pcm_sha256": "957386c1ad39ddcb9be449a6ab377ca9d432fcfa68ba4cd23d1947494c26918e",
+        "candidate_pcm_sha256": "957386c1ad39ddcb9be449a6ab377ca9d432fcfa68ba4cd23d1947494c26918e",
+        "bitwise_equal": true,
+        "frames": 960000,
+        "segments": [
+          {
+            "segment_index": 0,
+            "frames": 96000,
+            "reference_rms_dbfs": -6000.0,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 1,
+            "frames": 96000,
+            "reference_rms_dbfs": -27.158488394928327,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 2,
+            "frames": 96000,
+            "reference_rms_dbfs": -27.483703540334417,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 3,
+            "frames": 96000,
+            "reference_rms_dbfs": -27.442943006761837,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 4,
+            "frames": 96000,
+            "reference_rms_dbfs": -26.890512098281995,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 5,
+            "frames": 96000,
+            "reference_rms_dbfs": -26.403954820891975,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 6,
+            "frames": 96000,
+            "reference_rms_dbfs": -28.188028479935028,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 7,
+            "frames": 96000,
+            "reference_rms_dbfs": -28.717159251717614,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 8,
+            "frames": 96000,
+            "reference_rms_dbfs": -27.168906721030233,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 9,
+            "frames": 96000,
+            "reference_rms_dbfs": -27.111893532419952,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          }
+        ],
+        "all_segments_pass": true
+      },
+      "repeatable_over_3pct_regression": false
+    },
+    {
+      "n_pairs": 15,
+      "ratio_median": 0.8827984947941082,
+      "ratio_geomean": 0.8826232269768185,
+      "ratio_95ci": [
+        0.8637546731557683,
+        0.9019039607077003
+      ],
+      "ratio_range": [
+        0.8099586056212007,
+        0.9425961298448451
+      ],
+      "setup_plus_render_ratio_median": 0.8912670044351428,
+      "setup_plus_render_ratio_geomean": 0.8895874960699585,
+      "setup_plus_render_ratio_95ci": [
+        0.8718113988267193,
+        0.9077260451389323
+      ],
+      "pairs_candidate_faster": 15,
+      "ratio_cpu_geomean": 0.883433678552069,
+      "ratio_cpu_95ci": [
+        0.8641658625289841,
+        0.9031310981390033
+      ],
+      "pairs_candidate_hash_equal": 0,
+      "worst_pairwise_slowdown_ratio": 1.2346309960285518,
+      "ratios": [
+        0.8770241494750295,
+        0.9055406131024822,
+        0.9425961298448451,
+        0.8827984947941082,
+        0.9087882560912123,
+        0.8684054804919791,
+        0.8571470448623719,
+        0.8330743847395365,
+        0.9179133081533538,
+        0.8681609418061537,
+        0.8099586056212007,
+        0.8762737531859142,
+        0.9175941588659476,
+        0.8887132708369754,
+        0.8947101040741777
+      ],
+      "case": "poly96_sustain",
+      "block": 64,
+      "sample_rate": 44100,
+      "duration_s": 10,
+      "polyphony_limit": 512,
+      "custom_filter_type": 0,
+      "quality": {
+        "baseline_pcm_sha256": "980cf18be63cbd2d857b12608bea499af6dc7a9a08a8b591b8db26c43969c3ab",
+        "candidate_pcm_sha256": "7c2410d9580abb25bb7611c11c4ecb5aa1e9dcf464a4d6dfed9298a4098b39de",
+        "bitwise_equal": false,
+        "frames": 441000,
+        "segments": [
+          {
+            "segment_index": 0,
+            "frames": 44100,
+            "reference_rms_dbfs": -13.87521823952854,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 1,
+            "frames": 44100,
+            "reference_rms_dbfs": -23.020188683755862,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 2,
+            "frames": 44100,
+            "reference_rms_dbfs": -29.093036308441647,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 3,
+            "frames": 44100,
+            "reference_rms_dbfs": -34.21805664321583,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 4,
+            "frames": 44100,
+            "reference_rms_dbfs": -37.322528514196634,
+            "error_rms_dbfs": -254.15508290282543,
+            "relative_rms_error_db": -216.8325543886288,
+            "max_abs_error": 5.820766091346741e-11,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 5,
+            "frames": 44100,
+            "reference_rms_dbfs": -39.96124923786964,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 6,
+            "frames": 44100,
+            "reference_rms_dbfs": -41.39914663472009,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 7,
+            "frames": 44100,
+            "reference_rms_dbfs": -43.30330384731131,
+            "error_rms_dbfs": -326.40228186218087,
+            "relative_rms_error_db": -283.0989780148696,
+            "max_abs_error": 1.4210854715202004e-14,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 8,
+            "frames": 44100,
+            "reference_rms_dbfs": -43.985938120567454,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 9,
+            "frames": 44100,
+            "reference_rms_dbfs": -45.11490730904703,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          }
+        ],
+        "all_segments_pass": true
+      },
+      "repeatable_over_3pct_regression": false
+    },
+    {
+      "n_pairs": 15,
+      "ratio_median": 0.9397270366515552,
+      "ratio_geomean": 0.912183471662236,
+      "ratio_95ci": [
+        0.8715931310303265,
+        0.9546641160310126
+      ],
+      "ratio_range": [
+        0.7824124018039429,
+        1.0121533701937617
+      ],
+      "setup_plus_render_ratio_median": 0.9654598122562081,
+      "setup_plus_render_ratio_geomean": 0.9441859657190488,
+      "setup_plus_render_ratio_95ci": [
+        0.9155592288425131,
+        0.9737077731037311
+      ],
+      "pairs_candidate_faster": 13,
+      "ratio_cpu_geomean": 0.912152926214827,
+      "ratio_cpu_95ci": [
+        0.8714917018607481,
+        0.9547112829941977
+      ],
+      "pairs_candidate_hash_equal": 15,
+      "worst_pairwise_slowdown_ratio": 1.2780983503001533,
+      "ratios": [
+        0.8165835624070519,
+        0.9706594853998352,
+        0.8085975264243095,
+        0.9272557042358273,
+        0.7824124018039429,
+        0.9051516076066239,
+        1.0121533701937617,
+        0.9711496959501269,
+        1.0019864727161145,
+        0.9397270366515552,
+        0.9435507569148095,
+        0.9579233923314822,
+        0.9723969292337268,
+        0.8452781033976338,
+        0.8704446132353665
+      ],
+      "case": "all_custom_lp",
+      "block": 64,
+      "sample_rate": 44100,
+      "duration_s": 10,
+      "polyphony_limit": 256,
+      "custom_filter_type": 1,
+      "quality": {
+        "baseline_pcm_sha256": "0fe8d455d2144902990f647a4c09eb9d11c70d5e9c3a33d28b9978939c5837c3",
+        "candidate_pcm_sha256": "0fe8d455d2144902990f647a4c09eb9d11c70d5e9c3a33d28b9978939c5837c3",
+        "bitwise_equal": true,
+        "frames": 441000,
+        "segments": [
+          {
+            "segment_index": 0,
+            "frames": 44100,
+            "reference_rms_dbfs": -6000.0,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 1,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.227700777567172,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 2,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.865177065297978,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 3,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.62927580296185,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 4,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.149061581065276,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 5,
+            "frames": 44100,
+            "reference_rms_dbfs": -27.200958541921278,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 6,
+            "frames": 44100,
+            "reference_rms_dbfs": -29.107058146768278,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 7,
+            "frames": 44100,
+            "reference_rms_dbfs": -29.88354220902842,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 8,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.38692653907325,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 9,
+            "frames": 44100,
+            "reference_rms_dbfs": -28.21414515439743,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          }
+        ],
+        "all_segments_pass": true
+      },
+      "repeatable_over_3pct_regression": false
+    },
+    {
+      "n_pairs": 15,
+      "ratio_median": 0.9727732021670368,
+      "ratio_geomean": 0.9668065946245058,
+      "ratio_95ci": [
+        0.9405198017155955,
+        0.9938280828371997
+      ],
+      "ratio_range": [
+        0.8768658090717408,
+        1.0509661356032023
+      ],
+      "setup_plus_render_ratio_median": 0.9654965466391656,
+      "setup_plus_render_ratio_geomean": 0.9781988055088173,
+      "setup_plus_render_ratio_95ci": [
+        0.9543761045238949,
+        1.0026161578890618
+      ],
+      "pairs_candidate_faster": 12,
+      "ratio_cpu_geomean": 0.9664827099087866,
+      "ratio_cpu_95ci": [
+        0.9405392406491079,
+        0.9931417937522475
+      ],
+      "pairs_candidate_hash_equal": 0,
+      "worst_pairwise_slowdown_ratio": 1.1404253531775976,
+      "ratios": [
+        0.9194111830138949,
+        0.8768658090717408,
+        0.996959973694664,
+        1.0284605056968688,
+        0.9737562844124817,
+        0.9525246172881732,
+        1.0368369360771366,
+        0.9727732021670368,
+        0.9267157674332579,
+        0.9452151954279799,
+        0.9661287376162858,
+        0.9150265133606417,
+        0.9842896814536432,
+        0.9729257126540947,
+        1.0509661356032023
+      ],
+      "case": "maestro_30s",
+      "block": 64,
+      "sample_rate": 44100,
+      "duration_s": 30,
+      "polyphony_limit": 256,
+      "custom_filter_type": 0,
+      "quality": {
+        "baseline_pcm_sha256": "9c1bfe1898a5f083af5d02c8f4af745d70b4fb2c0bb76116463377437480a62a",
+        "candidate_pcm_sha256": "6e5a4c349bf0bce4ca0b05cbf0fbd48809cb9c8b884ac73d047d27dbe2c8ba65",
+        "bitwise_equal": false,
+        "frames": 1323000,
+        "segments": [
+          {
+            "segment_index": 0,
+            "frames": 44100,
+            "reference_rms_dbfs": -6000.0,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 1,
+            "frames": 44100,
+            "reference_rms_dbfs": -51.36654838267992,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 2,
+            "frames": 44100,
+            "reference_rms_dbfs": -44.31769190858486,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 3,
+            "frames": 44100,
+            "reference_rms_dbfs": -42.280539502853685,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 4,
+            "frames": 44100,
+            "reference_rms_dbfs": -45.216260973439155,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 5,
+            "frames": 44100,
+            "reference_rms_dbfs": -43.57885943477781,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 6,
+            "frames": 44100,
+            "reference_rms_dbfs": -45.0608154581359,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 7,
+            "frames": 44100,
+            "reference_rms_dbfs": -47.476757510120336,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 8,
+            "frames": 44100,
+            "reference_rms_dbfs": -48.52706287354935,
+            "error_rms_dbfs": -326.40228186218087,
+            "relative_rms_error_db": -277.87521898863156,
+            "max_abs_error": 1.4210854715202004e-14,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 9,
+            "frames": 44100,
+            "reference_rms_dbfs": -42.2514578637341,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 10,
+            "frames": 44100,
+            "reference_rms_dbfs": -39.78935541441582,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 11,
+            "frames": 44100,
+            "reference_rms_dbfs": -46.28045820324027,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 12,
+            "frames": 44100,
+            "reference_rms_dbfs": -46.146281162594036,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 13,
+            "frames": 44100,
+            "reference_rms_dbfs": -46.79172298148697,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 14,
+            "frames": 44100,
+            "reference_rms_dbfs": -46.71578885765716,
+            "error_rms_dbfs": -314.35684294810204,
+            "relative_rms_error_db": -267.64105409044487,
+            "max_abs_error": 5.684341886080802e-14,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 15,
+            "frames": 44100,
+            "reference_rms_dbfs": -41.303260704368356,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 16,
+            "frames": 44100,
+            "reference_rms_dbfs": -47.287712104742724,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 17,
+            "frames": 44100,
+            "reference_rms_dbfs": -53.59363125336509,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 18,
+            "frames": 44100,
+            "reference_rms_dbfs": -45.01266855739675,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 19,
+            "frames": 44100,
+            "reference_rms_dbfs": -42.180196707215636,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 20,
+            "frames": 44100,
+            "reference_rms_dbfs": -40.01298017637163,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 21,
+            "frames": 44100,
+            "reference_rms_dbfs": -40.475084866177625,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 22,
+            "frames": 44100,
+            "reference_rms_dbfs": -41.060263584975715,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 23,
+            "frames": 44100,
+            "reference_rms_dbfs": -39.887466277088016,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 24,
+            "frames": 44100,
+            "reference_rms_dbfs": -42.543107451343275,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 25,
+            "frames": 44100,
+            "reference_rms_dbfs": -45.09918597640435,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 26,
+            "frames": 44100,
+            "reference_rms_dbfs": -44.74888276560414,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 27,
+            "frames": 44100,
+            "reference_rms_dbfs": -45.219451721550065,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 28,
+            "frames": 44100,
+            "reference_rms_dbfs": -42.15543366643936,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          },
+          {
+            "segment_index": 29,
+            "frames": 44100,
+            "reference_rms_dbfs": -40.540793511669264,
+            "error_rms_dbfs": null,
+            "relative_rms_error_db": null,
+            "max_abs_error": 0.0,
+            "quality_pass": true
+          }
+        ],
+        "all_segments_pass": true
+      },
+      "repeatable_over_3pct_regression": false
+    }
+  ],
+  "all_quality_segments_pass": true,
+  "no_repeatable_over_3pct_total_slowdown": true,
+  "expansion_gate_pass": true
+}

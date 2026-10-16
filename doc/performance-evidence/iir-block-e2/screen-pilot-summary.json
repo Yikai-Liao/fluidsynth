@@ -1,0 +1,208 @@
+{
+  "pairs_per_case": 3,
+  "warmups_per_arm": 0,
+  "duration_s": 10,
+  "primary_minimum_useful_gain": 0.02,
+  "cases": [
+    {
+      "case": "All_4th_fx1_b64",
+      "paired_wall_ratios": [
+        0.832783235684436,
+        0.882452141329699,
+        0.875427769048461
+      ],
+      "median_wall_ratio": 0.875427769048461,
+      "range_wall_ratio": [
+        0.832783235684436,
+        0.882452141329699
+      ],
+      "paired_cpu_ratios": [
+        0.8331383474262356,
+        0.8858839876032556,
+        0.8749080665475142
+      ],
+      "median_cpu_ratio": 0.8749080665475142,
+      "all_pcm_hashes_equal": true
+    },
+    {
+      "case": "Maestro_4th_fx1_b64",
+      "paired_wall_ratios": [
+        0.9952707840649359,
+        0.9403631614957498,
+        1.0090728166162695
+      ],
+      "median_wall_ratio": 0.9952707840649359,
+      "range_wall_ratio": [
+        0.9403631614957498,
+        1.0090728166162695
+      ],
+      "paired_cpu_ratios": [
+        0.9961267311222287,
+        0.9399704939961953,
+        1.013069066126531
+      ],
+      "median_cpu_ratio": 0.9961267311222287,
+      "all_pcm_hashes_equal": false
+    },
+    {
+      "case": "POP909_4th_fx1_b64",
+      "paired_wall_ratios": [
+        0.8762233269657277,
+        0.9896073722719105,
+        0.8831244519697581
+      ],
+      "median_wall_ratio": 0.8831244519697581,
+      "range_wall_ratio": [
+        0.8762233269657277,
+        0.9896073722719105
+      ],
+      "paired_cpu_ratios": [
+        0.8768566378907442,
+        0.9881063376694548,
+        0.8834265010439332
+      ],
+      "median_cpu_ratio": 0.8834265010439332,
+      "all_pcm_hashes_equal": true
+    },
+    {
+      "case": "All_4th_fx1_b8192",
+      "paired_wall_ratios": [
+        1.410337974632618,
+        0.8966363914264586,
+        0.9694053300056636
+      ],
+      "median_wall_ratio": 0.9694053300056636,
+      "range_wall_ratio": [
+        0.8966363914264586,
+        1.410337974632618
+      ],
+      "paired_cpu_ratios": [
+        1.4104234236916966,
+        0.8962486606455078,
+        0.9692488332019968
+      ],
+      "median_cpu_ratio": 0.9692488332019968,
+      "all_pcm_hashes_equal": true
+    },
+    {
+      "case": "Maestro_4th_fx1_b8192",
+      "paired_wall_ratios": [
+        0.8988416500841708,
+        0.872860715696355,
+        0.7735603176921477
+      ],
+      "median_wall_ratio": 0.872860715696355,
+      "range_wall_ratio": [
+        0.7735603176921477,
+        0.8988416500841708
+      ],
+      "paired_cpu_ratios": [
+        0.898851808525668,
+        0.8727536117153534,
+        0.7738715695029503
+      ],
+      "median_cpu_ratio": 0.8727536117153534,
+      "all_pcm_hashes_equal": false
+    },
+    {
+      "case": "POP909_4th_fx1_b8192",
+      "paired_wall_ratios": [
+        0.9430648880545147,
+        0.9619434626928891,
+        0.9844349572452009
+      ],
+      "median_wall_ratio": 0.9619434626928891,
+      "range_wall_ratio": [
+        0.9430648880545147,
+        0.9844349572452009
+      ],
+      "paired_cpu_ratios": [
+        0.942910641871475,
+        0.9619347274322583,
+        0.9825913303073168
+      ],
+      "median_cpu_ratio": 0.9619347274322583,
+      "all_pcm_hashes_equal": true
+    },
+    {
+      "case": "All_sinc25_fx1_b64",
+      "paired_wall_ratios": [
+        0.9323268095871888,
+        0.952469437996674,
+        0.9232643188210793
+      ],
+      "median_wall_ratio": 0.9323268095871888,
+      "range_wall_ratio": [
+        0.9232643188210793,
+        0.952469437996674
+      ],
+      "paired_cpu_ratios": [
+        0.9320092449085118,
+        0.9525251779650232,
+        0.9235129479041368
+      ],
+      "median_cpu_ratio": 0.9320092449085118,
+      "all_pcm_hashes_equal": true
+    },
+    {
+      "case": "Maestro_sinc25_fx1_b64",
+      "paired_wall_ratios": [
+        1.0163481832934778,
+        0.9411182325915289,
+        1.0213375709815335
+      ],
+      "median_wall_ratio": 1.0163481832934778,
+      "range_wall_ratio": [
+        0.9411182325915289,
+        1.0213375709815335
+      ],
+      "paired_cpu_ratios": [
+        1.014338484454996,
+        0.94039827535545,
+        1.0477207188808721
+      ],
+      "median_cpu_ratio": 1.014338484454996,
+      "all_pcm_hashes_equal": true
+    },
+    {
+      "case": "All_4th_fx0_b64",
+      "paired_wall_ratios": [
+        0.9190970915336708,
+        0.8528613560182555,
+        0.8952013677663088
+      ],
+      "median_wall_ratio": 0.8952013677663088,
+      "range_wall_ratio": [
+        0.8528613560182555,
+        0.9190970915336708
+      ],
+      "paired_cpu_ratios": [
+        0.9377176764174315,
+        0.8059330067486399,
+        0.8202986783835562
+      ],
+      "median_cpu_ratio": 0.8202986783835562,
+      "all_pcm_hashes_equal": true
+    },
+    {
+      "case": "Maestro_4th_fx0_b64",
+      "paired_wall_ratios": [
+        0.9520843837184786,
+        1.00844781867935,
+        0.8930069615008236
+      ],
+      "median_wall_ratio": 0.9520843837184786,
+      "range_wall_ratio": [
+        0.8930069615008236,
+        1.00844781867935
+      ],
+      "paired_cpu_ratios": [
+        0.9481974725629098,
+        1.0286455396767948,
+        0.9002988645231768
+      ],
+      "median_cpu_ratio": 0.9481974725629098,
+      "all_pcm_hashes_equal": false
+    }
+  ]
+}

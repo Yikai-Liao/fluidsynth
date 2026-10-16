@@ -1,0 +1,34 @@
+{
+  "sample": "All The Small Things, 64 frames, 44.1 kHz, FX on, 10 sec",
+  "pairs": 15,
+  "render_wall_ratio_geomean": 1.0027757546029963,
+  "render_wall_ratio_median": 1.0060484455325733,
+  "render_wall_ratio_95ci": [
+    0.9716090961790154,
+    1.034942157266854
+  ],
+  "pairs_candidate_faster": 7,
+  "all_hashes_equal": true,
+  "pcm_bitwise_equal": true,
+  "baseline_float_library_sha256": "4d703879e21da4506b02f79baf271eab88d0deb6ac94d8719688b8d6bdd832fd",
+  "candidate_float_library_sha256": "e0d351696e861caba5fd7ba9b1b3aa6b6a0884af590b1c79852081b3772f08ff",
+  "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+  "sf2_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "ratios": [
+    0.9673246639057567,
+    0.9945524665190262,
+    1.0744967909103111,
+    0.9725900891849408,
+    0.9495062180142553,
+    1.057343386232328,
+    1.0856139848745556,
+    1.0425111841040557,
+    0.9802006029421292,
+    1.0641036783102793,
+    0.9601503976261708,
+    1.015679092776926,
+    0.8752914322398926,
+    1.0060484455325733,
+    1.018793516746549
+  ]
+}

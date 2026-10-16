@@ -1,0 +1,67 @@
+[
+  {
+    "file": "1415_the-nervous-filter.raw",
+    "bytes": 9146112,
+    "samples": 4573056,
+    "changed_samples": 0,
+    "max_abs_int16_delta": 0,
+    "error_rms": 0.0,
+    "reference_rms": 446.52811303134075,
+    "relative_error_db": null,
+    "absolute_error_dbfs": null,
+    "baseline_sha256": "a4b3dc0b2fae283344920e9eb6cc09df7eb340fd94d707857213033e910efda6",
+    "candidate_sha256": "a4b3dc0b2fae283344920e9eb6cc09df7eb340fd94d707857213033e910efda6"
+  },
+  {
+    "file": "1417_filter-envelope-noise.raw",
+    "bytes": 2800896,
+    "samples": 1400448,
+    "changed_samples": 0,
+    "max_abs_int16_delta": 0,
+    "error_rms": 0.0,
+    "reference_rms": 2128.7579789960614,
+    "relative_error_db": null,
+    "absolute_error_dbfs": null,
+    "baseline_sha256": "74c179b3c4494ac5567c26b187c1127237db58c959f4fcc87c53964130193524",
+    "candidate_sha256": "74c179b3c4494ac5567c26b187c1127237db58c959f4fcc87c53964130193524"
+  },
+  {
+    "file": "1424_clicks-on-ModEnv-FilterFc-change.raw",
+    "bytes": 1051648,
+    "samples": 525824,
+    "changed_samples": 0,
+    "max_abs_int16_delta": 0,
+    "error_rms": 0.0,
+    "reference_rms": 154.02970782512747,
+    "relative_error_db": null,
+    "absolute_error_dbfs": null,
+    "baseline_sha256": "f4b6442cd68954c58646f65a8d38a77577e398233cd0324ebab9af2e93538975",
+    "candidate_sha256": "f4b6442cd68954c58646f65a8d38a77577e398233cd0324ebab9af2e93538975"
+  },
+  {
+    "file": "1427_high-Q-note-cutoff.raw",
+    "bytes": 1129984,
+    "samples": 564992,
+    "changed_samples": 0,
+    "max_abs_int16_delta": 0,
+    "error_rms": 0.0,
+    "reference_rms": 1961.5479558229092,
+    "relative_error_db": null,
+    "absolute_error_dbfs": null,
+    "baseline_sha256": "ff407d6fee0ef9e6b6ce719c7f4033e01dfdc312c6eca42e4b922b62e2ffef97",
+    "candidate_sha256": "ff407d6fee0ef9e6b6ce719c7f4033e01dfdc312c6eca42e4b922b62e2ffef97"
+  },
+  {
+    "file": "1481_cutoff-resolution.raw",
+    "bytes": 10672896,
+    "samples": 5336448,
+    "changed_samples": 0,
+    "max_abs_int16_delta": 0,
+    "error_rms": 0.0,
+    "reference_rms": 2613.0824572228685,
+    "relative_error_db": null,
+    "absolute_error_dbfs": null,
+    "baseline_sha256": "747f83b0043fcb34cce4fd009794e598444d3ea0332ee263b496dbfb1c41bd06",
+    "candidate_sha256": "747f83b0043fcb34cce4fd009794e598444d3ea0332ee263b496dbfb1c41bd06"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "target_ref": "origin/master",
+  "target_sha": "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+  "candidate_source_patch": "candidate-impl.patch",
+  "candidate_source_patch_applies_cleanly": true,
+  "unit_test": "test_iir_filter_stable_block",
+  "unit_test_result": "1/1 passed",
+  "build": "Release double, GCC 14.2, CMake build-upstream-check",
+  "commands": [
+    "git apply --check candidate-impl.patch",
+    "cmake --build build-upstream-check --target test_iir_filter_stable_block -j2",
+    "ctest --test-dir build-upstream-check -R '^test_iir_filter_stable_block$' --output-on-failure"
+  ],
+  "note": "The implementation patch is source-compatible with target master. The test registration was inserted at that branch's current test list location because test/CMakeLists.txt has different surrounding context. This check establishes build and correctness compatibility only; all performance claims remain against the frozen composite baseline."
+}

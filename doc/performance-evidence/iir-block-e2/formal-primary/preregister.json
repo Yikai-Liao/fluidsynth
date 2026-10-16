@@ -1,0 +1,15 @@
+{
+  "primary_workload": "All The Small Things.mid, MuseScore General SF2, 44.1 kHz, default fourth-order interpolation, effects enabled, 64-frame write requests, 10-second render interval",
+  "baseline_commit": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+  "candidate_commit": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e plus uncommitted E2 production patch",
+  "pairs_per_candidate_batch": 15,
+  "independent_candidate_batches": 2,
+  "aa_control_pairs": 15,
+  "warmups_per_build_per_batch": 1,
+  "pair_order": "alternate AB/BA; batch 2 starts BA",
+  "primary_metric": "candidate/base render_wall_s, paired by render with identical inputs/settings",
+  "ci": "two-sided 95% Student-t interval on mean paired log ratio; exponentiate bounds",
+  "minimum_useful_improvement": 0.02,
+  "acceptance": "combined 30-pair 95% CI upper bound < 0.98; both independent batches have candidate/base median < 1; all primary pair output hashes match; A/A control centered near 1",
+  "stop_rules": "No sample-size expansion after seeing results; do not broaden to full matrix if primary gate fails or any guard workload has a repeatable slowdown over 3%"
+}

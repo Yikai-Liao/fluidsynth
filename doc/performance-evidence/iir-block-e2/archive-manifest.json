@@ -1,0 +1,723 @@
+{
+  "experiment": "E2 stable-coefficient standard-IIR W4 block recurrence",
+  "fork_branch": "perf/iir-stable-block-w4-20261016",
+  "code_commit": "cc36e662fc209207b3d871428f06054771ba40d6",
+  "base_commit": "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+  "included_files": {
+    "REPORT.md": {
+      "sha256": "d1b51ebae2a59cceef2a22bdb9d3d2d5caf9196dbd7d74ac14893f61eedd4ceb",
+      "size_bytes": 9937
+    },
+    "compile-command.txt": {
+      "sha256": "54f500435939f5121e58f639948d3678add9111f236c49aac27fc4cfa0a0df53",
+      "size_bytes": 5241
+    },
+    "upstream-check.json": {
+      "sha256": "956e0b13800a244e6600814817ec0bbd0ae05f89631c4f68b7d1e9c03f6cd437",
+      "size_bytes": 954
+    },
+    "summarize_formal_primary.py": {
+      "sha256": "e46ef4fa191c780ed04089b8c6064da37bfdeaf98661cf5f718bb7dcbc24e9c2",
+      "size_bytes": 4494
+    },
+    "run_formal_primary.py": {
+      "sha256": "d78ebb44c95bfa3556a39201a2894fbbf06624501195ac1cf13bbe87a40ffc58",
+      "size_bytes": 4151
+    },
+    "run_expansion.py": {
+      "sha256": "b1e89cda6289b29e5d82c0a598c7effe8a3d1b335b483f5481ba6dcc5017aaa8",
+      "size_bytes": 5745
+    },
+    "summarize_expansion.py": {
+      "sha256": "533bb17e3f83c20a903fe56b8c0cae54c1f12d8dfe0e84bb0791789551787f89",
+      "size_bytes": 5287
+    },
+    "run_callback_diagnostics.py": {
+      "sha256": "8aa2dc326b27d32abac3e12a854161f299f598ba72af8e72f664ef10ea0f46d9",
+      "size_bytes": 1396
+    },
+    "summarize_callback_diagnostics.py": {
+      "sha256": "ec65d025c35f30e8f05def830a77c2b4276eaa9aa61dfc9823b117572ced918b",
+      "size_bytes": 2939
+    },
+    "run_float_regression.py": {
+      "sha256": "600c509098bdd28ecec28cb5dac83c4e0394ab340c0976587fa91760b5e15fcb",
+      "size_bytes": 3907
+    },
+    "generate_high_poly_96.py": {
+      "sha256": "dc30477e1b24402a53369861009b50f75c58dfb52fdca424abc3f77aa79bdc9f",
+      "size_bytes": 712
+    },
+    "configure_validation_matrix.py": {
+      "sha256": "c147a700960a9bac8f88f2687ff4963062abdc444a8adcdf8352908636dd2b37",
+      "size_bytes": 1336
+    },
+    "first-gate/REPORT.md": {
+      "sha256": "0e5e6a9d5af5a845a5a42208fd7d9536cb0643cc459411580e279dd053d4e528",
+      "size_bytes": 4641
+    },
+    "first-gate/summary.json": {
+      "sha256": "239b7b4354e56bd6e7ed91d7946a59bfd4b98ccba94f77d11d0aad00160629bf",
+      "size_bytes": 14341
+    },
+    "first-gate/quality.csv": {
+      "sha256": "90cb71156b602a0c9894251c0eb1f3587132d270e82f2897ddaea94b8ed010e7",
+      "size_bytes": 33979
+    },
+    "stage2/REPORT.md": {
+      "sha256": "4c73685ed6d9f120eb96baec65b81f9566759c0af2139e85fc4ccf57198aa674",
+      "size_bytes": 3230
+    },
+    "stage2/summary.json": {
+      "sha256": "68e6576c071f016318568cf8e985f9c7f3ee6b49fa0ef02e6cc2c550a5ea1158",
+      "size_bytes": 7126
+    },
+    "formal-primary/preregister.json": {
+      "sha256": "8d127ae8a4a3577803730b7ec6ae8fa4e8b8dc46ad2fdfe994a62dcca884e05e",
+      "size_bytes": 1137
+    },
+    "formal-primary/summary.json": {
+      "sha256": "7c856f38febc09bdc59b2fdc4a74db067779eec2ecf7b6019e727517a0569546",
+      "size_bytes": 6561
+    },
+    "formal-primary/aa.jsonl": {
+      "sha256": "2cb34e474827b54d5728b7290270b87dd28551e7fa577c5164b44e7656972a66",
+      "size_bytes": 19763
+    },
+    "formal-primary/candidate-batch1.jsonl": {
+      "sha256": "0200d1bee8dc874e8c90d914eb60149f3bb0f8e092d1325a9b1b29849986b0a0",
+      "size_bytes": 19714
+    },
+    "formal-primary/candidate-batch2.jsonl": {
+      "sha256": "910dc69059ee01df232ba3bcc93a0d9e8e9afcda1da8b68378cdc1b34ea221c6",
+      "size_bytes": 19716
+    },
+    "screen-pilot-summary.json": {
+      "sha256": "5791a60a6a5f9df3110aa04f4f8ebeb7ab6b707571df54ed4c0de30999b31451",
+      "size_bytes": 5230
+    },
+    "screen-pilot.jsonl": {
+      "sha256": "aaec0c54df52abc4adb41cfd5e429d036ecebf0fadb9dffad9c70f062a00b806",
+      "size_bytes": 55001
+    },
+    "issue-render-diff.json": {
+      "sha256": "9b51cfe052346e28aa58fe0db1b3ce5bc91c20a9192fe74242f544ff0553a65f",
+      "size_bytes": 2333
+    },
+    "float-parity/issue-render-summary.json": {
+      "sha256": "3af64e39245d9a985ccd823c401a03e136d3daa3b262a706a9e65bd071bc0ad2",
+      "size_bytes": 1641
+    },
+    "float-regression/summary.json": {
+      "sha256": "bc7c6d9c562388e272215406d51d2d68f08a732bdc034f0d3601e8f202ff5d94",
+      "size_bytes": 1111
+    },
+    "float-regression/runs.jsonl": {
+      "sha256": "3a7b65835810592675f6efe993c3767bf9724848d115b37b9491e107d39de502",
+      "size_bytes": 9107
+    },
+    "expansion/manifest.json": {
+      "sha256": "62172c0bcd69220b8b8e05e9184ebf07328c71a125fecc5b0da51efba4f9347c",
+      "size_bytes": 2207
+    },
+    "expansion/summary.json": {
+      "sha256": "41ffec8013025eb4e5686c7ba2d8c5b7d866c940a781d7f4f4a32b197856536e",
+      "size_bytes": 38600
+    },
+    "expansion/callback-summary.json": {
+      "sha256": "ea057787140d23ffa8e53e6535b8680d6dffa0ccc18d23b358474d4e5baa799c",
+      "size_bytes": 24984
+    },
+    "expansion/callback_runs.jsonl": {
+      "sha256": "e8919d10836759e730ce04378b2564fdf866d8d54bb1f41122abfe1126ee9108",
+      "size_bytes": 21089
+    },
+    "expansion/all_48k.jsonl": {
+      "sha256": "c3e43d046fafd8d0447b1d789e642614026bf6468605eab1c7e5cce4d421a5d8",
+      "size_bytes": 40452
+    },
+    "expansion/all_96k.jsonl": {
+      "sha256": "a430edec9f8e2cfeeee9424df305d43e87611f06b98ad0156fbd2cd20826f376",
+      "size_bytes": 40460
+    },
+    "expansion/all_b128.jsonl": {
+      "sha256": "ba87c31d8fba293401b30d512692618e784ccb743f30a505de06f04405ed3170",
+      "size_bytes": 40581
+    },
+    "expansion/all_b256.jsonl": {
+      "sha256": "ef1b244ed9b03d1f5a4fd03bbb545ead4c540563bed5354b200f67bf7ffaab00",
+      "size_bytes": 40580
+    },
+    "expansion/all_custom_lp.jsonl": {
+      "sha256": "592590406388e74ba88afa390f2c665510e30d45bc055ad75e84976a3ed60306",
+      "size_bytes": 41106
+    },
+    "expansion/maestro_30s.jsonl": {
+      "sha256": "bf20040034dc85b00109eaee06e08ae8536deebaa4ad5b6c3987fa7f43c6fce3",
+      "size_bytes": 40298
+    },
+    "expansion/poly96_sustain.jsonl": {
+      "sha256": "52a63187593b7611bed9eadcba70ae2c3ae52b0c11658574f50cd8ca332501fc",
+      "size_bytes": 40392
+    },
+    "PR_DESCRIPTION.md": {
+      "sha256": "d138c6a97e0e1087ca1a3a8afd5f2d64d932e086a2cc0ce92ac95db0c3ebf11f",
+      "size_bytes": 1732
+    },
+    "refresh_manifest.py": {
+      "sha256": "2fc60ff86102c5eefc2f4c11693f862afa9203572415f70a5a4bb10a10d80c35",
+      "size_bytes": 3000
+    },
+    "build_probes.sh": {
+      "sha256": "877af611eea78423743c159e033aabb201f5f4ae88884ad8eebb2fc3c5b3f790",
+      "size_bytes": 720
+    },
+    "render_probe_e2.c": {
+      "sha256": "2306b97c97acb68aff1bc38bab1eec40e94bbaaaa90dd1fd6ea362c8125e4e16",
+      "size_bytes": 4048
+    },
+    "render_probe_extended.c": {
+      "sha256": "849f54b01cd3bd7b76462831d2612698d37bcd562d877cb7d3de608afa504d30",
+      "size_bytes": 5697
+    },
+    "manifest.json": {
+      "sha256": "5d5edb39a6873bd42e1fec7332e0a80edaff08be6183458382bb7959a7d908ec",
+      "size_bytes": 43170
+    }
+  },
+  "omitted_binary_evidence": [
+    {
+      "path": "expansion/pcm-all_48k-baseline.f32",
+      "sha256": "0272fc2d911f6f790ebfe7ab2de49c3d28d6253baafb191d6e986894440df96f",
+      "size_bytes": 3840000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_48k-candidate.f32",
+      "sha256": "0272fc2d911f6f790ebfe7ab2de49c3d28d6253baafb191d6e986894440df96f",
+      "size_bytes": 3840000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_96k-baseline.f32",
+      "sha256": "957386c1ad39ddcb9be449a6ab377ca9d432fcfa68ba4cd23d1947494c26918e",
+      "size_bytes": 7680000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_96k-candidate.f32",
+      "sha256": "957386c1ad39ddcb9be449a6ab377ca9d432fcfa68ba4cd23d1947494c26918e",
+      "size_bytes": 7680000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_b128-baseline.f32",
+      "sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_b128-candidate.f32",
+      "sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_b256-baseline.f32",
+      "sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_b256-candidate.f32",
+      "sha256": "fcb314b37a43e5bf37259f34e5d31f2b0c27d5ea690dd195cb19966daeecc8ea",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_custom_lp-baseline.f32",
+      "sha256": "0fe8d455d2144902990f647a4c09eb9d11c70d5e9c3a33d28b9978939c5837c3",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-all_custom_lp-candidate.f32",
+      "sha256": "0fe8d455d2144902990f647a4c09eb9d11c70d5e9c3a33d28b9978939c5837c3",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-maestro_30s-baseline.f32",
+      "sha256": "9c1bfe1898a5f083af5d02c8f4af745d70b4fb2c0bb76116463377437480a62a",
+      "size_bytes": 10584000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-maestro_30s-candidate.f32",
+      "sha256": "6e5a4c349bf0bce4ca0b05cbf0fbd48809cb9c8b884ac73d047d27dbe2c8ba65",
+      "size_bytes": 10584000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-poly96_sustain-baseline.f32",
+      "sha256": "980cf18be63cbd2d857b12608bea499af6dc7a9a08a8b591b8db26c43969c3ab",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "expansion/pcm-poly96_sustain-candidate.f32",
+      "sha256": "7c2410d9580abb25bb7611c11c4ecb5aa1e9dcf464a4d6dfed9298a4098b39de",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "float-regression/pcm-baseline.f32",
+      "sha256": "1757d2e7f1ec315bb4293657350f586e4daf0dffbc271b047880e3b81a785a67",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    },
+    {
+      "path": "float-regression/pcm-candidate.f32",
+      "sha256": "1757d2e7f1ec315bb4293657350f586e4daf0dffbc271b047880e3b81a785a67",
+      "size_bytes": 3528000,
+      "reason": "large generated PCM; retained in local evidence archive"
+    }
+  ],
+  "omitted_files": [
+    {
+      "path": "candidate.patch",
+      "sha256": "3449196f597c33b026600f1af8a32c98757f61ba6786ac8d0b5852a55e1aeb1c",
+      "size_bytes": 19427,
+      "reason": "implementation and regression test are committed directly on this branch"
+    },
+    {
+      "path": "candidate-impl.patch",
+      "sha256": "2576773cd4d1cd520c27ad8af2596fa71e1a96366febf16e9d197679aba335fd",
+      "size_bytes": 5880,
+      "reason": "implementation and regression test are committed directly on this branch"
+    }
+  ],
+  "omitted_large_files": [
+    {
+      "path": "expansion/callback/all_48k-baseline-00.csv",
+      "sha256": "7ff99d89495ea8a679bad0ba89b079ced3a227ae146dd24f0f1b832eadb73439",
+      "size_bytes": 103288,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-baseline-01.csv",
+      "sha256": "8f0798a9c6478e2d53ada463183268290383e4a1c5e8910b7248a8146ad3d8ae",
+      "size_bytes": 103290,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-baseline-02.csv",
+      "sha256": "e0f17d642b888d01503674ca20df5896a1305258d9a6d0ba6843a04197ed176e",
+      "size_bytes": 103350,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-baseline-03.csv",
+      "sha256": "17bfd7b300c870fb08d2910d8aaf4e0c47c56320f13b8ea2e263aedfc4af6ab4",
+      "size_bytes": 103300,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-baseline-04.csv",
+      "sha256": "b2b3abce90ee8bd71a6f8c690cfb47ece02e5f71f49311afc7e3068f6dcd79db",
+      "size_bytes": 103945,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-candidate-00.csv",
+      "sha256": "625970c53b190f2c3a447f571956347a4da62cdecc46c908382a06a524ad8cd2",
+      "size_bytes": 103279,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-candidate-01.csv",
+      "sha256": "f0c724ac5def5fb86b6473593936b8a295e94255e94964b2f96fbfc7a85800f9",
+      "size_bytes": 103574,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-candidate-02.csv",
+      "sha256": "62950c8ad91c07be3f004db86934de7d62aebf40f9a2b0b44a04f671c10bfea9",
+      "size_bytes": 103288,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-candidate-03.csv",
+      "sha256": "0b9d1b7fdc9d14978131389c3c53554321a3959e7f5226793b75867b536167ab",
+      "size_bytes": 103264,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_48k-candidate-04.csv",
+      "sha256": "064d08a406c4d6cdd613486b272fb291912ff553a2384a1ea9742a406767271e",
+      "size_bytes": 103291,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-baseline-00.csv",
+      "sha256": "8103e902efc62fc6385108984a882ec4e3b0a94452f5d19c1fe58c58c5c04f37",
+      "size_bytes": 212545,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-baseline-01.csv",
+      "sha256": "b56f370d2329f449e0d9c31d90ca1b90f46860870812d805bd94243134c56bfe",
+      "size_bytes": 212586,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-baseline-02.csv",
+      "sha256": "3af00a4900ad43d31c1b95a4fd1f9c9a0d48932f1d93507e0cc8d7a0a216745b",
+      "size_bytes": 212522,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-baseline-03.csv",
+      "sha256": "518d2a961e0092cf7a62ccf1b48557935795dd9fe32325f1777c2452b6f5f06b",
+      "size_bytes": 212592,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-baseline-04.csv",
+      "sha256": "b4e2702ad389c6005ca1fdf46e5ff3717662f2e0ab5685bafb06f02de819b67f",
+      "size_bytes": 212941,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-candidate-00.csv",
+      "sha256": "44718b9ae8dbfcefb09c1bdff7fc97c9315b1df6a264955e450460d9e0026e10",
+      "size_bytes": 212840,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-candidate-01.csv",
+      "sha256": "89c8a8c7f7fcdaa7c59065e19a4f57f04eede169eb3f7c8fc4eb5a5294cd74c4",
+      "size_bytes": 212621,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-candidate-02.csv",
+      "sha256": "78af5df066875c7c30d3244add3f7af57669f5261a642cd4aa77dc7ac36475bb",
+      "size_bytes": 212538,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-candidate-03.csv",
+      "sha256": "fcd50af1faeec888880adc6977be0ef0740fbe83de1fc234b541d408ce8b18c1",
+      "size_bytes": 212528,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_96k-candidate-04.csv",
+      "sha256": "04ee3aaa42cfb393341914b7b1068ab7e698f6d8bece582dcc75c84a79ef98f0",
+      "size_bytes": 212540,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-baseline-00.csv",
+      "sha256": "9bb4493d4edd043e067fd87cd9f8b42950369e03b936af8850f6e98a2eadca32",
+      "size_bytes": 51696,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-baseline-01.csv",
+      "sha256": "55e5a2fc666e93e889877e8a9b5a8bbc92da2b8b37ca3eabd2e8ce36b25c5cc5",
+      "size_bytes": 50797,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-baseline-02.csv",
+      "sha256": "5b6be0006599f7815e7ee7d0bd69e9b43e004aac132eb25f53c443f4f2bf0078",
+      "size_bytes": 51053,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-baseline-03.csv",
+      "sha256": "9791229cd1cc74c748e9943525d39bc5da35306e440a5213f05753f10f8beb69",
+      "size_bytes": 51159,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-baseline-04.csv",
+      "sha256": "c22f88c4200caac370196a8741633481e7e8828e817c343e4e6fda4d47f98b38",
+      "size_bytes": 50783,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-candidate-00.csv",
+      "sha256": "510edbc3999104d30e136b778f21230d0b26fe2ed994b7419b79b9239292ea58",
+      "size_bytes": 50860,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-candidate-01.csv",
+      "sha256": "a9f64df2b25cb1c4498ab3404f8f27b890384193e0a903985d055dfcdb1cf82b",
+      "size_bytes": 51185,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-candidate-02.csv",
+      "sha256": "e9a15cb57b01ab953d9c2dba33ccbaf59d7fe4b8756ecb0496219dd51e6c4a57",
+      "size_bytes": 50857,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-candidate-03.csv",
+      "sha256": "be783e263b705e843cb0b530d7a04e390920101e441fd00563f60bebadb911d7",
+      "size_bytes": 50892,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b128-candidate-04.csv",
+      "sha256": "2c11f84d87647ce63c57ec42244a8cc1097d6e64f313be22eb61d497b1d30b77",
+      "size_bytes": 51035,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-baseline-00.csv",
+      "sha256": "8bfd9576fee810d0d2909664baf2fe8cff3cae599d04a0597d3e6c926b515824",
+      "size_bytes": 26187,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-baseline-01.csv",
+      "sha256": "fd80017e0e837204642e1c8b8c4571c2862ea6e3856059c18cec8709fa30e3b5",
+      "size_bytes": 26193,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-baseline-02.csv",
+      "sha256": "55af0d445e174f736c3c3e396ef30d786b1fcdadb20f9c617479e95d10e12df5",
+      "size_bytes": 26160,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-baseline-03.csv",
+      "sha256": "3d63fb72d9dba90115885e0bea7dd9b2e2f024fd9920e574d8a2101692380451",
+      "size_bytes": 26153,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-baseline-04.csv",
+      "sha256": "4dcd5864300f619c24159b5f4ed419b9f937c7a63591d9b02ce4113112db7092",
+      "size_bytes": 26183,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-candidate-00.csv",
+      "sha256": "14d5a6c26db28b8ca06ab74f75f1af590d67cd9fd944b6a59aea0aabfc321509",
+      "size_bytes": 26131,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-candidate-01.csv",
+      "sha256": "43729b6eeb53b6c21edf282137f034d38ac40b396c4397f7d8af7898767e8ce8",
+      "size_bytes": 26121,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-candidate-02.csv",
+      "sha256": "df01742b36dcef0719d498fcec4294eeffe9139bbcb367a60e76e3226cc69b29",
+      "size_bytes": 26021,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-candidate-03.csv",
+      "sha256": "31189e7e44837239fe376e0547574f308b536d4005c0c2e76fbb751983afcf33",
+      "size_bytes": 26158,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_b256-candidate-04.csv",
+      "sha256": "f2bab6851bbcf28e9c0c248980016f88bb5bf3a2331526ae39ea00e3a46f1fec",
+      "size_bytes": 26006,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-baseline-00.csv",
+      "sha256": "6b9e39ab039c80f0c12f40a717efd74cc8b88847169e9e2a5fdae0f37ee7be90",
+      "size_bytes": 94838,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-baseline-01.csv",
+      "sha256": "0631c8c105cf7129fd6a2761fe6ab9912d2d49631aa130405d5ffc95d99330d9",
+      "size_bytes": 94880,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-baseline-02.csv",
+      "sha256": "8974dcb897412981e71bb7e75c06378e9fd0505ae03812d38a37c5dccbdb24d3",
+      "size_bytes": 94885,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-baseline-03.csv",
+      "sha256": "cf93a2959779c4f46903f23ca95c81a2b5c60dd2be8f1da3b4ec175727287a3d",
+      "size_bytes": 95042,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-baseline-04.csv",
+      "sha256": "a1dbdaddc3361fddce08f6e2a38269ee2d8b91b3a68b444a30e99744f24ad8b7",
+      "size_bytes": 95272,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-candidate-00.csv",
+      "sha256": "559289b8860d414f783ba613a80ef951d347787156e7dd4b5689454033188e8d",
+      "size_bytes": 94845,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-candidate-01.csv",
+      "sha256": "6ecc8fdda0bae3a5ea90b0b50ab38cd394a74b02785fed552d7f64388072d99b",
+      "size_bytes": 94877,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-candidate-02.csv",
+      "sha256": "e903f7ac8d896f53125ca0642955bdbff70d047ec58bc8a28c6ad614a757b8d0",
+      "size_bytes": 94845,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-candidate-03.csv",
+      "sha256": "b2e6d2bcfc86fbaa1b07b25379e4bdd7ed616e41ed4c262c29d2ee521c88f5b6",
+      "size_bytes": 94829,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/all_custom_lp-candidate-04.csv",
+      "sha256": "5d22fdb8b619b467f0d8ca238b619cbccb06d5683d0c1eb0ea9abde22d75166f",
+      "size_bytes": 94833,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-baseline-00.csv",
+      "sha256": "4c62fef38bedaaf5bbd2791dc9c729a647d510bda08aed0dd4d4937ddb36f28e",
+      "size_bytes": 298961,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-baseline-01.csv",
+      "sha256": "0a6d33d4a2aeda7ce0fbca78455af8392985945257517172281b82da9f7b75e3",
+      "size_bytes": 298903,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-baseline-02.csv",
+      "sha256": "351d52f183b442f2517267d61833315961dc85802bb75128ccd1d95238071cfd",
+      "size_bytes": 298897,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-baseline-03.csv",
+      "sha256": "2078ea6500f93b821bcb1bd97893a3553877dbf10fd7f5970fd82048e35901b3",
+      "size_bytes": 299075,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-baseline-04.csv",
+      "sha256": "80de68f88a43e10fbb010fa1f880e299232a03f3b7849e4dc0ed512f56dd0355",
+      "size_bytes": 299140,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-candidate-00.csv",
+      "sha256": "8b15c726dda06173bac1f000604ee545c98126616c8af36c135e8f18449bbf4f",
+      "size_bytes": 299185,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-candidate-01.csv",
+      "sha256": "eec788cfe782ec1f72946b62b3cea4fe5db55dde6c22bfc4097645d048472882",
+      "size_bytes": 298672,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-candidate-02.csv",
+      "sha256": "1cf39b8bf930241775cd3170f9c0ecaa15559018dc222e35ca3d78ebc277a0eb",
+      "size_bytes": 298823,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-candidate-03.csv",
+      "sha256": "53b6f911e211927949f4ccdc8af50d5bbda90823420c4810b86725cbf5b0a0e2",
+      "size_bytes": 299035,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/maestro_30s-candidate-04.csv",
+      "sha256": "030f5aced2aa0e48ee57c59a0da080b9362178b754e2e16a148eb5591347eda8",
+      "size_bytes": 298722,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-baseline-00.csv",
+      "sha256": "99a4dd8f04e8586551f5b74aaac0269b2a7c6f228af6bd558d8934e9e3f39082",
+      "size_bytes": 102290,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-baseline-01.csv",
+      "sha256": "669278ee9631f3646fbd7fae00f5ecf8d701b44d202f53ab158de48e2ad05c2a",
+      "size_bytes": 102292,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-baseline-02.csv",
+      "sha256": "4121568518089546709098c66d66321b50597228c522dfea3eb27a29cc7dc8c1",
+      "size_bytes": 102291,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-baseline-03.csv",
+      "sha256": "a040f1388bf077e15dd3220b1e6a1cad26a90d6b8d7e9572c8964af7e5077b07",
+      "size_bytes": 102291,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-baseline-04.csv",
+      "sha256": "edc61972db6efa3ea460fcf9930c7312c84a71fb9849a8ec8b904c8b16359730",
+      "size_bytes": 102292,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-candidate-00.csv",
+      "sha256": "ce851af7cd88bc8f67fa5d414bb43fd2bb642015ecdc8a06f41641b7cda3994d",
+      "size_bytes": 102288,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-candidate-01.csv",
+      "sha256": "ffe78f96ce1d207dacb5c47980eb7e219061f401cfc0f75bdb09513265d67564",
+      "size_bytes": 102291,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-candidate-02.csv",
+      "sha256": "7773602eaa39ce1c772ea7c9fe15ffec6ef7e81dd048a55c6b63c7aaaca4c257",
+      "size_bytes": 102290,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-candidate-03.csv",
+      "sha256": "49ae4c541ebe684ced9c7b6c1d565ff6d8c26247cfbd11e30628f61fbc81718e",
+      "size_bytes": 102291,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    },
+    {
+      "path": "expansion/callback/poly96_sustain-candidate-04.csv",
+      "sha256": "582861f9b2e6a8d03c19b4cc3ae2e40cbc5b2b3fbc8223ec95e3e5e6eb6b62a0",
+      "size_bytes": 102291,
+      "reason": "high-volume per-call trace; aggregate summary and run records are included"
+    }
+  ],
+  "note": "Hashes cover committed report, source helpers, tests, primary/expanded raw timing evidence, aggregate callback data and manifest. Generated PCM, build directories and verbose per-call traces remain in the local analysis archive."
+}

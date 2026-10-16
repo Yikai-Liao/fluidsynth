@@ -1,0 +1,219 @@
+{
+  "preregistered": {
+    "primary_workload": "All The Small Things.mid, MuseScore General SF2, 44.1 kHz, default fourth-order interpolation, effects enabled, 64-frame write requests, 10-second render interval",
+    "baseline_commit": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+    "candidate_commit": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e plus uncommitted E2 production patch",
+    "pairs_per_candidate_batch": 15,
+    "independent_candidate_batches": 2,
+    "aa_control_pairs": 15,
+    "warmups_per_build_per_batch": 1,
+    "pair_order": "alternate AB/BA; batch 2 starts BA",
+    "primary_metric": "candidate/base render_wall_s, paired by render with identical inputs/settings",
+    "ci": "two-sided 95% Student-t interval on mean paired log ratio; exponentiate bounds",
+    "minimum_useful_improvement": 0.02,
+    "acceptance": "combined 30-pair 95% CI upper bound < 0.98; both independent batches have candidate/base median < 1; all primary pair output hashes match; A/A control centered near 1",
+    "stop_rules": "No sample-size expansion after seeing results; do not broaden to full matrix if primary gate fails or any guard workload has a repeatable slowdown over 3%"
+  },
+  "aa_control": {
+    "n_pairs": 15,
+    "ratio_median": 1.0163884391387548,
+    "ratio_geomean": 1.0187564814680166,
+    "ratio_95ci": [
+      0.9853996951121357,
+      1.0532424291190665
+    ],
+    "setup_plus_render_ratio_median": 1.0174604022383864,
+    "setup_plus_render_ratio_geomean": 1.0167381784330727,
+    "setup_plus_render_ratio_95ci": [
+      0.9921689502889793,
+      1.0419158180492452
+    ],
+    "ratio_range": [
+      0.9026621560879496,
+      1.1339033080602618
+    ],
+    "pairs_faster": 4,
+    "ratio_cpu_geomean": 1.0188307924163937,
+    "ratio_cpu_95ci": [
+      0.9857260977943766,
+      1.0530472774317758
+    ],
+    "all_output_hashes_equal": true,
+    "worst_pairwise_slowdown_ratio": 1.1339033080602618,
+    "ratios": [
+      1.1339033080602618,
+      1.007350646894379,
+      0.9312201939114936,
+      0.9026621560879496,
+      1.0583638569701554,
+      1.0288529674483398,
+      1.0063385853646902,
+      1.0724033732882756,
+      1.0335103839879192,
+      1.035769747237764,
+      0.9628339235289468,
+      1.1120890950661024,
+      0.9960067144678322,
+      1.009345459585161,
+      1.0163884391387548
+    ]
+  },
+  "batch1": {
+    "n_pairs": 15,
+    "ratio_median": 0.8817955720353321,
+    "ratio_geomean": 0.8899938482282272,
+    "ratio_95ci": [
+      0.8623028758051502,
+      0.9185740557162106
+    ],
+    "setup_plus_render_ratio_median": 0.9298806226647789,
+    "setup_plus_render_ratio_geomean": 0.9317981142700155,
+    "setup_plus_render_ratio_95ci": [
+      0.9109797698660141,
+      0.9530922139850128
+    ],
+    "ratio_range": [
+      0.8079269269995774,
+      0.9990364640347172
+    ],
+    "pairs_faster": 15,
+    "ratio_cpu_geomean": 0.8898991638805123,
+    "ratio_cpu_95ci": [
+      0.8621743281817696,
+      0.9185155437709538
+    ],
+    "all_output_hashes_equal": true,
+    "worst_pairwise_slowdown_ratio": 1.237735699333268,
+    "ratios": [
+      0.8496487362073296,
+      0.8079269269995774,
+      0.922692553515291,
+      0.9185402438721137,
+      0.874497852946587,
+      0.8756919836835059,
+      0.9990364640347172,
+      0.8268909945022297,
+      0.8471163626978365,
+      0.8573228745642316,
+      0.9332202405931054,
+      0.9445074421811983,
+      0.893589740683233,
+      0.9378114718426782,
+      0.8817955720353321
+    ]
+  },
+  "batch2": {
+    "n_pairs": 15,
+    "ratio_median": 0.8981326736650257,
+    "ratio_geomean": 0.9225102714719657,
+    "ratio_95ci": [
+      0.8737545779494752,
+      0.9739865431875202
+    ],
+    "setup_plus_render_ratio_median": 0.9608672251435628,
+    "setup_plus_render_ratio_geomean": 0.9526950607620157,
+    "setup_plus_render_ratio_95ci": [
+      0.9197086839273513,
+      0.9868645307605198
+    ],
+    "ratio_range": [
+      0.7990271687677424,
+      1.1370369712288415
+    ],
+    "pairs_faster": 13,
+    "ratio_cpu_geomean": 0.9223765056194767,
+    "ratio_cpu_95ci": [
+      0.8734338741966761,
+      0.9740616241856702
+    ],
+    "all_output_hashes_equal": true,
+    "worst_pairwise_slowdown_ratio": 1.2515218994895974,
+    "ratios": [
+      0.985657665801531,
+      0.9373817699410036,
+      1.056293126369411,
+      0.8541379438935921,
+      0.8809657958602709,
+      0.9606035507357533,
+      0.8981326736650257,
+      0.8507862750852256,
+      0.8814598538881697,
+      0.9922662121963175,
+      0.7990271687677424,
+      1.1370369712288415,
+      0.8837609477252003,
+      0.9761793577672202,
+      0.8070818379247847
+    ]
+  },
+  "combined_candidate_baseline": {
+    "n_pairs": 30,
+    "ratio_median": 0.8886753442042167,
+    "ratio_geomean": 0.9061062115102189,
+    "ratio_95ci": [
+      0.8791389481216856,
+      0.9339006857693662
+    ],
+    "setup_plus_render_ratio_median": 0.9393980700134533,
+    "setup_plus_render_ratio_geomean": 0.9421886547249463,
+    "setup_plus_render_ratio_95ci": [
+      0.9234780391737563,
+      0.9612783666048564
+    ],
+    "ratio_range": [
+      0.7990271687677424,
+      1.1370369712288415
+    ],
+    "pairs_faster": 28,
+    "ratio_cpu_geomean": 0.9059923184739488,
+    "ratio_cpu_95ci": [
+      0.8789442445203749,
+      0.9338727527383831
+    ],
+    "all_output_hashes_equal": true,
+    "worst_pairwise_slowdown_ratio": 1.2515218994895974,
+    "ratios": [
+      0.8496487362073296,
+      0.8079269269995774,
+      0.922692553515291,
+      0.9185402438721137,
+      0.874497852946587,
+      0.8756919836835059,
+      0.9990364640347172,
+      0.8268909945022297,
+      0.8471163626978365,
+      0.8573228745642316,
+      0.9332202405931054,
+      0.9445074421811983,
+      0.893589740683233,
+      0.9378114718426782,
+      0.8817955720353321,
+      0.985657665801531,
+      0.9373817699410036,
+      1.056293126369411,
+      0.8541379438935921,
+      0.8809657958602709,
+      0.9606035507357533,
+      0.8981326736650257,
+      0.8507862750852256,
+      0.8814598538881697,
+      0.9922662121963175,
+      0.7990271687677424,
+      1.1370369712288415,
+      0.8837609477252003,
+      0.9761793577672202,
+      0.8070818379247847
+    ]
+  },
+  "checks": {
+    "combined_ci_upper_below_0_98": true,
+    "combined_setup_plus_render_ci_upper_below_0_98": true,
+    "batch1_median_below_1": true,
+    "batch2_median_below_1": true,
+    "batch1_setup_plus_render_median_below_1": true,
+    "batch2_setup_plus_render_median_below_1": true,
+    "all_primary_hashes_equal": true,
+    "aa_ci_contains_1": true
+  },
+  "primary_gate_pass": true
+}

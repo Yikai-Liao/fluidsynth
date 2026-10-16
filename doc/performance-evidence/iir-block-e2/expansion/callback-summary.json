@@ -1,0 +1,979 @@
+{
+  "note": "Offline fluid_synth_write_float process-call timing with per-call clock and CSV overhead; diagnostic only, not an audio-device/xrun guarantee.",
+  "all_no_repeatable_over_5pct_p99_regression": true,
+  "cases": [
+    {
+      "case": "all_b128",
+      "block": 128,
+      "sample_rate": 44100,
+      "deadline_ns": 2902494.3310657595,
+      "baseline_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 87261,
+          "p95_ns": 164763,
+          "p99_ns": 371048,
+          "max_ns": 886805,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 65695,
+          "p95_ns": 103150,
+          "p99_ns": 299245,
+          "max_ns": 909632,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 75254,
+          "p95_ns": 140448,
+          "p99_ns": 314102,
+          "max_ns": 876553,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 76015,
+          "p95_ns": 133709,
+          "p99_ns": 339615,
+          "max_ns": 884923,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 66441,
+          "p95_ns": 100271,
+          "p99_ns": 305246,
+          "max_ns": 860220,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        }
+      ],
+      "candidate_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 66237,
+          "p95_ns": 109851,
+          "p99_ns": 333643,
+          "max_ns": 882670,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 66324,
+          "p95_ns": 131235,
+          "p99_ns": 304671,
+          "max_ns": 868608,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 59345,
+          "p95_ns": 118966,
+          "p99_ns": 308575,
+          "max_ns": 827072,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 65289,
+          "p95_ns": 131658,
+          "p99_ns": 301972,
+          "max_ns": 960882,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 66916,
+          "p95_ns": 117623,
+          "p99_ns": 324528,
+          "max_ns": 861407,
+          "calls": 3446,
+          "over_deadline_calls": 0,
+          "deadline_ns": 2902494.3310657595
+        }
+      ],
+      "baseline_median": {
+        "p50_ns": 75254,
+        "p95_ns": 133709,
+        "p99_ns": 314102,
+        "max_ns": 884923
+      },
+      "candidate_median": {
+        "p50_ns": 66237,
+        "p95_ns": 118966,
+        "p99_ns": 308575,
+        "max_ns": 868608
+      },
+      "p99_candidate_baseline_ratios": [
+        0.8991909402557081,
+        1.018132299620712,
+        0.9824038051333643,
+        0.8891597838729149,
+        1.0631687229316682
+      ],
+      "p99_ratio_geomean": 0.9680674893606833,
+      "p99_ratio_95ci": [
+        0.8789170432184311,
+        1.0662606570074125
+      ],
+      "repeatable_over_5pct_p99_regression": false,
+      "over_deadline_calls": {
+        "baseline": 0,
+        "candidate": 0
+      }
+    },
+    {
+      "case": "all_b256",
+      "block": 256,
+      "sample_rate": 44100,
+      "deadline_ns": 5804988.662131519,
+      "baseline_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 147721,
+          "p95_ns": 206516,
+          "p99_ns": 559017,
+          "max_ns": 900769,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 145429,
+          "p95_ns": 216311,
+          "p99_ns": 545517,
+          "max_ns": 930616,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 146393,
+          "p95_ns": 213157,
+          "p99_ns": 569027,
+          "max_ns": 1315758,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 131720,
+          "p95_ns": 219818,
+          "p99_ns": 533650,
+          "max_ns": 1351081,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 147369,
+          "p95_ns": 205312,
+          "p99_ns": 559259,
+          "max_ns": 865946,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        }
+      ],
+      "candidate_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 130616,
+          "p95_ns": 212617,
+          "p99_ns": 574406,
+          "max_ns": 901521,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 128620,
+          "p95_ns": 201046,
+          "p99_ns": 546823,
+          "max_ns": 887990,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 125802,
+          "p95_ns": 181172,
+          "p99_ns": 516026,
+          "max_ns": 931261,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 133860,
+          "p95_ns": 249743,
+          "p99_ns": 570736,
+          "max_ns": 921170,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 112961,
+          "p95_ns": 192730,
+          "p99_ns": 515578,
+          "max_ns": 867641,
+          "calls": 1723,
+          "over_deadline_calls": 0,
+          "deadline_ns": 5804988.662131519
+        }
+      ],
+      "baseline_median": {
+        "p50_ns": 146393,
+        "p95_ns": 213157,
+        "p99_ns": 559017,
+        "max_ns": 930616
+      },
+      "candidate_median": {
+        "p50_ns": 128620,
+        "p95_ns": 201046,
+        "p99_ns": 546823,
+        "max_ns": 901521
+      },
+      "p99_candidate_baseline_ratios": [
+        1.0275286798075909,
+        1.0023940592135534,
+        0.9068567923841927,
+        1.0694949873512603,
+        0.9218948644545729
+      ],
+      "p99_ratio_geomean": 0.983662826190177,
+      "p99_ratio_95ci": [
+        0.9008362703169389,
+        1.074104792969782
+      ],
+      "repeatable_over_5pct_p99_regression": false,
+      "over_deadline_calls": {
+        "baseline": 0,
+        "candidate": 0
+      }
+    },
+    {
+      "case": "all_48k",
+      "block": 64,
+      "sample_rate": 48000,
+      "deadline_ns": 1333333.3333333333,
+      "baseline_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 39369,
+          "p95_ns": 60709,
+          "p99_ns": 133209,
+          "max_ns": 1385225,
+          "calls": 7500,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 39342,
+          "p95_ns": 64968,
+          "p99_ns": 131908,
+          "max_ns": 1760324,
+          "calls": 7500,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 39721,
+          "p95_ns": 62260,
+          "p99_ns": 129169,
+          "max_ns": 886626,
+          "calls": 7500,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 39320,
+          "p95_ns": 46421,
+          "p99_ns": 126290,
+          "max_ns": 902039,
+          "calls": 7500,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 40685,
+          "p95_ns": 64148,
+          "p99_ns": 132596,
+          "max_ns": 2555792,
+          "calls": 7500,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1333333.3333333333
+        }
+      ],
+      "candidate_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 34546,
+          "p95_ns": 63323,
+          "p99_ns": 137240,
+          "max_ns": 4253517,
+          "calls": 7500,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 35022,
+          "p95_ns": 70437,
+          "p99_ns": 136176,
+          "max_ns": 1014275,
+          "calls": 7500,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 34602,
+          "p95_ns": 62161,
+          "p99_ns": 131988,
+          "max_ns": 874696,
+          "calls": 7500,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 34403,
+          "p95_ns": 55295,
+          "p99_ns": 121394,
+          "max_ns": 851592,
+          "calls": 7500,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1333333.3333333333
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 34581,
+          "p95_ns": 70508,
+          "p99_ns": 126113,
+          "max_ns": 879107,
+          "calls": 7500,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1333333.3333333333
+        }
+      ],
+      "baseline_median": {
+        "p50_ns": 39369,
+        "p95_ns": 62260,
+        "p99_ns": 131908,
+        "max_ns": 1385225
+      },
+      "candidate_median": {
+        "p50_ns": 34581,
+        "p95_ns": 63323,
+        "p99_ns": 131988,
+        "max_ns": 879107
+      },
+      "p99_candidate_baseline_ratios": [
+        1.0302607181196466,
+        1.0323558844042817,
+        1.0218241218868305,
+        0.9612320848839971,
+        0.951107122386799
+      ],
+      "p99_ratio_geomean": 0.9987161767538447,
+      "p99_ratio_95ci": [
+        0.9501893849126938,
+        1.0497212635157611
+      ],
+      "repeatable_over_5pct_p99_regression": false,
+      "over_deadline_calls": {
+        "baseline": 3,
+        "candidate": 1
+      }
+    },
+    {
+      "case": "all_96k",
+      "block": 64,
+      "sample_rate": 96000,
+      "deadline_ns": 666666.6666666666,
+      "baseline_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 39236,
+          "p95_ns": 67662,
+          "p99_ns": 86625,
+          "max_ns": 4411481,
+          "calls": 15000,
+          "over_deadline_calls": 2,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 39282,
+          "p95_ns": 54402,
+          "p99_ns": 81023,
+          "max_ns": 3128704,
+          "calls": 15000,
+          "over_deadline_calls": 2,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 39318,
+          "p95_ns": 66038,
+          "p99_ns": 83012,
+          "max_ns": 965318,
+          "calls": 15000,
+          "over_deadline_calls": 2,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 39927,
+          "p95_ns": 68418,
+          "p99_ns": 90141,
+          "max_ns": 948790,
+          "calls": 15000,
+          "over_deadline_calls": 4,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 40049,
+          "p95_ns": 67366,
+          "p99_ns": 87035,
+          "max_ns": 854438,
+          "calls": 15000,
+          "over_deadline_calls": 1,
+          "deadline_ns": 666666.6666666666
+        }
+      ],
+      "candidate_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 34526,
+          "p95_ns": 66567,
+          "p99_ns": 90686,
+          "max_ns": 915532,
+          "calls": 15000,
+          "over_deadline_calls": 1,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 34912,
+          "p95_ns": 68883,
+          "p99_ns": 89251,
+          "max_ns": 3193319,
+          "calls": 15000,
+          "over_deadline_calls": 2,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 34839,
+          "p95_ns": 59745,
+          "p99_ns": 82502,
+          "max_ns": 866035,
+          "calls": 15000,
+          "over_deadline_calls": 1,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 34388,
+          "p95_ns": 59769,
+          "p99_ns": 82736,
+          "max_ns": 856565,
+          "calls": 15000,
+          "over_deadline_calls": 1,
+          "deadline_ns": 666666.6666666666
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 34517,
+          "p95_ns": 57284,
+          "p99_ns": 87777,
+          "max_ns": 863054,
+          "calls": 15000,
+          "over_deadline_calls": 2,
+          "deadline_ns": 666666.6666666666
+        }
+      ],
+      "baseline_median": {
+        "p50_ns": 39318,
+        "p95_ns": 67366,
+        "p99_ns": 86625,
+        "max_ns": 965318
+      },
+      "candidate_median": {
+        "p50_ns": 34526,
+        "p95_ns": 59769,
+        "p99_ns": 87777,
+        "max_ns": 866035
+      },
+      "p99_candidate_baseline_ratios": [
+        1.046880230880231,
+        1.1015514113276477,
+        0.9938563099310943,
+        0.917850922443727,
+        1.008525305911415
+      ],
+      "p99_ratio_geomean": 1.0118982937639864,
+      "p99_ratio_95ci": [
+        0.9305730645089614,
+        1.1003307488410616
+      ],
+      "repeatable_over_5pct_p99_regression": false,
+      "over_deadline_calls": {
+        "baseline": 11,
+        "candidate": 7
+      }
+    },
+    {
+      "case": "poly96_sustain",
+      "block": 64,
+      "sample_rate": 44100,
+      "deadline_ns": 1451247.1655328798,
+      "baseline_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 284992,
+          "p95_ns": 386663,
+          "p99_ns": 477157,
+          "max_ns": 10748127,
+          "calls": 6891,
+          "over_deadline_calls": 2,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 305897,
+          "p95_ns": 428362,
+          "p99_ns": 509589,
+          "max_ns": 10767630,
+          "calls": 6891,
+          "over_deadline_calls": 6,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 283927,
+          "p95_ns": 406521,
+          "p99_ns": 483747,
+          "max_ns": 10724535,
+          "calls": 6891,
+          "over_deadline_calls": 4,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 297224,
+          "p95_ns": 443838,
+          "p99_ns": 500867,
+          "max_ns": 10925622,
+          "calls": 6891,
+          "over_deadline_calls": 5,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 287314,
+          "p95_ns": 394073,
+          "p99_ns": 515903,
+          "max_ns": 10570706,
+          "calls": 6891,
+          "over_deadline_calls": 5,
+          "deadline_ns": 1451247.1655328798
+        }
+      ],
+      "candidate_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 266376,
+          "p95_ns": 431696,
+          "p99_ns": 513943,
+          "max_ns": 10657282,
+          "calls": 6891,
+          "over_deadline_calls": 2,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 267079,
+          "p95_ns": 402301,
+          "p99_ns": 485089,
+          "max_ns": 10577986,
+          "calls": 6891,
+          "over_deadline_calls": 2,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 254632,
+          "p95_ns": 363124,
+          "p99_ns": 476719,
+          "max_ns": 10507574,
+          "calls": 6891,
+          "over_deadline_calls": 3,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 271722,
+          "p95_ns": 460629,
+          "p99_ns": 516749,
+          "max_ns": 10473554,
+          "calls": 6891,
+          "over_deadline_calls": 5,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 264518,
+          "p95_ns": 418257,
+          "p99_ns": 491041,
+          "max_ns": 10545610,
+          "calls": 6891,
+          "over_deadline_calls": 5,
+          "deadline_ns": 1451247.1655328798
+        }
+      ],
+      "baseline_median": {
+        "p50_ns": 287314,
+        "p95_ns": 406521,
+        "p99_ns": 500867,
+        "max_ns": 10748127
+      },
+      "candidate_median": {
+        "p50_ns": 266376,
+        "p95_ns": 418257,
+        "p99_ns": 491041,
+        "max_ns": 10545610
+      },
+      "p99_candidate_baseline_ratios": [
+        1.077094122060454,
+        0.9519220391334978,
+        0.9854717445276147,
+        1.0317090165652758,
+        0.9518087702533228
+      ],
+      "p99_ratio_geomean": 0.9984382916598533,
+      "p99_ratio_95ci": [
+        0.9339699931288121,
+        1.0673565848867244
+      ],
+      "repeatable_over_5pct_p99_regression": false,
+      "over_deadline_calls": {
+        "baseline": 22,
+        "candidate": 17
+      }
+    },
+    {
+      "case": "all_custom_lp",
+      "block": 64,
+      "sample_rate": 44100,
+      "deadline_ns": 1451247.1655328798,
+      "baseline_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 51244,
+          "p95_ns": 85480,
+          "p99_ns": 144555,
+          "max_ns": 2040459,
+          "calls": 6891,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 51224,
+          "p95_ns": 85044,
+          "p99_ns": 160265,
+          "max_ns": 942080,
+          "calls": 6891,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 51172,
+          "p95_ns": 83389,
+          "p99_ns": 169412,
+          "max_ns": 1787991,
+          "calls": 6891,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 51813,
+          "p95_ns": 99243,
+          "p99_ns": 163707,
+          "max_ns": 940062,
+          "calls": 6891,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 58573,
+          "p95_ns": 100461,
+          "p99_ns": 169739,
+          "max_ns": 924989,
+          "calls": 6891,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        }
+      ],
+      "candidate_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 46230,
+          "p95_ns": 75783,
+          "p99_ns": 151471,
+          "max_ns": 2306643,
+          "calls": 6891,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 47616,
+          "p95_ns": 75378,
+          "p99_ns": 148288,
+          "max_ns": 904759,
+          "calls": 6891,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 46200,
+          "p95_ns": 75946,
+          "p99_ns": 146868,
+          "max_ns": 1492936,
+          "calls": 6891,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 46366,
+          "p95_ns": 75159,
+          "p99_ns": 145562,
+          "max_ns": 2003930,
+          "calls": 6891,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 46229,
+          "p95_ns": 75435,
+          "p99_ns": 147566,
+          "max_ns": 934314,
+          "calls": 6891,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        }
+      ],
+      "baseline_median": {
+        "p50_ns": 51244,
+        "p95_ns": 85480,
+        "p99_ns": 163707,
+        "max_ns": 942080
+      },
+      "candidate_median": {
+        "p50_ns": 46230,
+        "p95_ns": 75435,
+        "p99_ns": 147566,
+        "max_ns": 1492936
+      },
+      "p99_candidate_baseline_ratios": [
+        1.0478433814119192,
+        0.9252675256606246,
+        0.8669279626000519,
+        0.8891617340736804,
+        0.8693700328150867
+      ],
+      "p99_ratio_geomean": 0.9173739997339738,
+      "p99_ratio_95ci": [
+        0.8318975902608283,
+        1.0116330005524437
+      ],
+      "repeatable_over_5pct_p99_regression": false,
+      "over_deadline_calls": {
+        "baseline": 2,
+        "candidate": 3
+      }
+    },
+    {
+      "case": "maestro_30s",
+      "block": 64,
+      "sample_rate": 44100,
+      "deadline_ns": 1451247.1655328798,
+      "baseline_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 38184,
+          "p95_ns": 83476,
+          "p99_ns": 159351,
+          "max_ns": 1616209,
+          "calls": 20672,
+          "over_deadline_calls": 2,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 40191,
+          "p95_ns": 83493,
+          "p99_ns": 125080,
+          "max_ns": 1953512,
+          "calls": 20672,
+          "over_deadline_calls": 1,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 37941,
+          "p95_ns": 87025,
+          "p99_ns": 133174,
+          "max_ns": 923503,
+          "calls": 20672,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 38271,
+          "p95_ns": 81548,
+          "p99_ns": 116102,
+          "max_ns": 873126,
+          "calls": 20672,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 37938,
+          "p95_ns": 95554,
+          "p99_ns": 126443,
+          "max_ns": 932743,
+          "calls": 20672,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        }
+      ],
+      "candidate_runs": [
+        {
+          "repeat": 0,
+          "p50_ns": 37313,
+          "p95_ns": 93356,
+          "p99_ns": 145292,
+          "max_ns": 1590003,
+          "calls": 20672,
+          "over_deadline_calls": 2,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 1,
+          "p50_ns": 35922,
+          "p95_ns": 76201,
+          "p99_ns": 116139,
+          "max_ns": 901497,
+          "calls": 20672,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 2,
+          "p50_ns": 37859,
+          "p95_ns": 87363,
+          "p99_ns": 126609,
+          "max_ns": 895729,
+          "calls": 20672,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 3,
+          "p50_ns": 37349,
+          "p95_ns": 89547,
+          "p99_ns": 125864,
+          "max_ns": 925548,
+          "calls": 20672,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        },
+        {
+          "repeat": 4,
+          "p50_ns": 36118,
+          "p95_ns": 83921,
+          "p99_ns": 114059,
+          "max_ns": 903924,
+          "calls": 20672,
+          "over_deadline_calls": 0,
+          "deadline_ns": 1451247.1655328798
+        }
+      ],
+      "baseline_median": {
+        "p50_ns": 38184,
+        "p95_ns": 83493,
+        "p99_ns": 126443,
+        "max_ns": 932743
+      },
+      "candidate_median": {
+        "p50_ns": 37313,
+        "p95_ns": 87363,
+        "p99_ns": 125864,
+        "max_ns": 903924
+      },
+      "p99_candidate_baseline_ratios": [
+        0.9117733807757717,
+        0.9285177486408699,
+        0.9507035907909952,
+        1.0840812389106131,
+        0.9020586351162184
+      ],
+      "p99_ratio_geomean": 0.9532433185665832,
+      "p99_ratio_95ci": [
+        0.8689047795157689,
+        1.0457680125758149
+      ],
+      "repeatable_over_5pct_p99_regression": false,
+      "over_deadline_calls": {
+        "baseline": 3,
+        "candidate": 2
+      }
+    }
+  ]
+}

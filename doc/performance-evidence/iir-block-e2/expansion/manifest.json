@@ -1,0 +1,74 @@
+{
+  "created_utc": "2026-10-16T13:07:00.954664+00:00",
+  "base_sha": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+  "cpu_affinity": "2",
+  "cpu_model": "Intel(R) Xeon(R) Gold 6140 CPU @ 2.30GHz",
+  "compiler": "GCC 14.2 release build; production flags verified in formal-primary setup",
+  "delta": 0.02,
+  "pairs_per_case": 15,
+  "repeats": 1,
+  "sf2": "/root/code/fluidsynth-analysis-20261015/assets/MuseScore_General.sf2",
+  "sf2_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "probe_sha256": "8e4753c99a5424ddf902ebb302d1929bd03861180ca1aaeb907aca8d04a63bb5",
+  "cases": [
+    {
+      "name": "all_b128",
+      "midi": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+      "block": 128,
+      "rate": 44100,
+      "seconds": 10,
+      "polyphony": 256
+    },
+    {
+      "name": "all_b256",
+      "midi": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+      "block": 256,
+      "rate": 44100,
+      "seconds": 10,
+      "polyphony": 256
+    },
+    {
+      "name": "all_48k",
+      "midi": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+      "block": 64,
+      "rate": 48000,
+      "seconds": 10,
+      "polyphony": 256
+    },
+    {
+      "name": "all_96k",
+      "midi": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+      "block": 64,
+      "rate": 96000,
+      "seconds": 10,
+      "polyphony": 256
+    },
+    {
+      "name": "poly96_sustain",
+      "midi": "/root/code/fluidsynth-analysis-20261016/iir-block-e2/high_poly_96.mid",
+      "block": 64,
+      "rate": 44100,
+      "seconds": 10,
+      "polyphony": 512
+    },
+    {
+      "name": "all_custom_lp",
+      "midi": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+      "block": 64,
+      "rate": 44100,
+      "seconds": 10,
+      "polyphony": 256,
+      "custom_type": 1,
+      "custom_fc_cents": 9000,
+      "custom_q": 0.7071
+    },
+    {
+      "name": "maestro_30s",
+      "midi": "/root/code/symusic/tests/testcases/One_track_MIDIs/Maestro_1.mid",
+      "block": 64,
+      "rate": 44100,
+      "seconds": 30,
+      "polyphony": 256
+    }
+  ]
+}
