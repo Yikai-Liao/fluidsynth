@@ -56,6 +56,27 @@ extern "C" const fluid_real_t *const interp_coeff_linear;
 extern "C" const fluid_real_t *const interp_coeff;
 extern "C" const fluid_real_t *const sinc_table7;
 
+extern "C" void fluid_rvoice_dsp_prepare_sinc_table(int interpolation_method)
+{
+    switch(interpolation_method)
+    {
+    case FLUID_INTERP_MID:
+        (void)fluid_interp_sinc_coeff_table<11>();
+        break;
+
+    case FLUID_INTERP_HIGH:
+        (void)fluid_interp_sinc_coeff_table<17>();
+        break;
+
+    case FLUID_INTERP_HIGHEST:
+        (void)fluid_interp_sinc_coeff_table<25>();
+        break;
+
+    default:
+        break;
+    }
+}
+
 template<bool IS_24BIT>
 static FLUID_INLINE fluid_real_t
 fluid_rvoice_get_float_sample(const short int *FLUID_RESTRICT dsp_msb, const char *FLUID_RESTRICT dsp_lsb, unsigned int idx)
@@ -577,10 +598,10 @@ fluid_rvoice_dsp_interpolate_sinc_local(fluid_rvoice_t *rvoice, fluid_real_t *FL
 
     /* Compute windowed sinc interpolation coefficients and apply to sample array.
      * The center tap is at position half in the array (s[half] == sample at dsp_phase_index). */
+    const auto &sinc_coeff_table = fluid_interp_sinc_coeff_table<SINC_ORDER>();
     auto interp_sinc = [&](std::array<fluid_real_t, SINC_ORDER> s)
     {
-        const auto x = fluid_phase_fract(dsp_phase) * (fluid_real_t)(1.0 / FLUID_FRACT_MAX);
-        return fluid_interp_sinc_kernel<SINC_ORDER>(s, x);
+        return fluid_interp_sinc_kernel<SINC_ORDER>(s, fluid_phase_fract(dsp_phase), sinc_coeff_table);
     };
 
     while(1)

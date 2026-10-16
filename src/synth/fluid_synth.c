@@ -7111,6 +7111,15 @@ fluid_synth_set_interp_method(fluid_synth_t *synth, int chan, int interp_method)
     int i;
 
     fluid_return_val_if_fail(synth != NULL, FLUID_FAILED);
+
+    /* Prepare an optional sinc table before voices can first use it from a
+     * rendering call. */
+    if(interp_method == FLUID_INTERP_MID || interp_method == FLUID_INTERP_HIGH
+            || interp_method == FLUID_INTERP_HIGHEST)
+    {
+        fluid_rvoice_dsp_prepare_sinc_table(interp_method);
+    }
+
     fluid_synth_api_enter(synth);
 
     if(chan < -1 || chan >= synth->midi_channels)

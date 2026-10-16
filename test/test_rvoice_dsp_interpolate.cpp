@@ -24,6 +24,7 @@
 #include <stdexcept>
 #include <limits>
 #include <array>
+#include <algorithm>
 
 /* ----- constants -------------------------------------------------------- */
 
@@ -989,12 +990,17 @@ static void test_L_order()
         return (fluid_real_t)center;
     };
 
+    auto phase_from_x = [](fluid_real_t x)
+    {
+        return static_cast<uint32_t>(x * FLUID_FRACT_MAX);
+    };
+
     /* L1: unit impulse at s[half], x=0.5 must give 1.0 */
     {
         std::array<fluid_real_t, N> s;
         s.fill(0.0f);
         s[half] = 1.0f;
-        fluid_real_t result = fluid_interp_sinc_kernel<N>(s, get_center());
+        fluid_real_t result = fluid_interp_sinc_kernel<N>(s, phase_from_x(get_center()));
         fluid_real_t diff = std::fabs(result - 1.0f);
 
         if(diff > (fluid_real_t)1e-5)
@@ -1013,7 +1019,7 @@ static void test_L_order()
         std::array<fluid_real_t, N> s;
         s.fill(0.0f);
         s[half] = 1.0f;
-        fluid_real_t result = fluid_interp_sinc_kernel<N>(s, 0.0f);
+        fluid_real_t result = fluid_interp_sinc_kernel<N>(s, phase_from_x(0.0f));
 
         if(result >= 1.0f - (fluid_real_t)1e-5)
         {
@@ -1028,19 +1034,20 @@ static void test_L_order()
 
     /* L3: constant (DC) input must reproduce the constant for all x */
     {
-        const fluid_real_t DC = 12345.0f;
+        const fluid_real_t DC = 1.0f;
         std::array<fluid_real_t, N> s;
         s.fill(DC);
-        const float x_vals[] = { 0.0f, 0.1f, 0.25f, 0.5f, 0.75f, 0.9f, 0.999f };
-
-        for(float xv : x_vals)
+        constexpr unsigned int samples_per_bin = 16;
+        for(unsigned int step = 0; step < samples_per_bin * FLUID_SINC_PHASE_TABLE_SIZE; step++)
         {
-            fluid_real_t result = fluid_interp_sinc_kernel<N>(s, (fluid_real_t)xv);
+            const fluid_real_t xv = static_cast<fluid_real_t>(step)
+                                    / (samples_per_bin * FLUID_SINC_PHASE_TABLE_SIZE);
+            fluid_real_t result = fluid_interp_sinc_kernel<N>(s, phase_from_x(xv));
             fluid_real_t diff = std::fabs(result - DC);
 
-            if(diff > (fluid_real_t)1e-2 * DC)
+            if(diff > (fluid_real_t)1e-6 * DC)
             {
-                fprintf(stderr, "FAIL L3 (order=%d): DC x=%.3f -> %.1f (expected %.1f, diff=%.2e)\n",
+                fprintf(stderr, "FAIL L3 (order=%d): DC x=%.6f -> %.1f (expected %.1f, diff=%.2e)\n",
                         N, (double)xv, (double)result, (double)DC, (double)diff);
                 TEST_ASSERT(0);
             }
@@ -1056,7 +1063,7 @@ static void test_L_order()
         s.fill(0.0f);
         s[half] = 1.0f;
 
-        const fluid_real_t peak = fluid_interp_sinc_kernel<N>(s, get_center());
+        const fluid_real_t peak = fluid_interp_sinc_kernel<N>(s, phase_from_x(get_center()));
         bool found_higher = false;
 
         for(int step = 0; step <= 100; step++)
@@ -1068,7 +1075,7 @@ static void test_L_order()
                 xv = 0.999f;
             }
 
-            fluid_real_t v = fluid_interp_sinc_kernel<N>(s, (fluid_real_t)xv);
+            fluid_real_t v = fluid_interp_sinc_kernel<N>(s, phase_from_x((fluid_real_t)xv));
 
             if(v > peak + (fluid_real_t)1e-5)
             {
@@ -1081,6 +1088,47 @@ static void test_L_order()
 
         TEST_ASSERT(!found_higher);
         printf("    L4 (order=%d) peak at x=0.5: PASS\n", N);
+    }
+
+    /* L5: advancing the integer sample index while the fractional phase wraps
+     * from UINT32_MAX to zero must remain continuous for periodic input. */
+    if constexpr (N >= 11)
+    {
+        fluid_real_t max_jump = 0.0f;
+        for(fluid_real_t frequency : {(fluid_real_t)0.01, (fluid_real_t)0.10,
+                                      (fluid_real_t)0.25, (fluid_real_t)0.49})
+        {
+            auto periodic_sample = [frequency](int index)
+            {
+                const double phase = std::fmod((double)index * (double)frequency, 1.0);
+                return (fluid_real_t)std::sin(2.0 * FLUID_M_PI * phase);
+            };
+            std::array<fluid_real_t, N> before;
+            std::array<fluid_real_t, N> after;
+            constexpr int sample_index = 1024;
+
+            for(int i = 0; i < N; i++)
+            {
+                const int sample_offset = i - half;
+                before[i] = periodic_sample(sample_index + sample_offset);
+                after[i] = periodic_sample(sample_index + sample_offset + 1);
+            }
+
+            const fluid_real_t output_before = fluid_interp_sinc_kernel<N>(
+                                                   before, std::numeric_limits<uint32_t>::max());
+            const fluid_real_t output_after = fluid_interp_sinc_kernel<N>(after, 0u);
+            const fluid_real_t diff = std::fabs(output_before - output_after);
+            max_jump = std::max(max_jump, diff);
+            if(diff > (fluid_real_t)1e-5)
+            {
+                fprintf(stderr, "FAIL L5 (order=%d): phase wrap at f=%.2f cycles/sample jumped by %.3e\n",
+                        N, (double)frequency, (double)diff);
+                TEST_ASSERT(0);
+            }
+        }
+
+        printf("    L5 (order=%d) periodic phase-wrap continuity: PASS (max jump=%.3e)\n",
+               N, (double)max_jump);
     }
 }
 
@@ -1098,6 +1146,7 @@ static void test_L_sinc_kernel_centering(void)
     test_L_order<15>();
     test_L_order<17>();
     test_L_order<19>();
+    test_L_order<25>();
 
     printf("  Even orders:\n");
     /* N=2 is omitted: with only 2 taps the windowed-sinc degenerates into a
