@@ -1,0 +1,80 @@
+diff --git a/src/rvoice/fluid_rev_freeverb.cpp b/src/rvoice/fluid_rev_freeverb.cpp
+index 290d0f09..94a02f77 100644
+--- a/src/rvoice/fluid_rev_freeverb.cpp
++++ b/src/rvoice/fluid_rev_freeverb.cpp
+@@ -266,40 +266,56 @@ void fluid_revmodel_freeverb::processreplace(const fluid_real_t *in, fluid_real_
+ template<bool MIX>
+ void fluid_revmodel_freeverb::process(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)
+ {
+-    int i, k = 0;
+-    fluid_real_t outL, outR, input;
+-
++    fluid_real_t input_buffer[FLUID_BUFSIZE];
++    fluid_real_t outL[FLUID_BUFSIZE];
++    fluid_real_t outR[FLUID_BUFSIZE];
++    int i, k;
++
++    /* Read the complete input block first. Besides preparing contiguous input
++     * for the filter passes, this preserves the supported input/output alias.
++     */
+     for(k = 0; k < FLUID_BUFSIZE; k++)
+     {
+-
+-        outL = outR = 0;
+-
+         /* The original Freeverb code expects a stereo signal and 'input'
+          * is set to the sum of the left and right input sample. Since
+          * this code works on a mono signal, 'input' is set to twice the
+          * input sample. */
+-        input = (2.0f * in[k] + DC_OFFSET) * this->gain;
++        input_buffer[k] = (2.0f * in[k] + DC_OFFSET) * this->gain;
++        outL[k] = outR[k] = 0;
++    }
+ 
+-        /* Accumulate comb filters in parallel */
+-        for(i = 0; i < numcombs; i++)
++    /* Each comb remains sequential across samples. Processing one complete
++     * comb at a time keeps the per-sample accumulation order unchanged.
++     */
++    for(i = 0; i < numcombs; i++)
++    {
++        for(k = 0; k < FLUID_BUFSIZE; k++)
+         {
+-            outL += this->combL[i].process(input);
+-            outR += this->combR[i].process(input);
++            outL[k] += this->combL[i].process(input_buffer[k]);
++            outR[k] += this->combR[i].process(input_buffer[k]);
+         }
++    }
+ 
+-        /* Feed through allpasses in series */
+-        for(i = 0; i < numallpasses; i++)
++    /* Allpass stages are independent over the block and still run in series;
++     * each stage advances its own state in the original sample order.
++     */
++    for(i = 0; i < numallpasses; i++)
++    {
++        for(k = 0; k < FLUID_BUFSIZE; k++)
+         {
+-            outL = this->allpassL[i].process(outL);
+-            outR = this->allpassR[i].process(outR);
++            outL[k] = this->allpassL[i].process(outL[k]);
++            outR[k] = this->allpassR[i].process(outR[k]);
+         }
++    }
+ 
++    for(k = 0; k < FLUID_BUFSIZE; k++)
++    {
+         /* Remove the DC offset */
+-        outL -= DC_OFFSET;
+-        outR -= DC_OFFSET;
++        outL[k] -= DC_OFFSET;
++        outR[k] -= DC_OFFSET;
+ 
+-        fluid_real_t out_left = outL * this->wet1 + outR * this->wet2;
+-        fluid_real_t out_right = outR * this->wet1 + outL * this->wet2;
++        fluid_real_t out_left = outL[k] * this->wet1 + outR[k] * this->wet2;
++        fluid_real_t out_right = outR[k] * this->wet1 + outL[k] * this->wet2;
+ 
+         if(MIX)
+         {

@@ -1,0 +1,42 @@
+{
+  "baseline_commit": "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+  "candidate_branch": "perf/freeverb-block-process-20261016",
+  "candidate_source_diff": "diff --git a/src/rvoice/fluid_rev_freeverb.cpp b/src/rvoice/fluid_rev_freeverb.cpp\nindex 290d0f09..94a02f77 100644\n--- a/src/rvoice/fluid_rev_freeverb.cpp\n+++ b/src/rvoice/fluid_rev_freeverb.cpp\n@@ -266,40 +266,56 @@ void fluid_revmodel_freeverb::processreplace(const fluid_real_t *in, fluid_real_\n template<bool MIX>\n void fluid_revmodel_freeverb::process(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out)\n {\n-    int i, k = 0;\n-    fluid_real_t outL, outR, input;\n-\n+    fluid_real_t input_buffer[FLUID_BUFSIZE];\n+    fluid_real_t outL[FLUID_BUFSIZE];\n+    fluid_real_t outR[FLUID_BUFSIZE];\n+    int i, k;\n+\n+    /* Read the complete input block first. Besides preparing contiguous input\n+     * for the filter passes, this preserves the supported input/output alias.\n+     */\n     for(k = 0; k < FLUID_BUFSIZE; k++)\n     {\n-\n-        outL = outR = 0;\n-\n         /* The original Freeverb code expects a stereo signal and 'input'\n          * is set to the sum of the left and right input sample. Since\n          * this code works on a mono signal, 'input' is set to twice the\n          * input sample. */\n-        input = (2.0f * in[k] + DC_OFFSET) * this->gain;\n+        input_buffer[k] = (2.0f * in[k] + DC_OFFSET) * this->gain;\n+        outL[k] = outR[k] = 0;\n+    }\n \n-        /* Accumulate comb filters in parallel */\n-        for(i = 0; i < numcombs; i++)\n+    /* Each comb remains sequential across samples. Processing one complete\n+     * comb at a time keeps the per-sample accumulation order unchanged.\n+     */\n+    for(i = 0; i < numcombs; i++)\n+    {\n+        for(k = 0; k < FLUID_BUFSIZE; k++)\n         {\n-            outL += this->combL[i].process(input);\n-            outR += this->combR[i].process(input);\n+            outL[k] += this->combL[i].process(input_buffer[k]);\n+            outR[k] += this->combR[i].process(input_buffer[k]);\n         }\n+    }\n \n-        /* Feed through allpasses in series */\n-        for(i = 0; i < numallpasses; i++)\n+    /* Allpass stages are independent over the block and still run in series;\n+     * each stage advances its own state in the original sample order.\n+     */\n+    for(i = 0; i < numallpasses; i++)\n+    {\n+        for(k = 0; k < FLUID_BUFSIZE; k++)\n         {\n-            outL = this->allpassL[i].process(outL);\n-            outR = this->allpassR[i].process(outR);\n+            outL[k] = this->allpassL[i].process(outL[k]);\n+            outR[k] = this->allpassR[i].process(outR[k]);\n         }\n+    }\n \n+    for(k = 0; k < FLUID_BUFSIZE; k++)\n+    {\n         /* Remove the DC offset */\n-        outL -= DC_OFFSET;\n-        outR -= DC_OFFSET;\n+        outL[k] -= DC_OFFSET;\n+        outR[k] -= DC_OFFSET;\n \n-        fluid_real_t out_left = outL * this->wet1 + outR * this->wet2;\n-        fluid_real_t out_right = outR * this->wet1 + outL * this->wet2;\n+        fluid_real_t out_left = outL[k] * this->wet1 + outR[k] * this->wet2;\n+        fluid_real_t out_right = outR[k] * this->wet1 + outL[k] * this->wet2;\n \n         if(MIX)\n         {\n",
+  "probe_sha256": "989d6ecaf8336b84ff82638672c2fea38cf57a0cff8291dc8e6677321915449c",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+  "libraries": {
+    "baseline": "502e32e465f12829f08c93c0672bf22202cdeb45c921e8f18826bfa471f40b08",
+    "candidate": "470e0ec17375dbc16a9fc1e43a5b3e1e83fae238316166f96120a01011084c84"
+  },
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 10,
+    "reverb_engine": "free",
+    "reverb_active": true,
+    "chorus_active": false,
+    "block": 64,
+    "OMP_NUM_THREADS": 1,
+    "OMP_DYNAMIC": false,
+    "cpu_affinity": 0
+  },
+  "repetitions": 3,
+  "order": "AB/BA alternation",
+  "host": {
+    "platform": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "compiler": "c++ (Debian 14.2.0-19) 14.2.0",
+    "affinity_available": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  }
+}
