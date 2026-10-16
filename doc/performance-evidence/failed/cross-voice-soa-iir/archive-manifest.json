@@ -1,0 +1,29 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/deferred-cross-voice-soa-iir-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/cross-voice-soa-iir/ARCHIVE.md",
+      "sha256": "63e97a9d8f3f5cdd6348090e90de82c59c1517363e2763c483ee72069801a5b7",
+      "size_bytes": 797
+    },
+    {
+      "path": "doc/performance-evidence/failed/cross-voice-soa-iir/sources/cross-voice-soa-iir/RESEARCH.md",
+      "sha256": "9d1482406992da009cc20fde8fa9c8d9c464c4bf4389c2b22eb7b4e6e05236f6",
+      "size_bytes": 1975
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [],
+  "schema": 1,
+  "source_roots": [
+    "cross-voice-soa-iir"
+  ],
+  "status": "deferred after architecture screen",
+  "summary": "IIR is a large profile hotspot, but a useful prototype needs split render/filter stages, retained per-voice blocks, scratch ownership, and ordered mixing. The bounded screen did not justify that wider redesign.",
+  "title": "Cross-voice SoA IIR"
+}
