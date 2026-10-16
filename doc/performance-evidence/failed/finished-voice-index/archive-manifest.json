@@ -1,0 +1,85 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-finished-voice-index-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/finished-voice-index/ARCHIVE.md",
+      "sha256": "571d46ed7d3b231537352dc5e4f911dffbcccb780888506c246af2c359f2663d",
+      "size_bytes": 907
+    },
+    {
+      "path": "doc/performance-evidence/failed/finished-voice-index/sources/finished-voice-index/RESEARCH.md",
+      "sha256": "d2feb88e3ee892a1bd3c044676d16f2ad14b56767bcf049294971beb1e4df05a",
+      "size_bytes": 2943
+    },
+    {
+      "path": "doc/performance-evidence/failed/finished-voice-index/sources/finished-voice-index/baseline-latency.csv",
+      "sha256": "55a414521e00b7d739a4ac00bc5d2dc1f7a7de50df610d133234143582841377",
+      "size_bytes": 78044
+    },
+    {
+      "path": "doc/performance-evidence/failed/finished-voice-index/sources/finished-voice-index/baseline-release-train-latency.csv",
+      "sha256": "f8254d0b07615aba22b6929b220243345d6ffd18a6bebfc8bb9f2dae16ece46b",
+      "size_bytes": 392317
+    },
+    {
+      "path": "doc/performance-evidence/failed/finished-voice-index/sources/finished-voice-index/generate_release_burst.py",
+      "sha256": "179d5c2ac73f88cf790e560fad514d8e326254b7a6c43e16470aebee839eb1e1",
+      "size_bytes": 980
+    },
+    {
+      "path": "doc/performance-evidence/failed/finished-voice-index/sources/finished-voice-index/generate_release_train.py",
+      "sha256": "a5039b0e443da45845f620574ec00132173b911147430c6c530efe17afa60625",
+      "size_bytes": 1209
+    },
+    {
+      "path": "doc/performance-evidence/failed/finished-voice-index/sources/finished-voice-index/render_latency_probe.c",
+      "sha256": "a1e44e3690c9d888fc31d4b5b4d2bc23a90ed5baefc4c464d970dd53cf5220a9",
+      "size_bytes": 4007
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/finished-voice-index/baseline-release-train.perf.data",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "8b1861fe9c70673ae371743247462fa7f09fabc08919c8c974eca53fdb520cc5",
+      "size_bytes": 20312942
+    },
+    {
+      "path": "sources/finished-voice-index/release-burst-128.mid",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "84c2d2ce817683fcc5f3de4bbf36898bc809695825191e04b26f07a9433d9076",
+      "size_bytes": 806
+    },
+    {
+      "path": "sources/finished-voice-index/release-burst-64.mid",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "51adb1988c4917823b0d2ac62e4bef316b92d5a7b8e6d34f499d48ac59a4ee13",
+      "size_bytes": 550
+    },
+    {
+      "path": "sources/finished-voice-index/release-train-16x64.mid",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "cefd8375f59157bd1908d030b69c9310dce710bdea8e9358b0818716397ecb5d",
+      "size_bytes": 8260
+    },
+    {
+      "path": "sources/finished-voice-index/render_latency_probe",
+      "reason": "unsupported file type",
+      "sha256": "36cd21676ea5fc34775dfea3b525a6f95ea65742181956085890090df9ab74b6",
+      "size_bytes": 17368
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "finished-voice-index"
+  ],
+  "status": "stopped at profile screen",
+  "summary": "The profiled mixer render function accounted for 0.02% self samples during repeated release bursts. The screen stopped before a prototype because the measured workload offered no meaningful scan budget.",
+  "title": "Finished-voice reverse index"
+}
