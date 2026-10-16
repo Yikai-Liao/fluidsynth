@@ -1,0 +1,14 @@
+Internal ctest changing into directory: <build-dir>
+Test project <build-dir>
+    Start 38: test_voice_reuse_gain
+1/1 Test #38: test_voice_reuse_gain ............Subprocess aborted***Exception:   0.01 sec
+test/test_voice_reuse_gain.c:77 assertion (reference[channel][frame] == reused[channel][frame]) failed
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.01 sec
+
+The following tests FAILED:
+	 38 - test_voice_reuse_gain (Subprocess aborted)
+Errors while running CTest

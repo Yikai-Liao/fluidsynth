@@ -1,0 +1,236 @@
+[
+  {
+    "name": "Maestro_1",
+    "block": 64,
+    "render_wall": {
+      "median_ratio": 0.9890979805669341,
+      "ratio_range": [
+        0.9672496053607735,
+        1.0249923113646109
+      ],
+      "baseline_median": 2.288808206,
+      "candidate_median": 2.267700589
+    },
+    "render_cpu": {
+      "median_ratio": 0.9899555626331928,
+      "ratio_range": [
+        0.9700673880468246,
+        1.0251149097809795
+      ],
+      "baseline_median": 2.279976305,
+      "candidate_median": 2.264993924
+    },
+    "maxrss_kib": {
+      "median_ratio": 1.0006071451396434,
+      "ratio_range": [
+        0.9992652813493268,
+        1.0014070769575159
+      ],
+      "baseline_median": 250236,
+      "candidate_median": 250384
+    },
+    "hashes": {
+      "baseline": [
+        "2476278b93c7eeb6"
+      ],
+      "candidate": [
+        "6d2a0ad7c57a9564"
+      ]
+    }
+  },
+  {
+    "name": "Maestro_1",
+    "block": 8192,
+    "render_wall": {
+      "median_ratio": 1.001117251717086,
+      "ratio_range": [
+        0.9642950737261167,
+        1.0576289826310754
+      ],
+      "baseline_median": 1.860660376,
+      "candidate_median": 1.862739202
+    },
+    "render_cpu": {
+      "median_ratio": 1.003524066252996,
+      "ratio_range": [
+        0.9651585056038532,
+        1.0504113070912013
+      ],
+      "baseline_median": 1.854495214,
+      "candidate_median": 1.861030578
+    },
+    "maxrss_kib": {
+      "median_ratio": 0.9998085360989231,
+      "ratio_range": [
+        0.9996011805057031,
+        1.0003510843719579
+      ],
+      "baseline_median": 250740,
+      "candidate_median": 250652
+    },
+    "hashes": {
+      "baseline": [
+        "764d6d0e250ac3d4"
+      ],
+      "candidate": [
+        "6d2a0ad7c57a9564"
+      ]
+    }
+  },
+  {
+    "name": "POP909_010",
+    "block": 64,
+    "render_wall": {
+      "median_ratio": 0.9849909191802035,
+      "ratio_range": [
+        0.9228953126933757,
+        1.0209575336576724
+      ],
+      "baseline_median": 1.792300359,
+      "candidate_median": 1.744032901
+    },
+    "render_cpu": {
+      "median_ratio": 0.9788120489128704,
+      "ratio_range": [
+        0.923970720133086,
+        1.0182703661657062
+      ],
+      "baseline_median": 1.785641073,
+      "candidate_median": 1.742715216
+    },
+    "maxrss_kib": {
+      "median_ratio": 0.9999520437361127,
+      "ratio_range": [
+        0.9996485454574501,
+        1.0006395497569711
+      ],
+      "baseline_median": 250256,
+      "candidate_median": 250300
+    },
+    "hashes": {
+      "baseline": [
+        "2e18639eee45f726"
+      ],
+      "candidate": [
+        "9642ba282c525185"
+      ]
+    }
+  },
+  {
+    "name": "POP909_010",
+    "block": 8192,
+    "render_wall": {
+      "median_ratio": 0.9995615605666504,
+      "ratio_range": [
+        0.9467122191601116,
+        1.018901585116637
+      ],
+      "baseline_median": 1.395544153,
+      "candidate_median": 1.401022622
+    },
+    "render_cpu": {
+      "median_ratio": 0.9986770247082019,
+      "ratio_range": [
+        0.9464336481575046,
+        1.0104415685455124
+      ],
+      "baseline_median": 1.394473753,
+      "candidate_median": 1.392763779
+    },
+    "maxrss_kib": {
+      "median_ratio": 1.0002394139147368,
+      "ratio_range": [
+        0.999696935862058,
+        1.0003511460128967
+      ],
+      "baseline_median": 250612,
+      "candidate_median": 250696
+    },
+    "hashes": {
+      "baseline": [
+        "bf1121e94d804d41"
+      ],
+      "candidate": [
+        "9642ba282c525185"
+      ]
+    }
+  },
+  {
+    "name": "All The Small Things",
+    "block": 64,
+    "render_wall": {
+      "median_ratio": 1.0181922098416076,
+      "ratio_range": [
+        0.9819199522153923,
+        1.0261761394636055
+      ],
+      "baseline_median": 1.726604919,
+      "candidate_median": 1.730647986
+    },
+    "render_cpu": {
+      "median_ratio": 1.017369568347539,
+      "ratio_range": [
+        0.9769525234421946,
+        1.0297352033286826
+      ],
+      "baseline_median": 1.725359629,
+      "candidate_median": 1.72935069
+    },
+    "maxrss_kib": {
+      "median_ratio": 0.9998880841607112,
+      "ratio_range": [
+        0.9992173524150268,
+        1.0000799053920157
+      ],
+      "baseline_median": 250296,
+      "candidate_median": 250228
+    },
+    "hashes": {
+      "baseline": [
+        "85f91f0b92c05b32"
+      ],
+      "candidate": [
+        "124f8cd830b16bbe"
+      ]
+    }
+  },
+  {
+    "name": "All The Small Things",
+    "block": 8192,
+    "render_wall": {
+      "median_ratio": 0.9928682897921322,
+      "ratio_range": [
+        0.9334930794816463,
+        1.08381536579263
+      ],
+      "baseline_median": 1.385751203,
+      "candidate_median": 1.375868427
+    },
+    "render_cpu": {
+      "median_ratio": 0.9891491788468518,
+      "ratio_range": [
+        0.9352336728952079,
+        1.0845033029268003
+      ],
+      "baseline_median": 1.385015271,
+      "candidate_median": 1.372910302
+    },
+    "maxrss_kib": {
+      "median_ratio": 1.0002714050800645,
+      "ratio_range": [
+        0.9995850357507661,
+        1.0008301139810352
+      ],
+      "baseline_median": 250568,
+      "candidate_median": 250616
+    },
+    "hashes": {
+      "baseline": [
+        "90d8e9175c60b8b4"
+      ],
+      "candidate": [
+        "124f8cd830b16bbe"
+      ]
+    }
+  }
+]
