@@ -1,0 +1,119 @@
+{
+  "audit_only_source_roots": [
+    "cubic-sinc25/sf2-samples"
+  ],
+  "branch": "archive/failed-mipmap-d-screen-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/ARCHIVE.md",
+      "sha256": "bde4b350ea94099032624cde4fab41ccb2644c156d6ffc4a82552d3bfb4ef803",
+      "size_bytes": 1096
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/REPORT.md",
+      "sha256": "6066e07b56569ff7b2eb0f07a9549fd869decb20f4c1994609919f2385511e57",
+      "size_bytes": 5621
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/decimated-windows.csv",
+      "sha256": "20e58cb7e9c25da50695dec53bce2cccba8db75d4addf866a425817da3bf6df9",
+      "size_bytes": 2694
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/manifest.json",
+      "sha256": "2024533d469d308ef08613a3eaf45eb202005867b0af1d309bebf8e8fa270148",
+      "size_bytes": 2617
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/mipmap_d_screen.cpp",
+      "sha256": "98cc3ec3fd4a04fde06a57f59b92ded1c7d4cc25c567f599528d29829880b688",
+      "size_bytes": 30261
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/run.sh",
+      "sha256": "687b548d3b723bf156ca1fd257f92074ae6830a7054897ff0fee84a0f3951749",
+      "size_bytes": 595
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/static.csv",
+      "sha256": "ba51b608730c023c881140c0243bbfd83ff5070fd94737e072915a471fbd7677",
+      "size_bytes": 10944
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/storage.csv",
+      "sha256": "522ed15d0580e75691cc63b6f0190b5bc6d0e119c55a16ea95fa79a3feac3313",
+      "size_bytes": 845
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/summarize.py",
+      "sha256": "d8c5e5852508317ce91932e5575b2fb8efefed997b8532528d5e346b6a2c2946",
+      "size_bytes": 5443
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/summary.json",
+      "sha256": "dc1de447d8005f66ced66c6a9c42818fd1db87c036953adfd67f0cbbd54b59b9",
+      "size_bytes": 5987
+    },
+    {
+      "path": "doc/performance-evidence/failed/mipmap-d-screen/sources/mipmap-d-screen/windows.csv",
+      "sha256": "81cb20968067269456e26bea4c8fad8c47e9015725317e8aec7e6e9353c7dae7",
+      "size_bytes": 2438
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/mipmap-d-screen/mipmap_d_screen",
+      "reason": "unsupported file type",
+      "sha256": "d152d3362d4ccbb2fcdaf5f889a99dd985f232a5202c2bbbf68713235f351c86",
+      "size_bytes": 78200
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/cymbal.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "51d24dafba8869c7527f163b0d48cf8a20959e76951bb464782580e564f83373",
+      "size_bytes": 751662
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/hihat.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "8e77d32572a42e8ed1fe7ff406db02522181aa790c4d9bcf8502fac918dfee41",
+      "size_bytes": 62722
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/manifest.json",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "004960dea1d76ee03a5fa5db7cc62073539e5c985445e1cdc179e672cef0c9fb",
+      "size_bytes": 6432
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/piano-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "3ae16bc9b97af03ef7ec0b921f1da97ead4d57143d8103f73a11d24f51470202",
+      "size_bytes": 643736
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/saw-lead-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "84082e5ed972a3a10116f2ae4bb164b516ade1b3f8fc3ed6b8f6b78c4ed185a3",
+      "size_bytes": 4480
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/strings-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "43e322215dd2a87db518b4127e3d3c6178b1b38b4584e1cfa92d419601e03055",
+      "size_bytes": 138026
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "mipmap-d-screen"
+  ],
+  "status": "stopped at static passband gate",
+  "summary": "The decimated layer improved selected SF2 window errors but failed its declared passband by up to 4.489 dB. The full-rate prefilter passed selected quality gates but increased storage substantially and had no performance evidence. No production change was accepted.",
+  "title": "Decimated sample representation screen"
+}

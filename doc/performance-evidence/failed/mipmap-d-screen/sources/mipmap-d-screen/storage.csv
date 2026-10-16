@@ -1,0 +1,6 @@
+sample,frames,loop_frames,reduced_eligible,original_int16_bytes,finite_float_bytes,attack_float_bytes,periodic_float_bytes,first_stage_total_bytes,first_stage_ratio_vs_original,reduced_finite_float_bytes,reduced_attack_float_bytes,reduced_periodic_float_bytes,original_plus_reduced_total_bytes,reduced_ratio_vs_original,prepare_ms
+piano-mid,321868,81107,0,643736,1287472,1287472,324428,3543108,5.50397678551,0,0,0,643736,1,2470.473665
+strings-mid,69013,30844,1,138026,276052,276052,123376,813506,5.89386057699,138028,138028,61688,475770,3.44695926854,758.267675
+saw-lead-mid,2240,1946,1,4480,8960,8960,7784,30184,6.7375,4480,4480,3892,17332,3.86875,134.674538
+hihat,31361,0,1,62722,125444,0,0,188166,3,62724,62724,0,188170,3.00006377348,182.067235
+cymbal,375831,0,1,751662,1503324,0,0,2254986,3,751664,751664,0,2254990,3.00000532154,2170.060024

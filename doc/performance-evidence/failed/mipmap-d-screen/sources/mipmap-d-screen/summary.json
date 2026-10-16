@@ -1,0 +1,178 @@
+{
+  "baseline_source": "measurement composite 6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+  "decimated_layer": {
+    "active_improved_rows": 16,
+    "active_median_error_change_vs_sinc25_db": -19.371411928649998,
+    "active_reference_worst_margin_db": -21.5560057804,
+    "active_rows": 16,
+    "active_worst_error_change_vs_sinc25_db": -9.31051236013,
+    "finite_failures": 0,
+    "quiet_rows": 2,
+    "quiet_worst_absolute_error_peak_dbfs": -98.7218725007,
+    "quiet_worst_absolute_error_rms_dbfs": -105.742735991,
+    "reference_tap_counts": [
+      65535,
+      524287
+    ],
+    "rows": 18
+  },
+  "design": {
+    "cutoff_cycles_per_source_sample": 0.25,
+    "declared_passband_cycles_per_source_sample": [
+      0.0,
+      0.24
+    ],
+    "declared_stopband_cycles_per_source_sample": [
+      0.26,
+      0.5
+    ],
+    "declared_transition_cycles_per_source_sample": [
+      0.24,
+      0.26
+    ],
+    "filter_taps": 4095,
+    "kaiser_beta": 9.5,
+    "lowpass_input_gain_normalized": true
+  },
+  "full_rate_prefilter": {
+    "active_improved_rows": 16,
+    "active_median_error_change_vs_sinc25_db": -37.840071944049996,
+    "active_reference_worst_margin_db": -20.7218119281,
+    "active_rows": 16,
+    "active_worst_error_change_vs_sinc25_db": -14.0697465208,
+    "finite_failures": 0,
+    "quiet_rows": 2,
+    "quiet_worst_absolute_error_peak_dbfs": -104.608404826,
+    "quiet_worst_absolute_error_rms_dbfs": -111.051402343,
+    "reference_tap_counts": [
+      65535,
+      524287
+    ],
+    "rows": 18
+  },
+  "gates": {
+    "passband_max_abs_gain_error_db": 0.1,
+    "quiet_absolute_error_rms_dbfs_max": -80.0,
+    "reference_margin_db_max_for_active_rows": -20.0,
+    "stopband_alias_input_db_max": -80.0
+  },
+  "screen": "fixed-step-2 Kaiser prefilter, first without decimation then with one decimated layer",
+  "static_response": {
+    "decimated-2x": {
+      "passband_max_abs_gain_error_db_through_0_24": 4.48948244322,
+      "passband_worst_case": {
+        "frequency": 0.239501953125,
+        "gain_error_db": -4.48948244322,
+        "phase": 0.75
+      },
+      "rows": 72,
+      "stopband_worst_alias_input_db_from_0_26": -118.101642017
+    },
+    "full-rate": {
+      "passband_max_abs_gain_error_db_through_0_24": 0.00248970015005,
+      "passband_worst_case": {
+        "frequency": 0.220001220703,
+        "gain_error_db": -0.00248970015005,
+        "phase": 0.5
+      },
+      "rows": 72,
+      "stopband_worst_alias_input_db_from_0_26": -118.097776455
+    }
+  },
+  "storage_and_preparation": {
+    "rows": [
+      {
+        "attack_float_bytes": "1287472",
+        "finite_float_bytes": "1287472",
+        "first_stage_ratio_vs_original": "5.50397678551",
+        "first_stage_total_bytes": "3543108",
+        "frames": "321868",
+        "loop_frames": "81107",
+        "original_int16_bytes": "643736",
+        "original_plus_reduced_total_bytes": "643736",
+        "periodic_float_bytes": "324428",
+        "prepare_ms": "2470.473665",
+        "reduced_attack_float_bytes": "0",
+        "reduced_eligible": "0",
+        "reduced_finite_float_bytes": "0",
+        "reduced_periodic_float_bytes": "0",
+        "reduced_ratio_vs_original": "1",
+        "sample": "piano-mid"
+      },
+      {
+        "attack_float_bytes": "276052",
+        "finite_float_bytes": "276052",
+        "first_stage_ratio_vs_original": "5.89386057699",
+        "first_stage_total_bytes": "813506",
+        "frames": "69013",
+        "loop_frames": "30844",
+        "original_int16_bytes": "138026",
+        "original_plus_reduced_total_bytes": "475770",
+        "periodic_float_bytes": "123376",
+        "prepare_ms": "758.267675",
+        "reduced_attack_float_bytes": "138028",
+        "reduced_eligible": "1",
+        "reduced_finite_float_bytes": "138028",
+        "reduced_periodic_float_bytes": "61688",
+        "reduced_ratio_vs_original": "3.44695926854",
+        "sample": "strings-mid"
+      },
+      {
+        "attack_float_bytes": "8960",
+        "finite_float_bytes": "8960",
+        "first_stage_ratio_vs_original": "6.7375",
+        "first_stage_total_bytes": "30184",
+        "frames": "2240",
+        "loop_frames": "1946",
+        "original_int16_bytes": "4480",
+        "original_plus_reduced_total_bytes": "17332",
+        "periodic_float_bytes": "7784",
+        "prepare_ms": "134.674538",
+        "reduced_attack_float_bytes": "4480",
+        "reduced_eligible": "1",
+        "reduced_finite_float_bytes": "4480",
+        "reduced_periodic_float_bytes": "3892",
+        "reduced_ratio_vs_original": "3.86875",
+        "sample": "saw-lead-mid"
+      },
+      {
+        "attack_float_bytes": "0",
+        "finite_float_bytes": "125444",
+        "first_stage_ratio_vs_original": "3",
+        "first_stage_total_bytes": "188166",
+        "frames": "31361",
+        "loop_frames": "0",
+        "original_int16_bytes": "62722",
+        "original_plus_reduced_total_bytes": "188170",
+        "periodic_float_bytes": "0",
+        "prepare_ms": "182.067235",
+        "reduced_attack_float_bytes": "62724",
+        "reduced_eligible": "1",
+        "reduced_finite_float_bytes": "62724",
+        "reduced_periodic_float_bytes": "0",
+        "reduced_ratio_vs_original": "3.00006377348",
+        "sample": "hihat"
+      },
+      {
+        "attack_float_bytes": "0",
+        "finite_float_bytes": "1503324",
+        "first_stage_ratio_vs_original": "3",
+        "first_stage_total_bytes": "2254986",
+        "frames": "375831",
+        "loop_frames": "0",
+        "original_int16_bytes": "751662",
+        "original_plus_reduced_total_bytes": "2254990",
+        "periodic_float_bytes": "0",
+        "prepare_ms": "2170.060024",
+        "reduced_attack_float_bytes": "751664",
+        "reduced_eligible": "1",
+        "reduced_finite_float_bytes": "751664",
+        "reduced_periodic_float_bytes": "0",
+        "reduced_ratio_vs_original": "3.00000532154",
+        "sample": "cymbal"
+      }
+    ],
+    "samples": 5,
+    "total_preparation_ms_single_run": 5715.543137
+  }
+}

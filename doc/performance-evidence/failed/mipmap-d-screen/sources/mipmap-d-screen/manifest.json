@@ -1,0 +1,24 @@
+{
+  "baseline_source": "measurement composite 6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+  "command": "./run.sh",
+  "compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+  "platform": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41",
+  "sha256": {
+    "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples/cymbal.s16le": "51d24dafba8869c7527f163b0d48cf8a20959e76951bb464782580e564f83373",
+    "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples/hihat.s16le": "8e77d32572a42e8ed1fe7ff406db02522181aa790c4d9bcf8502fac918dfee41",
+    "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples/piano-mid.s16le": "3ae16bc9b97af03ef7ec0b921f1da97ead4d57143d8103f73a11d24f51470202",
+    "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples/saw-lead-mid.s16le": "84082e5ed972a3a10116f2ae4bb164b516ade1b3f8fc3ed6b8f6b78c4ed185a3",
+    "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples/strings-mid.s16le": "43e322215dd2a87db518b4127e3d3c6178b1b38b4584e1cfa92d419601e03055",
+    "/root/code/fluidsynth-analysis-20261015/fractional-delay-ab/samples.csv": "f2d8283f3319b47264bc6063c65488969d90b234e526011e1f166e74bba3416f",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/REPORT.md": "6066e07b56569ff7b2eb0f07a9549fd869decb20f4c1994609919f2385511e57",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/decimated-windows.csv": "20e58cb7e9c25da50695dec53bce2cccba8db75d4addf866a425817da3bf6df9",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/mipmap_d_screen": "d152d3362d4ccbb2fcdaf5f889a99dd985f232a5202c2bbbf68713235f351c86",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/mipmap_d_screen.cpp": "98cc3ec3fd4a04fde06a57f59b92ded1c7d4cc25c567f599528d29829880b688",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/run.sh": "687b548d3b723bf156ca1fd257f92074ae6830a7054897ff0fee84a0f3951749",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/static.csv": "ba51b608730c023c881140c0243bbfd83ff5070fd94737e072915a471fbd7677",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/storage.csv": "522ed15d0580e75691cc63b6f0190b5bc6d0e119c55a16ea95fa79a3feac3313",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/summarize.py": "d8c5e5852508317ce91932e5575b2fb8efefed997b8532528d5e346b6a2c2946",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/summary.json": "dc1de447d8005f66ced66c6a9c42818fd1db87c036953adfd67f0cbbd54b59b9",
+    "/root/code/fluidsynth-analysis-20261015/mipmap-d-screen/windows.csv": "81cb20968067269456e26bea4c8fad8c47e9015725317e8aec7e6e9353c7dae7"
+  }
+}
