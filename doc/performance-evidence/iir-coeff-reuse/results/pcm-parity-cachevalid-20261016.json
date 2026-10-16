@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Maestro_1",
+    "block": 64,
+    "baseline_hash": "6d2a0ad7c57a9564",
+    "candidate_hash": "6d2a0ad7c57a9564",
+    "equal": true,
+    "baseline_wall": 2.435170854,
+    "candidate_wall": 2.123379416
+  },
+  {
+    "name": "Maestro_1",
+    "block": 8192,
+    "baseline_hash": "6d2a0ad7c57a9564",
+    "candidate_hash": "6d2a0ad7c57a9564",
+    "equal": true,
+    "baseline_wall": 1.92595207,
+    "candidate_wall": 1.756653122
+  },
+  {
+    "name": "POP909_010",
+    "block": 64,
+    "baseline_hash": "9642ba282c525185",
+    "candidate_hash": "9642ba282c525185",
+    "equal": true,
+    "baseline_wall": 1.834665641,
+    "candidate_wall": 1.521332646
+  },
+  {
+    "name": "POP909_010",
+    "block": 8192,
+    "baseline_hash": "9642ba282c525185",
+    "candidate_hash": "9642ba282c525185",
+    "equal": true,
+    "baseline_wall": 1.387314949,
+    "candidate_wall": 1.276537185
+  },
+  {
+    "name": "All The Small Things",
+    "block": 64,
+    "baseline_hash": "124f8cd830b16bbe",
+    "candidate_hash": "124f8cd830b16bbe",
+    "equal": true,
+    "baseline_wall": 1.755693379,
+    "candidate_wall": 1.712852176
+  },
+  {
+    "name": "All The Small Things",
+    "block": 8192,
+    "baseline_hash": "124f8cd830b16bbe",
+    "candidate_hash": "124f8cd830b16bbe",
+    "equal": true,
+    "baseline_wall": 1.38994516,
+    "candidate_wall": 1.393868107
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "baseline_revision": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "candidate_base_revision": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "candidate_source_sha256": "f7c3c4e4e00f39c6859bab0762a704ceb4f9517b3e6632b80a150c6389e9b7ef",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_sha256": {
+    "Maestro_1": "de94744a9c06c2c133b6f81e7f08a8707eb8ba614a10c878dd9572fc1eb868c9",
+    "POP909_010": "711c7230a53a806e7f78ceb360b440646b310d47a008ae82c4c9b2631276509b",
+    "All The Small Things": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1"
+  },
+  "probe_sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59",
+  "library_sha256": {
+    "baseline": "98fef3bad95e3921e1ac74abd934b212da5e6bfb2b92e5f56a9ef5dfe5158d10",
+    "candidate": "a02a187067605539c1e47db417bb44d23361a4f5a7b66f9e7f27acff9ffc77fb"
+  },
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 60,
+    "effects": true,
+    "OMP_NUM_THREADS": "1",
+    "player_timing_source": "sample"
+  },
+  "repetitions": 5,
+  "order": "Sequential; arms alternate AB/BA for every MIDI/request-size/repetition pair.",
+  "host": {
+    "system": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "cpu_model": "Intel(R) Xeon(R) Gold 6140 CPU @ 2.30GHz",
+    "vcpus": 6,
+    "compiler": "c++ (Debian 14.2.0-19) 14.2.0"
+  },
+  "post_measurement_note": "An explanatory source comment was added after the trials; rebuilding produced the same candidate library SHA-256."
+}
