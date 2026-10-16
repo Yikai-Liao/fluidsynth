@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import csv
 import json
+import os
 from pathlib import Path
 
-root = Path('/root/code/fluidsynth-analysis-20261015/cubic-sinc25')
+root = Path(os.environ.get(
+    'FLUIDSYNTH_FD_DATA_ROOT', Path(__file__).resolve().parent.parent / 'cubic-sinc25'))
 manifest = json.loads((root / 'sf2-samples/manifest.json').read_text())
 rates = {item['label']: item['base_phase_step'] for item in json.loads((root / 'sf2-rate-context.json').read_text())}
 out = Path(__file__).resolve().parent / 'samples.csv'

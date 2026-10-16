@@ -768,14 +768,15 @@ static void write_loop_entry_errors(const std::string &path,
 
 int main(int argc, char **argv)
 {
-    if(argc != 2)
+    if(argc != 3)
     {
-        std::cerr << "usage: fractional_delay_screen <analysis-root>\n";
+        std::cerr << "usage: fractional_delay_screen <analysis-root> <reference-data-root>\n";
         return 2;
     }
     try
     {
         const std::string root = argv[1];
+        const std::string data_root = argv[2];
         const auto metadata = read_metadata(root + "/samples.csv");
         if(metadata.size() != 5) throw std::runtime_error("expected five sample cases");
         std::vector<std::pair<int, FirTable>> tables;
@@ -783,12 +784,11 @@ int main(int argc, char **argv)
         write_spline_static(root + "/spline-static.csv");
         write_fir_static(root + "/fir-static.csv", tables, root + "/fir-coefficients.csv");
         write_reconstruction(root + "/spline-reconstruction.csv", metadata,
-                             "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples");
+                             data_root + "/sf2-samples");
         write_window_errors(root + "/candidate-windows.csv", root + "/baseline-reproduction.csv", metadata,
-                            "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples",
-                            "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-raw", tables);
+                            data_root + "/sf2-samples", data_root + "/sf2-raw", tables);
         write_loop_entry_errors(root + "/loop-entry-windows.csv", metadata,
-                                "/root/code/fluidsynth-analysis-20261015/cubic-sinc25/sf2-samples", tables);
+                                data_root + "/sf2-samples", tables);
         std::cout << "completed: " << metadata.size() << " samples; 2 spline degrees; 4 weighted-LS FIR lengths\n";
     }
     catch(const std::exception &e)

@@ -171,9 +171,9 @@
           "worst_delta_vs_sinc25_db": 27.8736895902
         },
         "2.0": {
-          "n_nonquiet": 0,
-          "median_delta_vs_sinc25_db": null,
-          "worst_delta_vs_sinc25_db": null
+          "n_nonquiet": 16,
+          "median_delta_vs_sinc25_db": -0.06283535585455,
+          "worst_delta_vs_sinc25_db": 6.67370476061
         }
       }
     },
@@ -203,9 +203,9 @@
           "worst_delta_vs_sinc25_db": 16.9178599337
         },
         "2.0": {
-          "n_nonquiet": 0,
-          "median_delta_vs_sinc25_db": null,
-          "worst_delta_vs_sinc25_db": null
+          "n_nonquiet": 16,
+          "median_delta_vs_sinc25_db": -0.0730445836855,
+          "worst_delta_vs_sinc25_db": 1.15928308221
         }
       }
     },
@@ -235,9 +235,9 @@
           "worst_delta_vs_sinc25_db": 6.35769422828
         },
         "2.0": {
-          "n_nonquiet": 0,
-          "median_delta_vs_sinc25_db": null,
-          "worst_delta_vs_sinc25_db": null
+          "n_nonquiet": 16,
+          "median_delta_vs_sinc25_db": -0.0477695152079,
+          "worst_delta_vs_sinc25_db": 0.102292870066
         }
       }
     },
@@ -267,9 +267,9 @@
           "worst_delta_vs_sinc25_db": 2.1639404348
         },
         "2.0": {
-          "n_nonquiet": 0,
-          "median_delta_vs_sinc25_db": null,
-          "worst_delta_vs_sinc25_db": null
+          "n_nonquiet": 16,
+          "median_delta_vs_sinc25_db": -0.036499509217100004,
+          "worst_delta_vs_sinc25_db": 0.0114144642553
         }
       }
     },
@@ -299,9 +299,9 @@
           "worst_delta_vs_sinc25_db": 17.8355521317
         },
         "2.0": {
-          "n_nonquiet": 0,
-          "median_delta_vs_sinc25_db": null,
-          "worst_delta_vs_sinc25_db": null
+          "n_nonquiet": 16,
+          "median_delta_vs_sinc25_db": -0.935576167106,
+          "worst_delta_vs_sinc25_db": -0.167321188768
         }
       }
     },
@@ -331,9 +331,9 @@
           "worst_delta_vs_sinc25_db": 12.3476772527
         },
         "2.0": {
-          "n_nonquiet": 0,
-          "median_delta_vs_sinc25_db": null,
-          "worst_delta_vs_sinc25_db": null
+          "n_nonquiet": 16,
+          "median_delta_vs_sinc25_db": -0.5096496015825001,
+          "worst_delta_vs_sinc25_db": 1.74237617114
         }
       }
     }

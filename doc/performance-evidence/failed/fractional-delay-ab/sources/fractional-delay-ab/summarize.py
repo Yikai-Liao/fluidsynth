@@ -2,6 +2,7 @@
 import csv
 import hashlib
 import json
+import os
 import platform
 import statistics
 import subprocess
@@ -51,14 +52,17 @@ for taps in ('13', '17', '21', '25'):
 quality = {}
 for kind in sorted({r['kind'] for r in windows}):
     all_rows = [r for r in windows if r['kind'] == kind]
-    selected = [r for r in all_rows
-                if r['quiet_reference'] == '0' and fnum(r, 'transpose_factor') <= 1.0]
+    nonquiet = [r for r in all_rows if r['quiet_reference'] == '0']
+    # Factors 0.5 and 1.0 are the preregistered mapped/down quality gate.
+    # Keep factor 2.0 visible as a separate octave-up diagnostic; do not mix
+    # it into the primary gate or silently drop it from the summary.
+    selected = [r for r in nonquiet if fnum(r, 'transpose_factor') <= 1.0]
     deltas = [fnum(r, 'error_vs_sinc25_db') for r in selected]
     worst = max(selected, key=lambda r: fnum(r, 'error_vs_sinc25_db'))
     margins = [fnum(r, 'ref_margin_db') for r in all_rows]
     per_factor = {}
     for factor in (0.5, 1.0, 2.0):
-        factor_rows = [r for r in selected if abs(fnum(r, 'transpose_factor') - factor) < 1e-9]
+        factor_rows = [r for r in nonquiet if abs(fnum(r, 'transpose_factor') - factor) < 1e-9]
         values = [fnum(r, 'error_vs_sinc25_db') for r in factor_rows]
         per_factor[str(factor)] = {
             'n_nonquiet': len(values),
@@ -170,6 +174,18 @@ lines += [
     '',
     'Positive values mean more RMS error than current sinc25. The 13/17/21-tap designs fail the 1 dB median budget by wide margins. The 25-tap design is closest, but its mapped/down median is +1.03 dB (the frozen limit is +1.00 dB) and it retains all 25 multiply-accumulates, so it has no tap-count performance case. Its worst primary window is hi-hat interior at half-step, +2.34 dB. At one-octave-up all candidates are evaluated separately; that case is not used to hide the lower-rate error.',
     '',
+    '### Separate octave-up diagnostic (transpose factor 2.0)',
+    '',
+    'This diagnostic is summarized from all nonquiet factor-2 rows. It is deliberately excluded from the mapped/down acceptance gate above, but remains visible because the fixed sinc25 cutoff can behave differently at higher playback rates.',
+    '',
+    '| Candidate | Nonquiet octave-up windows | Median error change vs sinc25 | Worst change |',
+    '|---|---:|---:|---:|',
+]
+for kind in ('spline3', 'spline5', 'fir13', 'fir17', 'fir21', 'fir25'):
+    q = quality[kind]['per_factor']['2.0']
+    lines.append(f"| {kind} | {q['n_nonquiet']} | {q['median_delta_vs_sinc25_db']:+.2f} dB | {q['worst_delta_vs_sinc25_db']:+.2f} dB |")
+lines += [
+    '',
     'Both spline variants are much farther from the long reference than sinc25 in mapped/down windows: medians are +11.56 dB (degree 3) and +8.45 dB (degree 5). Their exact integer reconstruction does not translate into good fractional-delay fidelity. The first-loop-wrap windows expose additional transition risk: the degree-3/5 spline worst error is about +39 dB versus sinc25; 25-tap WLS stays within +1.85 dB there, but the primary gate still fails.',
     '',
     '## Decision',
@@ -182,12 +198,14 @@ lines += [
     '',
     'This is double-precision offline analysis at 44.1 kHz using five selected SF2 samples and the existing 54 primary windows plus nine loop-entry probes. It is not a full SF2/MIDI render, float-table quantization test, real-time test, generalized listening result, or proof for other SoundFonts/loop zones. The periodic spline coefficients are built per selected loop region; that correctly exposes the per-zone preprocessing/storage problem rather than assuming one coefficient transform can serve every loop.',
     '',
-    'Run `./run.sh` from this folder to regenerate the metadata, compile with the recorded command, rerun all screens, and regenerate `summary.json`. The raw inputs and prior reference CSVs are read-only; generated CSVs are retained alongside `fractional_delay_screen.cpp`.',
+    'Set `FLUIDSYNTH_FD_DATA_ROOT` to the directory containing the external `sf2-samples/` and `sf2-raw/` inputs, then run `./run.sh` from this folder. The five extracted SF2 samples and prior reference CSVs are not copied into this report archive. Their source SF2 SHA-256 is `ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3`; expected input file hashes are listed in `manifest.json`. The default source-worktree path can be overridden with `FLUIDSYNTH_FD_SOURCE_ROOT`.',
 ]
 (ROOT / 'REPORT.md').write_text('\n'.join(lines) + '\n')
 
-source_root = Path('/root/code/fluidsynth-worktrees/algorithm-route-profile-20261016')
-input_root = Path('/root/code/fluidsynth-analysis-20261015/cubic-sinc25')
+source_root = Path(os.environ.get(
+    'FLUIDSYNTH_FD_SOURCE_ROOT', ROOT.parent.parent / 'fluidsynth-worktrees/algorithm-route-profile-20261016'))
+input_root = Path(os.environ.get(
+    'FLUIDSYNTH_FD_DATA_ROOT', ROOT.parent.parent / 'fluidsynth-analysis-20261015/cubic-sinc25'))
 def sha256(path):
     h = hashlib.sha256()
     with path.open('rb') as f:

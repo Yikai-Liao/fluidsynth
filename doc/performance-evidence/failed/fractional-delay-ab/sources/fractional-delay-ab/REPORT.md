@@ -44,6 +44,19 @@ The spline maximum occurs at half phase and the high end of each band. Degree 5 
 
 Positive values mean more RMS error than current sinc25. The 13/17/21-tap designs fail the 1 dB median budget by wide margins. The 25-tap design is closest, but its mapped/down median is +1.03 dB (the frozen limit is +1.00 dB) and it retains all 25 multiply-accumulates, so it has no tap-count performance case. Its worst primary window is hi-hat interior at half-step, +2.34 dB. At one-octave-up all candidates are evaluated separately; that case is not used to hide the lower-rate error.
 
+### Separate octave-up diagnostic (transpose factor 2.0)
+
+This diagnostic is summarized from all nonquiet factor-2 rows. It is deliberately excluded from the mapped/down acceptance gate above, but remains visible because the fixed sinc25 cutoff can behave differently at higher playback rates.
+
+| Candidate | Nonquiet octave-up windows | Median error change vs sinc25 | Worst change |
+|---|---:|---:|---:|
+| spline3 | 16 | -0.94 dB | -0.17 dB |
+| spline5 | 16 | -0.51 dB | +1.74 dB |
+| fir13 | 16 | -0.06 dB | +6.67 dB |
+| fir17 | 16 | -0.07 dB | +1.16 dB |
+| fir21 | 16 | -0.05 dB | +0.10 dB |
+| fir25 | 16 | -0.04 dB | +0.01 dB |
+
 Both spline variants are much farther from the long reference than sinc25 in mapped/down windows: medians are +11.56 dB (degree 3) and +8.45 dB (degree 5). Their exact integer reconstruction does not translate into good fractional-delay fidelity. The first-loop-wrap windows expose additional transition risk: the degree-3/5 spline worst error is about +39 dB versus sinc25; 25-tap WLS stays within +1.85 dB there, but the primary gate still fails.
 
 ## Decision
@@ -56,4 +69,4 @@ Both spline variants are much farther from the long reference than sinc25 in map
 
 This is double-precision offline analysis at 44.1 kHz using five selected SF2 samples and the existing 54 primary windows plus nine loop-entry probes. It is not a full SF2/MIDI render, float-table quantization test, real-time test, generalized listening result, or proof for other SoundFonts/loop zones. The periodic spline coefficients are built per selected loop region; that correctly exposes the per-zone preprocessing/storage problem rather than assuming one coefficient transform can serve every loop.
 
-Run `./run.sh` from this folder to regenerate the metadata, compile with the recorded command, rerun all screens, and regenerate `summary.json`. The raw inputs and prior reference CSVs are read-only; generated CSVs are retained alongside `fractional_delay_screen.cpp`.
+Set `FLUIDSYNTH_FD_DATA_ROOT` to the directory containing the external `sf2-samples/` and `sf2-raw/` inputs, then run `./run.sh` from this folder. The five extracted SF2 samples and prior reference CSVs are not copied into this report archive. Their source SF2 SHA-256 is `ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3`; expected input file hashes are listed in `manifest.json`. The default source-worktree path can be overridden with `FLUIDSYNTH_FD_SOURCE_ROOT`.
