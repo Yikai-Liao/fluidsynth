@@ -1,0 +1,139 @@
+{
+  "audit_only_source_roots": [
+    "cubic-sinc25/sf2-samples"
+  ],
+  "branch": "archive/failed-fractional-delay-ab-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/ARCHIVE.md",
+      "sha256": "421d911fdb57d1b0744aa1984d8a91aeb06fd271925dcca31e7a99a3a2fba6fa",
+      "size_bytes": 1305
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/REPORT.md",
+      "sha256": "eca5c4e02c4f553060348a820c5c0153412d3fde667dadd1bfa3261f0441ef26",
+      "size_bytes": 7031
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/baseline-reproduction.csv",
+      "sha256": "c7c631bc0d29bdc64bf06ab894d04f7c0d1e39da9ddbd3deee310f215e7400fc",
+      "size_bytes": 4598
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/candidate-windows.csv",
+      "sha256": "f5f8ef0ff166069a2d703b06733712ed12f28c5bfa44c084f9f402016bde07af",
+      "size_bytes": 48262
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/fir-coefficients.csv",
+      "sha256": "d2f728543dd0cf504b00319c57a076f9d15b3cf9c1817e74b68aa502dfc8ca37",
+      "size_bytes": 280
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/fir-static.csv",
+      "sha256": "0fc1adc332425ead4fab71d1f8b216925fe804bffc46ec291a9e16907cf25193",
+      "size_bytes": 33528
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/fractional_delay_screen.cpp",
+      "sha256": "c926fcdd6d03260db7a9ec17789c7dc28b42bc2997871bafb35f8d40b3ac691f",
+      "size_bytes": 34945
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/loop-entry-windows.csv",
+      "sha256": "a029b71e66aa713fb8e9732ce136c7255ae7c39d10bd5ef4af058a4d2212eba2",
+      "size_bytes": 5289
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/make_metadata.py",
+      "sha256": "8c5606815cfc47622f0428154c39c1be72ad6a7d27590faddb2f01feb44b87b5",
+      "size_bytes": 763
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/run.sh",
+      "sha256": "d108ef4ae5c6c1423782330268047e20c89a9a0c19513bcb116667f9f3b5a189",
+      "size_bytes": 352
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/samples.csv",
+      "sha256": "f2d8283f3319b47264bc6063c65488969d90b234e526011e1f166e74bba3416f",
+      "size_bytes": 353
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/spline-reconstruction.csv",
+      "sha256": "84cbb3026fa081727337a33ce27234cac268d680ce6e6a079b9b5ece706732eb",
+      "size_bytes": 1062
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/spline-static.csv",
+      "sha256": "f1c5297da6126f0859905c8eeb68b1f704ff6932b66e2b05f78a53890069e736",
+      "size_bytes": 4790288
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/summarize.py",
+      "sha256": "2809db6b0df2e8ee95064aff9721eb1f738cf60a3bab84ccae35c5191ac2e12c",
+      "size_bytes": 14799
+    },
+    {
+      "path": "doc/performance-evidence/failed/fractional-delay-ab/sources/fractional-delay-ab/summary.json",
+      "sha256": "9e6615a4e47614c234d60b8df94bf911cb7d2ea3437373c4ac31458a1ed96eec",
+      "size_bytes": 11393
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/fractional-delay-ab/fractional_delay_screen",
+      "reason": "unsupported file type",
+      "sha256": "0b0597559d2fd212b1cb3525837511f467ba3fe744180be972b1c648ab5e80a5",
+      "size_bytes": 110112
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/cymbal.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "51d24dafba8869c7527f163b0d48cf8a20959e76951bb464782580e564f83373",
+      "size_bytes": 751662
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/hihat.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "8e77d32572a42e8ed1fe7ff406db02522181aa790c4d9bcf8502fac918dfee41",
+      "size_bytes": 62722
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/manifest.json",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "004960dea1d76ee03a5fa5db7cc62073539e5c985445e1cdc179e672cef0c9fb",
+      "size_bytes": 6432
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/piano-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "3ae16bc9b97af03ef7ec0b921f1da97ead4d57143d8103f73a11d24f51470202",
+      "size_bytes": 643736
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/saw-lead-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "84082e5ed972a3a10116f2ae4bb164b516ade1b3f8fc3ed6b8f6b78c4ed185a3",
+      "size_bytes": 4480
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/strings-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "43e322215dd2a87db518b4127e3d3c6178b1b38b4584e1cfa92d419601e03055",
+      "size_bytes": 138026
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "fractional-delay-ab"
+  ],
+  "status": "stopped at frozen quality gates",
+  "summary": "Prefiltered cardinal B-splines failed static passband and real-SF2 error gates. WLS FIR tables with 13/17/21 taps failed the real-sample budget; 25 taps narrowly missed the median bound while keeping the same tap count as sinc25. No production code changed.",
+  "title": "Fractional-delay interpolation A/B screen"
+}

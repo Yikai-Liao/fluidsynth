@@ -1,0 +1,6 @@
+label,raw_file,frames,loop_start,loop_end,samplemode,base_step
+piano-mid,piano-mid.s16le,321868,240697,321804,1,0.9971160533345892
+strings-mid,strings-mid.s16le,69013,38140,68984,1,0.6848974604493014
+saw-lead-mid,saw-lead-mid.s16le,2240,182,2128,1,0.7696400339445416
+hihat,hihat.s16le,31361,8,31352,0,1.0
+cymbal,cymbal.s16le,375831,8,375822,0,1.0
