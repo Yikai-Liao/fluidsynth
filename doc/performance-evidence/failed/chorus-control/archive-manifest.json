@@ -1,0 +1,29 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-chorus-control-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/chorus-control/ARCHIVE.md",
+      "sha256": "dce4167613d99bbcdffcba4919a817c2703016864c07ed10f9b84efe5434f5ca",
+      "size_bytes": 776
+    },
+    {
+      "path": "doc/performance-evidence/failed/chorus-control/sources/chorus-control/RESEARCH.md",
+      "sha256": "a5db3e32ee46af1c285bb2e9f0fcbadbef6d3aecd34a65801923f09071556fc3",
+      "size_bytes": 1492
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [],
+  "schema": 1,
+  "source_roots": [
+    "chorus-control"
+  ],
+  "status": "stopped at code-generation screen",
+  "summary": "GCC 14.2 already hoists the shared modulation-rate predicate ahead of the tap loop, so the proposed source hoist removes no work. No source patch or benchmark expansion was justified.",
+  "title": "Chorus shared modulation-control hoist"
+}
