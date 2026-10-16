@@ -8,8 +8,8 @@
   "included_files": [
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/ARCHIVE.md",
-      "sha256": "bc9f16dbbe0f42ad6ae5ed82bc4a992dc621ff2e3652b88344c99a9a162daae2",
-      "size_bytes": 9140
+      "sha256": "167c7e5739003e5ba7663c2f05148366ebaa6460dc244c61c82a950175c67b20",
+      "size_bytes": 9186
     },
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/REPORT.md",

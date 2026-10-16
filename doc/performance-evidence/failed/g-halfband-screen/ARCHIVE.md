@@ -2,7 +2,7 @@
 
 - Branch: `archive/failed-g-halfband-screen-20261016`
 - Status: stopped at the frozen quality gate
-- Analysis source: `/root/code/fluidsynth-analysis-20261015`
+- Source package: experiment materials and result hashes are preserved under `sources/g-halfband-screen/`.
 - Outcome: The corrected short run has independent medians H+C=2.298 ms, complete=2.882 ms and full rate=3.096 ms (complete/full 0.9309; reciprocal 1.0742). The long run is 36.237 ms complete versus 51.150 ms full (0.7084; reciprocal 1.4115). These are separate medians, not paired estimates. The 12-second wet impulse still fails the response contract: energy −3.011 dB, normalized color −3.013 to +13.251 dB, high-band T20 differences up to +35.32%, and late IACC delta −0.056. No integration was attempted.
 
 ## Preserved files
