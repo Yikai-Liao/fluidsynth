@@ -1,0 +1,124 @@
+{
+  "audit_only_source_roots": [
+    "cubic-sinc25/sf2-samples"
+  ],
+  "branch": "archive/failed-oversampled-c-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/ARCHIVE.md",
+      "sha256": "9a2af14ecd8a2b93047b7fbd89770cf4d6c1428156b6f2f6b7847ca92993dad1",
+      "size_bytes": 1106
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/REPORT.md",
+      "sha256": "879b447f6cfb766acc85eaac2212f1e186ce168c6c1e9ce6290cf9b66d321a01",
+      "size_bytes": 5868
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/baseline-reproduction.csv",
+      "sha256": "051eb6ffd2494790cb00256c73d316bf82794ec6bcb7649b633272ade3eef30d",
+      "size_bytes": 5106
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/loop-entry.csv",
+      "sha256": "a7cf662a972e0ef7ef61be9b6dbc35038c5fa064d9657331e91423abf64d70f0",
+      "size_bytes": 3884
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/manifest.json",
+      "sha256": "a4c24eba49f97b78f1881328ef0f9f6ac8e2b17800688e70d746116070ae4a70",
+      "size_bytes": 11718
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/oversampled_c_screen.cpp",
+      "sha256": "e492a02d961a8b9682cb70acd8489ab2afa2a077d4d4e98bec9d7e812f8e2a00",
+      "size_bytes": 31901
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/quality.csv",
+      "sha256": "cbf72cff8466cc0ce16b6deef835d3d40492788059c7057a25854d5088e71c76",
+      "size_bytes": 30141
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/run.sh",
+      "sha256": "45f2505619d16a0f2406a97ffb9dd7cd5954f197fc805954c4a6eb69132a791c",
+      "size_bytes": 691
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/static.csv",
+      "sha256": "8410d049c521d7207b180a90f589769cb4fb7dada1a46836ff25b71af42162d7",
+      "size_bytes": 2232
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/storage.csv",
+      "sha256": "10b53f52c0d1612924ddfc7165a940f2e980c56c6f454b53c38a20bf672ea95a",
+      "size_bytes": 753
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/summarize.py",
+      "sha256": "390b8133410d8c563f39df95bd7d7aaa92f502bfe156f3e1ac4374b894b1ba55",
+      "size_bytes": 6218
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/summary.json",
+      "sha256": "35b59fccee156b1bea3ab642f15aaa56f4d7b2df6a7d701d2672ec19e711d06b",
+      "size_bytes": 7353
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/oversampled-c/oversampled_c_screen",
+      "reason": "unsupported file type",
+      "sha256": "08eacce327597d8dc6dc31b510eca26b432038405db7648f884b5e930dfdaf55",
+      "size_bytes": 95968
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/cymbal.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "51d24dafba8869c7527f163b0d48cf8a20959e76951bb464782580e564f83373",
+      "size_bytes": 751662
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/hihat.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "8e77d32572a42e8ed1fe7ff406db02522181aa790c4d9bcf8502fac918dfee41",
+      "size_bytes": 62722
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/manifest.json",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "004960dea1d76ee03a5fa5db7cc62073539e5c985445e1cdc179e672cef0c9fb",
+      "size_bytes": 6432
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/piano-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "3ae16bc9b97af03ef7ec0b921f1da97ead4d57143d8103f73a11d24f51470202",
+      "size_bytes": 643736
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/saw-lead-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "84082e5ed972a3a10116f2ae4bb164b516ade1b3f8fc3ed6b8f6b78c4ed185a3",
+      "size_bytes": 4480
+    },
+    {
+      "path": "audit-only/cubic-sinc25/sf2-samples/strings-mid.s16le",
+      "reason": "input asset retained by hash only; not copied",
+      "sha256": "43e322215dd2a87db518b4127e3d3c6178b1b38b4584e1cfa92d419601e03055",
+      "size_bytes": 138026
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "oversampled-c"
+  ],
+  "status": "stopped at static and SF2 quality gates",
+  "summary": "The direct, un-pre-emphasized 2\u00d7 float representation with 4/6-point polynomial reconstruction missed both passband and real-SF2 error budgets. The screen rejects this direct form only; an equalized/pre-emphasized form remains untested.",
+  "title": "Two-times oversampled interpolation table"
+}
