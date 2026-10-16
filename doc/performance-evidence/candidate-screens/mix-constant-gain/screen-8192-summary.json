@@ -1,0 +1,107 @@
+{
+  "block": 8192,
+  "wall_ratios": [
+    0.9857029541697699,
+    0.9943558231537595,
+    1.0180818906159546
+  ],
+  "wall_median_ratio": 0.9943558231537595,
+  "wall_improvement_percent": 0.5644176846240523,
+  "cpu_ratios": [
+    0.9831912735316098,
+    0.9960264036819428,
+    1.0126010402364756
+  ],
+  "rows": [
+    {
+      "block": 8192,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.272515099,
+      "render_wall": 1.320639538,
+      "render_cpu": 1.318625896,
+      "maxrss_kib": 250832,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "baseline",
+      "tag": "pair-0"
+    },
+    {
+      "block": 8192,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.247164507,
+      "render_wall": 1.301758294,
+      "render_cpu": 1.296461474,
+      "maxrss_kib": 250636,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "candidate",
+      "tag": "pair-0"
+    },
+    {
+      "block": 8192,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.247918527,
+      "render_wall": 1.29377213,
+      "render_cpu": 1.292495101,
+      "maxrss_kib": 250704,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "candidate",
+      "tag": "pair-1"
+    },
+    {
+      "block": 8192,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.240772661,
+      "render_wall": 1.301115858,
+      "render_cpu": 1.297651444,
+      "maxrss_kib": 250872,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "baseline",
+      "tag": "pair-1"
+    },
+    {
+      "block": 8192,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.221736939,
+      "render_wall": 1.384381674,
+      "render_cpu": 1.383261435,
+      "maxrss_kib": 250724,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "baseline",
+      "tag": "pair-2"
+    },
+    {
+      "block": 8192,
+      "cores": 1,
+      "fx": 1,
+      "frames": 2646000,
+      "setup_wall": 0.292926526,
+      "render_wall": 1.409413912,
+      "render_cpu": 1.400691968,
+      "maxrss_kib": 250676,
+      "hash": "124f8cd830b16bbe",
+      "rms": 0.0528080814,
+      "peak": 0.507304907,
+      "arm": "candidate",
+      "tag": "pair-2"
+    }
+  ]
+}
