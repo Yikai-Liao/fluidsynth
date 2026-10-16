@@ -1,0 +1,11 @@
+{
+  "samples": 5292000,
+  "bit_identical": false,
+  "max_abs_error": 2.9802322387695312e-08,
+  "rms_error": 1.074902448050633e-09,
+  "reference_rms": 0.05283294294302603,
+  "relative_rms_error": 2.034530707876307e-08,
+  "changed_samples": 1047121,
+  "baseline_sha256": "7e1b93630900fccc9bd8e5772ebda9cf40207e48b075f1a1a5ece94e823a3880",
+  "candidate_sha256": "78688e110343dae80310694fc02c58de7b62ee385ac056d92b1596d1ab9f2c48"
+}

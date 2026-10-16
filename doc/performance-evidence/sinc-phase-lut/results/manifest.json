@@ -1,0 +1,189 @@
+{
+  "stage": "high-quality sinc phase-coefficient table",
+  "branch": "perf/sinc-phase-lut-20261016",
+  "commit": "84936b5d402630da8818aeecbbfde2d624059bab",
+  "base_commit": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "precision": "double for timing; float and double for tests/PCM checks",
+  "scope": "FLUID_INTERP_MID/HIGH/HIGHEST (11/17/25 taps); default 4th-order path unchanged",
+  "phase_table": {
+    "bins": 4096,
+    "fraction_bits": 20,
+    "row_count": 4097,
+    "normalization": "each row normalized before linear interpolation"
+  },
+  "table_memory_bytes_double": {
+    "11_tap": 360536,
+    "17_tap": 557192,
+    "25_tap": 819400
+  },
+  "timing_environment": {
+    "compiler": "GCC 14.2.0",
+    "build_type": "Release",
+    "cpu": "Intel Xeon Gold 6140 @ 2.30GHz",
+    "openmp": "enabled; OMP_NUM_THREADS=1",
+    "synth_cpu_cores": 1,
+    "sample_rate_hz": 44100,
+    "effects": true,
+    "block_frames": 64
+  },
+  "timing_input": {
+    "midi": "All The Small Things.mid",
+    "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+    "soundfont": "MuseScore_General.sf2",
+    "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+    "seconds": 10,
+    "interpolation": "FLUID_INTERP_HIGHEST"
+  },
+  "timing_pairs": 3,
+  "timing_wall_candidate_over_baseline": [
+    0.07514694519041852,
+    0.07470507940020649,
+    0.07787606782608636
+  ],
+  "timing_wall_median_ratio": 0.07514694519041852,
+  "timing_wall_median_improvement_percent": 92.48530548095815,
+  "timing_cpu_candidate_over_baseline": [
+    0.0753357505648297,
+    0.0746108328311012,
+    0.07749294618793269
+  ],
+  "timing_candidate_table_prepare_wall_seconds": [
+    0.005656585,
+    0.005368898,
+    0.00514924
+  ],
+  "timing_revision_caveat": "The saved timing run predates the final change that passes the table reference outside the per-sample lambda. The table values and arithmetic are unchanged; the final source passed both full suites but was not separately timed, per user direction.",
+  "pcm_10s_high_mode": {
+    "samples": 882000,
+    "bit_identical": false,
+    "max_abs_error": 1.4901161193847656e-08,
+    "rms_error": 8.888088003936908e-10,
+    "signal_rms": 0.040859644006636504,
+    "relative_rms_error": 2.1752729912412568e-08,
+    "changed_samples": 177575
+  },
+  "pcm_60s_double": {
+    "samples": 5292000,
+    "bit_identical": false,
+    "max_abs_error": 2.9802322387695312e-08,
+    "rms_error": 1.074902448050633e-09,
+    "reference_rms": 0.05283294294302603,
+    "relative_rms_error": 2.034530707876307e-08,
+    "changed_samples": 1047121,
+    "baseline_sha256": "7e1b93630900fccc9bd8e5772ebda9cf40207e48b075f1a1a5ece94e823a3880",
+    "candidate_sha256": "78688e110343dae80310694fc02c58de7b62ee385ac056d92b1596d1ab9f2c48"
+  },
+  "phase_bound": {
+    "method": "per-LUT-interval second-derivative interpolation remainder",
+    "bound_scope": "real-arithmetic single sinc convolution; excludes floating-point rounding and downstream effects",
+    "trigonometric_interval_method": "MPFR 256-bit sin/cos with directed rounding; pi and critical-point intervals rounded outward",
+    "results": [
+      {
+        "order": 11,
+        "phase_bins": 4096,
+        "intervals_checked": 4096,
+        "minimum_normalizer_lower_bound": 0.9920212025086971,
+        "sampled_max_l1_error": 7.354116076256802e-08,
+        "sampled_max_phase": 0.4998779296875,
+        "max_abs_wrap_row_difference": 4.645177652195185e-33,
+        "max_sum_abs_second_derivative_bound": 44.25432898947226,
+        "proved_continuous_l1_interpolation_bound": 3.297204448988458e-07,
+        "unit_amplitude_single_convolution_bound": 3.297204448988458e-07,
+        "meets_1e-6_budget": true
+      },
+      {
+        "order": 17,
+        "phase_bins": 4096,
+        "intervals_checked": 4096,
+        "minimum_normalizer_lower_bound": 0.9919186300295767,
+        "sampled_max_l1_error": 7.354950586271854e-08,
+        "sampled_max_phase": 0.4998779296875,
+        "max_abs_wrap_row_difference": 1.4040308408400319e-34,
+        "max_sum_abs_second_derivative_bound": 45.11899052054468,
+        "proved_continuous_l1_interpolation_bound": 3.3616267532516036e-07,
+        "unit_amplitude_single_convolution_bound": 3.3616267532516036e-07,
+        "meets_1e-6_budget": true
+      },
+      {
+        "order": 25,
+        "phase_bins": 4096,
+        "intervals_checked": 4096,
+        "minimum_normalizer_lower_bound": 0.9918249690822313,
+        "sampled_max_l1_error": 9.165621948378938e-08,
+        "sampled_max_phase": 0.0001220703125,
+        "max_abs_wrap_row_difference": 9.547690690337378e-35,
+        "max_sum_abs_second_derivative_bound": 45.88931348844478,
+        "proved_continuous_l1_interpolation_bound": 3.419020286831616e-07,
+        "unit_amplitude_single_convolution_bound": 3.419020286831616e-07,
+        "meets_1e-6_budget": true
+      }
+    ]
+  },
+  "event_windows": {
+    "pitchbend_10s": {
+      "events_in_render": 13,
+      "windows": 13,
+      "pooled_rms_error": 2.2187555885384821e-10,
+      "max_window_peak_error": 1.862645149230957e-09,
+      "max_window_rms_error": 2.8946233046702167e-10,
+      "worst_peak_window": {
+        "start_sec": 2.338390022675737,
+        "end_sec": 2.438390022675737,
+        "samples": 8820,
+        "max_abs_error": 1.862645149230957e-09,
+        "rms_error": 9.188126563212284e-11,
+        "reference_rms": 0.009512915057282705,
+        "event_sec": 2.388391583333333,
+        "event_channel": 2,
+        "event_key": null,
+        "event_value": 5632
+      },
+      "worst_rms_window": {
+        "start_sec": 3.8115873015873016,
+        "end_sec": 3.9115873015873017,
+        "samples": 8820,
+        "max_abs_error": 1.862645149230957e-09,
+        "rms_error": 2.8946233046702167e-10,
+        "reference_rms": 0.00745276807974922,
+        "event_sec": 3.8616050833333335,
+        "event_channel": 2,
+        "event_key": null,
+        "event_value": 8192
+      }
+    },
+    "phase_wrap": {
+      "precision": "float and double",
+      "orders": [
+        11,
+        17,
+        25
+      ],
+      "cycles_per_sample": [
+        0.01,
+        0.1,
+        0.25,
+        0.49
+      ],
+      "tolerance": 1e-05,
+      "maximum_jump_double": {
+        "11": 7.293e-10,
+        "17": 7.285e-10,
+        "25": 7.275e-10
+      },
+      "maximum_jump_float": {
+        "11": 0.0,
+        "17": 0.0,
+        "25": 0.0
+      },
+      "logs": [
+        "phase-wrap-test-double.log",
+        "phase-wrap-test-float.log"
+      ]
+    }
+  },
+  "test_suites": {
+    "double_release": "41/41 passed",
+    "float_release": "41/41 passed"
+  },
+  "source_patch_sha256": "5ba100a0747a3ce148c1d359724a364025200d98710b82eb8cd665fdd532055c"
+}

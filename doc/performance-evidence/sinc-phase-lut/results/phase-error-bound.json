@@ -1,0 +1,46 @@
+{
+  "method": "per-LUT-interval second-derivative interpolation remainder",
+  "bound_scope": "real-arithmetic single sinc convolution; excludes floating-point rounding and downstream effects",
+  "trigonometric_interval_method": "MPFR 256-bit sin/cos with directed rounding; pi and critical-point intervals rounded outward",
+  "results": [
+    {
+      "order": 11,
+      "phase_bins": 4096,
+      "intervals_checked": 4096,
+      "minimum_normalizer_lower_bound": 0.9920212025086971,
+      "sampled_max_l1_error": 7.354116076256802e-08,
+      "sampled_max_phase": 0.4998779296875,
+      "max_abs_wrap_row_difference": 4.645177652195185e-33,
+      "max_sum_abs_second_derivative_bound": 44.25432898947226,
+      "proved_continuous_l1_interpolation_bound": 3.297204448988458e-07,
+      "unit_amplitude_single_convolution_bound": 3.297204448988458e-07,
+      "meets_1e-6_budget": true
+    },
+    {
+      "order": 17,
+      "phase_bins": 4096,
+      "intervals_checked": 4096,
+      "minimum_normalizer_lower_bound": 0.9919186300295767,
+      "sampled_max_l1_error": 7.354950586271854e-08,
+      "sampled_max_phase": 0.4998779296875,
+      "max_abs_wrap_row_difference": 1.4040308408400319e-34,
+      "max_sum_abs_second_derivative_bound": 45.11899052054468,
+      "proved_continuous_l1_interpolation_bound": 3.3616267532516036e-07,
+      "unit_amplitude_single_convolution_bound": 3.3616267532516036e-07,
+      "meets_1e-6_budget": true
+    },
+    {
+      "order": 25,
+      "phase_bins": 4096,
+      "intervals_checked": 4096,
+      "minimum_normalizer_lower_bound": 0.9918249690822313,
+      "sampled_max_l1_error": 9.165621948378938e-08,
+      "sampled_max_phase": 0.0001220703125,
+      "max_abs_wrap_row_difference": 9.547690690337378e-35,
+      "max_sum_abs_second_derivative_bound": 45.88931348844478,
+      "proved_continuous_l1_interpolation_bound": 3.419020286831616e-07,
+      "unit_amplitude_single_convolution_bound": 3.419020286831616e-07,
+      "meets_1e-6_budget": true
+    }
+  ]
+}

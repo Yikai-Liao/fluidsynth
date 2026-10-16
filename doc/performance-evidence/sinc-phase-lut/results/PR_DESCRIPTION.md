@@ -1,0 +1,5 @@
+# Use phase tables for high-quality sinc interpolation
+
+FluidSynth's optional 11-, 17-, and 25-tap sinc modes calculate and normalize windowed-sinc coefficients for every output sample. This change precomputes normalized coefficients at 4096 fractional-phase positions and linearly interpolates adjacent rows, removing the per-sample trigonometric and normalization work. The default 4th-order interpolator is unchanged, and each sinc table is prepared when its mode is selected.
+
+Validation: double and float Release test suites both pass 41/41. The coefficient interpolation has a real-arithmetic continuous L1 error bound below `3.42e-7` for unit-amplitude inputs across all phase bins; whole-render comparisons remain separate because this bound does not cover later synth/effect stages. A three-pair 10-second high-quality screen measured a 92.5% median render-time reduction; output stayed within `1.49e-8` peak and `8.89e-10` RMS error. See the local evidence directory for benchmark inputs and limitations.

@@ -1,0 +1,373 @@
+{
+  "sample_rate_hz": 44100,
+  "segment_definitions": {
+    "note_on": "5 ms before through 50 ms after MIDI note-on",
+    "note_off": "0 through 200 ms after note-off, capped at next same-channel/key note-on",
+    "pitch_bend": "50 ms before through 50 ms after MIDI pitch-bend",
+    "loop_seam": "synthetic periodic-sine input sampled immediately before and after fractional phase wrap (UINT32_MAX -> 0)"
+  },
+  "cases": [
+    {
+      "case": "double-All-60s-effects-on",
+      "pcm_samples": 5292000,
+      "overall": {
+        "start_sec": 0.0,
+        "end_sec": 60.0,
+        "samples": 5292000,
+        "max_abs_error": 2.9802322387695312e-08,
+        "rms_error": 1.074902448050633e-09,
+        "reference_rms": 0.05283294294303602
+      },
+      "nonoverlapping_10ms_windows": {
+        "windows": 6000,
+        "pooled_rms_error": 1.074902448050633e-09,
+        "max_window_peak_error": 2.9802322387695312e-08,
+        "max_window_rms_error": 2.765099392449036e-09,
+        "worst_peak_window": {
+          "start_sec": 21.63,
+          "end_sec": 21.64,
+          "samples": 882,
+          "max_abs_error": 2.9802322387695312e-08,
+          "rms_error": 1.3647627754563913e-09,
+          "reference_rms": 0.09889913373165944
+        },
+        "worst_rms_window": {
+          "start_sec": 50.42,
+          "end_sec": 50.43,
+          "samples": 882,
+          "max_abs_error": 2.9802322387695312e-08,
+          "rms_error": 2.765099392449036e-09,
+          "reference_rms": 0.15308528319862114
+        }
+      },
+      "event_windows": {
+        "on": {
+          "events_in_render": 2115,
+          "windows": 2115,
+          "pooled_rms_error": 1.2387337895159406e-09,
+          "max_window_peak_error": 2.9802322387695312e-08,
+          "max_window_rms_error": 2.0415263024901517e-09,
+          "worst_peak_window": {
+            "start_sec": 21.59498866213152,
+            "end_sec": 21.65,
+            "samples": 4852,
+            "max_abs_error": 2.9802322387695312e-08,
+            "rms_error": 1.0929776764707885e-09,
+            "reference_rms": 0.07639547051337887,
+            "event_sec": 21.6,
+            "event_channel": 3,
+            "event_key": 64,
+            "event_value": null
+          },
+          "worst_rms_window": {
+            "start_sec": 50.59498866213152,
+            "end_sec": 50.65,
+            "samples": 4852,
+            "max_abs_error": 2.9802322387695312e-08,
+            "rms_error": 2.0415263024901517e-09,
+            "reference_rms": 0.11854306581759216,
+            "event_sec": 50.6,
+            "event_channel": 0,
+            "event_key": 55,
+            "event_value": null
+          }
+        },
+        "off": {
+          "events_in_render": 2108,
+          "windows": 2108,
+          "pooled_rms_error": 1.143356605990506e-09,
+          "max_window_peak_error": 2.9802322387695312e-08,
+          "max_window_rms_error": 1.6571890566888548e-09,
+          "worst_peak_window": {
+            "start_sec": 46.4,
+            "end_sec": 46.6,
+            "samples": 17640,
+            "max_abs_error": 2.9802322387695312e-08,
+            "rms_error": 1.166235619427943e-09,
+            "reference_rms": 0.08391732678179518,
+            "event_sec": 46.4,
+            "event_channel": 3,
+            "event_key": 65,
+            "event_value": null
+          },
+          "worst_rms_window": {
+            "start_sec": 49.6,
+            "end_sec": 49.8,
+            "samples": 17640,
+            "max_abs_error": 2.9802322387695312e-08,
+            "rms_error": 1.6571890566888548e-09,
+            "reference_rms": 0.09037693629840374,
+            "event_sec": 49.6,
+            "event_channel": 3,
+            "event_key": 60,
+            "event_value": null
+          }
+        },
+        "bend": {
+          "events_in_render": 0,
+          "windows": 0
+        }
+      }
+    },
+    {
+      "case": "double-Shut-Up-10s-effects-on-pitch-bend",
+      "pcm_samples": 882000,
+      "overall": {
+        "start_sec": 0.0,
+        "end_sec": 10.0,
+        "samples": 882000,
+        "max_abs_error": 3.725290298461914e-09,
+        "rms_error": 2.722824520777815e-10,
+        "reference_rms": 0.008226593619504773
+      },
+      "nonoverlapping_10ms_windows": {
+        "windows": 1000,
+        "pooled_rms_error": 2.722824520777815e-10,
+        "max_window_peak_error": 3.725290298461914e-09,
+        "max_window_rms_error": 4.4064614396300127e-10,
+        "worst_peak_window": {
+          "start_sec": 4.69,
+          "end_sec": 4.7,
+          "samples": 882,
+          "max_abs_error": 3.725290298461914e-09,
+          "rms_error": 3.896897219132486e-10,
+          "reference_rms": 0.01634780096962056
+        },
+        "worst_rms_window": {
+          "start_sec": 7.48,
+          "end_sec": 7.49,
+          "samples": 882,
+          "max_abs_error": 1.862645149230957e-09,
+          "rms_error": 4.4064614396300127e-10,
+          "reference_rms": 0.012802802435070407
+        }
+      },
+      "event_windows": {
+        "on": {
+          "events_in_render": 116,
+          "windows": 116,
+          "pooled_rms_error": 3.0177586656915433e-10,
+          "max_window_peak_error": 3.725290298461914e-09,
+          "max_window_rms_error": 3.9413618627621024e-10,
+          "worst_peak_window": {
+            "start_sec": 4.68249433106576,
+            "end_sec": 4.737482993197279,
+            "samples": 4850,
+            "max_abs_error": 3.725290298461914e-09,
+            "rms_error": 3.646794006594512e-10,
+            "reference_rms": 0.015490315212023709,
+            "event_sec": 4.6874975,
+            "event_channel": 1,
+            "event_key": 53,
+            "event_value": null
+          },
+          "worst_rms_window": {
+            "start_sec": 4.950340136054422,
+            "end_sec": 5.005351473922903,
+            "samples": 4852,
+            "max_abs_error": 3.725290298461914e-09,
+            "rms_error": 3.9413618627621024e-10,
+            "reference_rms": 0.011234770449175311,
+            "event_sec": 4.9553545,
+            "event_channel": 1,
+            "event_key": 57,
+            "event_value": null
+          }
+        },
+        "off": {
+          "events_in_render": 108,
+          "windows": 108,
+          "pooled_rms_error": 3.1069931026714475e-10,
+          "max_window_peak_error": 3.725290298461914e-09,
+          "max_window_rms_error": 3.8653995725767553e-10,
+          "worst_peak_window": {
+            "start_sec": 4.651768707482993,
+            "end_sec": 4.851768707482993,
+            "samples": 17640,
+            "max_abs_error": 3.725290298461914e-09,
+            "rms_error": 3.669336530148819e-10,
+            "reference_rms": 0.013550583040659023,
+            "event_sec": 4.651783233333333,
+            "event_channel": 1,
+            "event_key": 50,
+            "event_value": null
+          },
+          "worst_rms_window": {
+            "start_sec": 7.357120181405896,
+            "end_sec": 7.557120181405896,
+            "samples": 17640,
+            "max_abs_error": 3.725290298461914e-09,
+            "rms_error": 3.8653995725767553e-10,
+            "reference_rms": 0.012067359693941642,
+            "event_sec": 7.357138933333333,
+            "event_channel": 1,
+            "event_key": 55,
+            "event_value": null
+          }
+        },
+        "bend": {
+          "events_in_render": 13,
+          "windows": 13,
+          "pooled_rms_error": 2.2187555885384821e-10,
+          "max_window_peak_error": 1.862645149230957e-09,
+          "max_window_rms_error": 2.8946233046702167e-10,
+          "worst_peak_window": {
+            "start_sec": 2.338390022675737,
+            "end_sec": 2.438390022675737,
+            "samples": 8820,
+            "max_abs_error": 1.862645149230957e-09,
+            "rms_error": 9.188126563212284e-11,
+            "reference_rms": 0.009512915057282705,
+            "event_sec": 2.388391583333333,
+            "event_channel": 2,
+            "event_key": null,
+            "event_value": 5632
+          },
+          "worst_rms_window": {
+            "start_sec": 3.8115873015873016,
+            "end_sec": 3.9115873015873017,
+            "samples": 8820,
+            "max_abs_error": 1.862645149230957e-09,
+            "rms_error": 2.8946233046702167e-10,
+            "reference_rms": 0.00745276807974922,
+            "event_sec": 3.8616050833333335,
+            "event_channel": 2,
+            "event_key": null,
+            "event_value": 8192
+          }
+        }
+      }
+    },
+    {
+      "case": "float-All-10s-effects-on",
+      "pcm_samples": 882000,
+      "overall": {
+        "start_sec": 0.0,
+        "end_sec": 10.0,
+        "samples": 882000,
+        "max_abs_error": 8.940696716308594e-08,
+        "rms_error": 9.515589221719841e-09,
+        "reference_rms": 0.040860016059089656
+      },
+      "nonoverlapping_10ms_windows": {
+        "windows": 1000,
+        "pooled_rms_error": 9.515589221719841e-09,
+        "max_window_peak_error": 8.940696716308594e-08,
+        "max_window_rms_error": 1.4938286064027577e-08,
+        "worst_peak_window": {
+          "start_sec": 5.349977324263039,
+          "end_sec": 5.36,
+          "samples": 884,
+          "max_abs_error": 8.940696716308594e-08,
+          "rms_error": 1.4771837901200134e-08,
+          "reference_rms": 0.06438039717588545
+        },
+        "worst_rms_window": {
+          "start_sec": 6.33,
+          "end_sec": 6.34,
+          "samples": 882,
+          "max_abs_error": 4.0978193283081055e-08,
+          "rms_error": 1.4938286064027577e-08,
+          "reference_rms": 0.06401975724071182
+        }
+      },
+      "event_windows": {
+        "on": {
+          "events_in_render": 367,
+          "windows": 367,
+          "pooled_rms_error": 9.430552218187364e-09,
+          "max_window_peak_error": 5.960464477539063e-08,
+          "max_window_rms_error": 1.2160697356854724e-08,
+          "worst_peak_window": {
+            "start_sec": 3.1949886621315193,
+            "end_sec": 3.25,
+            "samples": 4852,
+            "max_abs_error": 5.960464477539063e-08,
+            "rms_error": 1.1998277134499998e-08,
+            "reference_rms": 0.06992513778163444,
+            "event_sec": 3.2,
+            "event_channel": 0,
+            "event_key": 65,
+            "event_value": null
+          },
+          "worst_rms_window": {
+            "start_sec": 9.59498866213152,
+            "end_sec": 9.65,
+            "samples": 4852,
+            "max_abs_error": 5.960464477539063e-08,
+            "rms_error": 1.2160697356854724e-08,
+            "reference_rms": 0.06994551051442512,
+            "event_sec": 9.6,
+            "event_channel": 0,
+            "event_key": 53,
+            "event_value": null
+          }
+        },
+        "off": {
+          "events_in_render": 360,
+          "windows": 360,
+          "pooled_rms_error": 1.0149487657848374e-08,
+          "max_window_peak_error": 8.940696716308594e-08,
+          "max_window_rms_error": 1.1611766541451763e-08,
+          "worst_peak_window": {
+            "start_sec": 5.201655328798186,
+            "end_sec": 5.401655328798186,
+            "samples": 17640,
+            "max_abs_error": 8.940696716308594e-08,
+            "rms_error": 1.0729564163389475e-08,
+            "reference_rms": 0.0449746749655352,
+            "event_sec": 5.201666666666667,
+            "event_channel": 0,
+            "event_key": 55,
+            "event_value": null
+          },
+          "worst_rms_window": {
+            "start_sec": 6.3,
+            "end_sec": 6.4,
+            "samples": 8820,
+            "max_abs_error": 5.960464477539063e-08,
+            "rms_error": 1.1611766541451763e-08,
+            "reference_rms": 0.047543739245385026,
+            "event_sec": 6.3,
+            "event_channel": 9,
+            "event_key": 46,
+            "event_value": null
+          }
+        },
+        "bend": {
+          "events_in_render": 0,
+          "windows": 0
+        }
+      }
+    }
+  ],
+  "phase_wrap_test": {
+    "precision": "float and double",
+    "orders": [
+      11,
+      17,
+      25
+    ],
+    "cycles_per_sample": [
+      0.01,
+      0.1,
+      0.25,
+      0.49
+    ],
+    "tolerance": 1e-05,
+    "maximum_jump_double": {
+      "11": 7.293e-10,
+      "17": 7.285e-10,
+      "25": 7.275e-10
+    },
+    "maximum_jump_float": {
+      "11": 0.0,
+      "17": 0.0,
+      "25": 0.0
+    },
+    "logs": [
+      "phase-wrap-test-double.log",
+      "phase-wrap-test-float.log"
+    ]
+  }
+}
