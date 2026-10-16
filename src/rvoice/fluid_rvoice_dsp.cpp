@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include "fluid_rvoice_dsp_sinc.hpp"
 
 /* Purpose:
@@ -320,6 +322,25 @@ fluid_rvoice_dsp_interpolate_linear_local(fluid_rvoice_t *rvoice, fluid_real_t *
     return (dsp_i);
 }
 
+/* Temporary counters for the interpolation fast-path investigation. */
+namespace
+{
+uint64_t interp_debug_total_samples = 0;
+uint64_t interp_debug_integer_step_samples = 0;
+uint64_t interp_debug_same_coefficient_row = 0;
+
+struct interp_debug_report
+{
+    ~interp_debug_report()
+    {
+        fprintf(stderr, "INTERP_DEBUG total=%llu integer_step=%llu same_row=%llu\n",
+                static_cast<unsigned long long>(interp_debug_total_samples),
+                static_cast<unsigned long long>(interp_debug_integer_step_samples),
+                static_cast<unsigned long long>(interp_debug_same_coefficient_row));
+    }
+} interp_debug_report_at_exit;
+}
+
 /* 4th order (cubic) interpolation.
  * Returns number of samples processed (usually FLUID_BUFSIZE but could be
  * smaller if end of sample occurs).
@@ -340,6 +361,9 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
 
     /* Convert playback "speed" floating point value to phase index/fract */
     fluid_phase_set_float(dsp_phase_incr, voice->phase_incr);
+    const bool has_integer_phase_step = fluid_phase_fract(dsp_phase_incr) == 0;
+    unsigned int previous_coeff_row = fluid_phase_fract_to_tablerow(dsp_phase);
+    bool has_previous_coeff_row = false;
 
     /* last index before 4th interpolation point must be specially handled */
     end_index = (LOOPING ? voice->loopend - 1 : voice->end) - 2;
@@ -370,7 +394,14 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
     /* Lambda for cubic interpolation with parameterized samples */
     auto interp_cubic = [&](fluid_real_t s0, fluid_real_t s1, fluid_real_t s2, fluid_real_t s3)
     {
-        const fluid_real_t *FLUID_RESTRICT coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];
+        const unsigned int coeff_row = fluid_phase_fract_to_tablerow(dsp_phase);
+        if(has_previous_coeff_row && coeff_row == previous_coeff_row)
+        {
+            ++interp_debug_same_coefficient_row;
+        }
+        previous_coeff_row = coeff_row;
+        has_previous_coeff_row = true;
+        const fluid_real_t *FLUID_RESTRICT coeffs = &interp_coeff[coeff_row * CUBIC_INTERP_ORDER];
         return (coeffs[0] * s0
                 + coeffs[1] * s1
                 + coeffs[2] * s2
@@ -491,6 +522,11 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
     }
 
     voice->phase = dsp_phase;
+    interp_debug_total_samples += dsp_i;
+    if(has_integer_phase_step)
+    {
+        interp_debug_integer_step_samples += dsp_i;
+    }
 
     return (dsp_i);
 }

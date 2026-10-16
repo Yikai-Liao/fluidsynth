@@ -1,0 +1,122 @@
+[
+  {
+    "precision": "double",
+    "name": "Maestro_1",
+    "block": 64,
+    "hashes": {
+      "baseline": "6d2a0ad7c57a9564",
+      "candidate": "6d2a0ad7c57a9564"
+    },
+    "equal": true
+  },
+  {
+    "precision": "double",
+    "name": "Maestro_1",
+    "block": 8192,
+    "hashes": {
+      "baseline": "6d2a0ad7c57a9564",
+      "candidate": "6d2a0ad7c57a9564"
+    },
+    "equal": true
+  },
+  {
+    "precision": "double",
+    "name": "POP909_010",
+    "block": 64,
+    "hashes": {
+      "baseline": "9642ba282c525185",
+      "candidate": "9642ba282c525185"
+    },
+    "equal": true
+  },
+  {
+    "precision": "double",
+    "name": "POP909_010",
+    "block": 8192,
+    "hashes": {
+      "baseline": "9642ba282c525185",
+      "candidate": "9642ba282c525185"
+    },
+    "equal": true
+  },
+  {
+    "precision": "double",
+    "name": "All The Small Things",
+    "block": 64,
+    "hashes": {
+      "baseline": "124f8cd830b16bbe",
+      "candidate": "124f8cd830b16bbe"
+    },
+    "equal": true
+  },
+  {
+    "precision": "double",
+    "name": "All The Small Things",
+    "block": 8192,
+    "hashes": {
+      "baseline": "124f8cd830b16bbe",
+      "candidate": "124f8cd830b16bbe"
+    },
+    "equal": true
+  },
+  {
+    "precision": "float",
+    "name": "Maestro_1",
+    "block": 64,
+    "hashes": {
+      "baseline": "ab25b9a8d74a854c",
+      "candidate": "ab25b9a8d74a854c"
+    },
+    "equal": true
+  },
+  {
+    "precision": "float",
+    "name": "Maestro_1",
+    "block": 8192,
+    "hashes": {
+      "baseline": "56f71990173d8974",
+      "candidate": "56f71990173d8974"
+    },
+    "equal": true
+  },
+  {
+    "precision": "float",
+    "name": "POP909_010",
+    "block": 64,
+    "hashes": {
+      "baseline": "c9008dfca65a6217",
+      "candidate": "c9008dfca65a6217"
+    },
+    "equal": true
+  },
+  {
+    "precision": "float",
+    "name": "POP909_010",
+    "block": 8192,
+    "hashes": {
+      "baseline": "add20f42ebc092a0",
+      "candidate": "add20f42ebc092a0"
+    },
+    "equal": true
+  },
+  {
+    "precision": "float",
+    "name": "All The Small Things",
+    "block": 64,
+    "hashes": {
+      "baseline": "25fd82f6f8d9bb80",
+      "candidate": "25fd82f6f8d9bb80"
+    },
+    "equal": true
+  },
+  {
+    "precision": "float",
+    "name": "All The Small Things",
+    "block": 8192,
+    "hashes": {
+      "baseline": "bfa35d267600f6b2",
+      "candidate": "bfa35d267600f6b2"
+    },
+    "equal": true
+  }
+]
