@@ -2,7 +2,7 @@
 
 - Branch: `archive/failed-fractional-delay-ab-20261016`
 - Status: stopped at the frozen quality gate
-- Analysis source: `/root/code/fluidsynth-analysis-20261015`
+- Source package: experiment materials and result hashes are preserved under `sources/fractional-delay-ab/`.
 - Outcome: Prefiltered cardinal B-splines failed static passband and real-SF2 error gates. WLS FIR tables with 13/17/21 taps failed the real-sample budget; 25 taps narrowly missed the mapped/down median bound while keeping the same tap count as sinc25. The corrected report keeps the nonquiet octave-up factor-2 diagnostic separate from the mapped/down gate. No production code changed.
 
 ## Preserved files
