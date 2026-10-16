@@ -84,12 +84,8 @@ static int fluid_dattorro_seconds_to_samples(float seconds, fluid_real_t sample_
 
 static float fluid_dattorro_read_tap(const fluid_reverb_delay_line<float> &delay, int tap)
 {
+    /* Tap-bearing delay lines are initialized with positive lengths in setup(). */
     int size = delay.size();
-    if(size <= 0)
-    {
-        return 0.0f;
-    }
-
     int index = delay.line_out + tap;
     index %= size;
     if(index < 0)
