@@ -1,0 +1,67 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-fdn-four-line-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/fdn-four-line/ARCHIVE.md",
+      "sha256": "208056938d920f47895a23f5bd88fb0dd94264865e8cc6e4d59ababaab3cb3b3",
+      "size_bytes": 996
+    },
+    {
+      "path": "doc/performance-evidence/failed/fdn-four-line/sources/algorithm-route-profile/fdn-four-line/RESEARCH.md",
+      "sha256": "b384382c1cf017d8102dd2d613bdf08a371d3bb88697c532634c920bb0155c12",
+      "size_bytes": 4565
+    },
+    {
+      "path": "doc/performance-evidence/failed/fdn-four-line/sources/algorithm-route-profile/fdn-four-line/analyze_fdn.cpp",
+      "sha256": "2e13ce60ccfa3a236257ac0332896c01c3ab152817e63aee660e8ab8c37201bc",
+      "size_bytes": 5521
+    },
+    {
+      "path": "doc/performance-evidence/failed/fdn-four-line/sources/algorithm-route-profile/fdn-four-line/candidate.patch",
+      "sha256": "af248339fde864392f63998e52050926673d9b25c6591a4737592e7f05b1ce40",
+      "size_bytes": 2118
+    },
+    {
+      "path": "doc/performance-evidence/failed/fdn-four-line/sources/algorithm-route-profile/fdn-four-line/fdn-quality.txt",
+      "sha256": "fe05ea2a1782c141111b4e2d0d722145b5afd96fca2bcd40847423963ecbd3d8",
+      "size_bytes": 4492
+    },
+    {
+      "path": "doc/performance-evidence/failed/fdn-four-line/sources/algorithm-route-profile/fdn-four-line/manifest.txt",
+      "sha256": "a90af548f9c03d95755ef1796a6b0460eb99f2d075db3cf304860cc402d7761f",
+      "size_bytes": 1456
+    },
+    {
+      "path": "doc/performance-evidence/failed/fdn-four-line/sources/algorithm-route-profile/fdn-four-line/test_fdn_probe.cpp",
+      "sha256": "2425ef121d768a8c6ec6725e0621cea8f8be079c3ed0e5bc7044c29ce86e778e",
+      "size_bytes": 3355
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/algorithm-route-profile/fdn-four-line/fdn4-impulse.f64le",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "159056fc4ea1ca3044f393abf2e8c48efe0d1aa0e5e60141832a307cd18934ca",
+      "size_bytes": 8468480
+    },
+    {
+      "path": "sources/algorithm-route-profile/fdn-four-line/fdn8-impulse.f64le",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "c461bb0a172e6257e6f450302d5e9e00cb27e76fed1b1702149fc46bc66d5055",
+      "size_bytes": 8468480
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "algorithm-route-profile/fdn-four-line"
+  ],
+  "status": "stopped at wet-quality gates",
+  "summary": "The isolated FDN core was 42.45% faster, but the heuristic four-line configuration missed wet level by \u22126.068 dB, exceeded \u00b11 dB coloration in 17/28 bands (worst \u22124.405 dB), and changed left/right energy balance by \u22120.645 dB. No production change was accepted.",
+  "title": "Four-line FDN feasibility screen"
+}

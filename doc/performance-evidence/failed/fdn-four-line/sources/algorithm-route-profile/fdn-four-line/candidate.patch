@@ -1,0 +1,58 @@
+diff --git a/src/rvoice/fluid_rev_fdn.cpp b/src/rvoice/fluid_rev_fdn.cpp
+index cd43937a..731141e5 100644
+--- a/src/rvoice/fluid_rev_fdn.cpp
++++ b/src/rvoice/fluid_rev_fdn.cpp
+@@ -265,7 +265,12 @@ a flatter response on comb filter. So the input gain is set to 0.1 rather 1.0. *
+ /* phase offset between modulators waveform */
+ #define MOD_PHASE  (360.0f/(float) NBR_DELAYS)
+ 
+-#if (NBR_DELAYS == 8)
++#if (NBR_DELAYS == 4)
++    #define DELAY_L0 1201
++    #define DELAY_L1 1543
++    #define DELAY_L2 1993
++    #define DELAY_L3 2267
++#elif (NBR_DELAYS == 8)
+     #define DELAY_L0 601
+     #define DELAY_L1 691
+     #define DELAY_L2 773
+@@ -626,7 +631,9 @@ static void update_stereo_coefficient(fluid_late *late, fluid_real_t wet1)
+ static const int nom_delay_length[NBR_DELAYS] =
+ {
+     DELAY_L0, DELAY_L1, DELAY_L2, DELAY_L3,
++#if (NBR_DELAYS == 8 || NBR_DELAYS == 12)
+     DELAY_L4, DELAY_L5, DELAY_L6, DELAY_L7,
++#endif
+ #if (NBR_DELAYS == 12)
+     DELAY_L8, DELAY_L9, DELAY_L10, DELAY_L11
+ #endif
+diff --git a/src/rvoice/fluid_rev_fdn.h b/src/rvoice/fluid_rev_fdn.h
+index e71bafda..c6163261 100644
+--- a/src/rvoice/fluid_rev_fdn.h
++++ b/src/rvoice/fluid_rev_fdn.h
+@@ -38,11 +38,8 @@
+ -----------------------------------------------------------------------------*/
+ //#define INFOS_PRINT /* allows message to be printed on the console. */
+ 
+-/* Number of delay lines (must be only 8 or 12)
+-  8 is the default.
+- 12 produces a better quality but is +50% cpu expensive.
+-*/
+-#define NBR_DELAYS 8 /* default*/
++/* Isolated feasibility variant: four lines with a matched total nominal delay. */
++#define NBR_DELAYS 4
+ 
+ 
+ /*----------------------------------------------------------------------------
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index 46793280..c20e514a 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -57,6 +57,7 @@ ADD_FLUID_TEST(test_mts_cc_tuning)
+ ADD_FLUID_TEST(test_voice_callback)
+ ADD_FLUID_TEST(test_voice_reuse_gain)
+ ADD_FLUID_TEST(test_rvoice_dsp_interpolate)
++ADD_FLUID_TEST(test_fdn_probe)
+ 
+ if ( NOT OSAL STREQUAL "embedded" )
+     ADD_FLUID_TEST(test_threading)
