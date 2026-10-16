@@ -1,0 +1,29 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-noteon-zone-index-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/noteon-zone-index/ARCHIVE.md",
+      "sha256": "73ba2f09347c4792180ce4a0a4f442d3ffdd54219169ac8f7788372dad556d4d",
+      "size_bytes": 807
+    },
+    {
+      "path": "doc/performance-evidence/failed/noteon-zone-index/sources/noteon-zone-index/RESEARCH.md",
+      "sha256": "c536c75018ee96a57f2a9c93a8d7762bef54a5bbc1f80a0a99f21149b517f7d3",
+      "size_bytes": 1611
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [],
+  "schema": 1,
+  "source_roots": [
+    "noteon-zone-index"
+  ],
+  "status": "stopped at whole-path bound",
+  "summary": "The real-player profile put the complete fluid_defpreset_noteon path at 1.48% of whole-process samples, with zone lookup only a subset. Range checks also clear mono-legato ignore flags. The screen stopped before a prototype.",
+  "title": "SoundFont note-on zone index"
+}
