@@ -1,0 +1,17 @@
+{
+  "candidate_over_baseline_wall_ratio_median": 1.024845294402442,
+  "ratio_range": [
+    1.0177469574703097,
+    1.0437821021068328
+  ],
+  "candidate_over_baseline_cpu_ratio_median": 1.0253023586655334,
+  "pcm_hashes": {
+    "baseline": [
+      "124f8cd830b16bbe"
+    ],
+    "candidate": [
+      "124f8cd830b16bbe"
+    ]
+  },
+  "pcm_equal": true
+}

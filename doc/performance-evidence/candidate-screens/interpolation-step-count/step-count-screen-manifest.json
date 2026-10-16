@@ -1,0 +1,23 @@
+{
+  "purpose": "screen only; expand only if a clear gain appears",
+  "baseline_library_sha256": "0e42fbf40f7fbafd0cdec6cf39d21accf5242843356f9a67cdf991d2838d66dc",
+  "candidate_library_sha256": "610f67c8883c6f1667d32b60bee7c965286d9d750a1d9f126241f5b88daec66b",
+  "candidate_source_sha256": "1416809d5a77e4395249767e8bb1200c54276ffebe8acaf58cc2aed680e7a4c4",
+  "probe_sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_path": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+  "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "block": 64,
+    "seconds": 60,
+    "effects": true,
+    "OMP_NUM_THREADS": "1"
+  },
+  "repetitions": 3,
+  "host": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41"
+}
