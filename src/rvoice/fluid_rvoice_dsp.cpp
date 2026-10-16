@@ -324,13 +324,14 @@ fluid_rvoice_dsp_interpolate_linear_local(fluid_rvoice_t *rvoice, fluid_real_t *
  * Returns number of samples processed (usually FLUID_BUFSIZE but could be
  * smaller if end of sample occurs).
  */
-template<bool IS_24BIT, bool LOOPING>
+template<bool IS_24BIT, bool LOOPING, bool FIXED_COEFF_ROW>
 static int
-fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_t *FLUID_RESTRICT dsp_buf)
+fluid_rvoice_dsp_interpolate_4th_order_impl(fluid_rvoice_t *rvoice,
+                                           fluid_real_t *FLUID_RESTRICT dsp_buf,
+                                           fluid_phase_t dsp_phase_incr)
 {
     fluid_rvoice_dsp_t *voice = &rvoice->dsp;
     fluid_phase_t dsp_phase = voice->phase;
-    fluid_phase_t dsp_phase_incr;
     const short int *FLUID_RESTRICT dsp_data = voice->sample->data;
     const char *FLUID_RESTRICT dsp_data24 = voice->sample->data24;
     unsigned short dsp_i = 0;
@@ -338,8 +339,11 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
     unsigned int start_index, end_index;
     fluid_real_t start_point, end_point1, end_point2;
 
-    /* Convert playback "speed" floating point value to phase index/fract */
-    fluid_phase_set_float(dsp_phase_incr, voice->phase_incr);
+    const fluid_real_t *fixed_coeffs = nullptr;
+    if constexpr(FIXED_COEFF_ROW)
+    {
+        fixed_coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];
+    }
 
     /* last index before 4th interpolation point must be specially handled */
     end_index = (LOOPING ? voice->loopend - 1 : voice->end) - 2;
@@ -370,7 +374,15 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
     /* Lambda for cubic interpolation with parameterized samples */
     auto interp_cubic = [&](fluid_real_t s0, fluid_real_t s1, fluid_real_t s2, fluid_real_t s3)
     {
-        const fluid_real_t *FLUID_RESTRICT coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];
+        const fluid_real_t *FLUID_RESTRICT coeffs;
+        if constexpr(FIXED_COEFF_ROW)
+        {
+            coeffs = fixed_coeffs;
+        }
+        else
+        {
+            coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];
+        }
         return (coeffs[0] * s0
                 + coeffs[1] * s1
                 + coeffs[2] * s2
@@ -493,6 +505,24 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
     voice->phase = dsp_phase;
 
     return (dsp_i);
+}
+
+template<bool IS_24BIT, bool LOOPING>
+static int
+fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice,
+                                             fluid_real_t *FLUID_RESTRICT dsp_buf)
+{
+    fluid_phase_t dsp_phase_incr;
+    fluid_phase_set_float(dsp_phase_incr, rvoice->dsp.phase_incr);
+
+    if(fluid_phase_fract(dsp_phase_incr) == 0)
+    {
+        return fluid_rvoice_dsp_interpolate_4th_order_impl<IS_24BIT, LOOPING, true>(
+                   rvoice, dsp_buf, dsp_phase_incr);
+    }
+
+    return fluid_rvoice_dsp_interpolate_4th_order_impl<IS_24BIT, LOOPING, false>(
+               rvoice, dsp_buf, dsp_phase_incr);
 }
 
 /* Nth order sinc interpolation (N = SINC_ORDER).

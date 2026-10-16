@@ -1,0 +1,61 @@
+{
+  "baseline_commit": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "candidate_parent": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "candidate_branch": "perf/interpolation-fixed-row-20261016",
+  "candidate_source_diff": "diff --git a/src/rvoice/fluid_rvoice_dsp.cpp b/src/rvoice/fluid_rvoice_dsp.cpp\nindex 3452ea4d..7c63ce94 100644\n--- a/src/rvoice/fluid_rvoice_dsp.cpp\n+++ b/src/rvoice/fluid_rvoice_dsp.cpp\n@@ -324,13 +324,14 @@ fluid_rvoice_dsp_interpolate_linear_local(fluid_rvoice_t *rvoice, fluid_real_t *\n  * Returns number of samples processed (usually FLUID_BUFSIZE but could be\n  * smaller if end of sample occurs).\n  */\n-template<bool IS_24BIT, bool LOOPING>\n+template<bool IS_24BIT, bool LOOPING, bool FIXED_COEFF_ROW>\n static int\n-fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_t *FLUID_RESTRICT dsp_buf)\n+fluid_rvoice_dsp_interpolate_4th_order_impl(fluid_rvoice_t *rvoice,\n+                                           fluid_real_t *FLUID_RESTRICT dsp_buf,\n+                                           fluid_phase_t dsp_phase_incr)\n {\n     fluid_rvoice_dsp_t *voice = &rvoice->dsp;\n     fluid_phase_t dsp_phase = voice->phase;\n-    fluid_phase_t dsp_phase_incr;\n     const short int *FLUID_RESTRICT dsp_data = voice->sample->data;\n     const char *FLUID_RESTRICT dsp_data24 = voice->sample->data24;\n     unsigned short dsp_i = 0;\n@@ -338,8 +339,11 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_\n     unsigned int start_index, end_index;\n     fluid_real_t start_point, end_point1, end_point2;\n \n-    /* Convert playback \"speed\" floating point value to phase index/fract */\n-    fluid_phase_set_float(dsp_phase_incr, voice->phase_incr);\n+    const fluid_real_t *fixed_coeffs = nullptr;\n+    if constexpr(FIXED_COEFF_ROW)\n+    {\n+        fixed_coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];\n+    }\n \n     /* last index before 4th interpolation point must be specially handled */\n     end_index = (LOOPING ? voice->loopend - 1 : voice->end) - 2;\n@@ -370,7 +374,15 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_\n     /* Lambda for cubic interpolation with parameterized samples */\n     auto interp_cubic = [&](fluid_real_t s0, fluid_real_t s1, fluid_real_t s2, fluid_real_t s3)\n     {\n-        const fluid_real_t *FLUID_RESTRICT coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];\n+        const fluid_real_t *FLUID_RESTRICT coeffs;\n+        if constexpr(FIXED_COEFF_ROW)\n+        {\n+            coeffs = fixed_coeffs;\n+        }\n+        else\n+        {\n+            coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(dsp_phase) * CUBIC_INTERP_ORDER];\n+        }\n         return (coeffs[0] * s0\n                 + coeffs[1] * s1\n                 + coeffs[2] * s2\n@@ -495,6 +507,24 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_\n     return (dsp_i);\n }\n \n+template<bool IS_24BIT, bool LOOPING>\n+static int\n+fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice,\n+                                             fluid_real_t *FLUID_RESTRICT dsp_buf)\n+{\n+    fluid_phase_t dsp_phase_incr;\n+    fluid_phase_set_float(dsp_phase_incr, rvoice->dsp.phase_incr);\n+\n+    if(fluid_phase_fract(dsp_phase_incr) == 0)\n+    {\n+        return fluid_rvoice_dsp_interpolate_4th_order_impl<IS_24BIT, LOOPING, true>(\n+                   rvoice, dsp_buf, dsp_phase_incr);\n+    }\n+\n+    return fluid_rvoice_dsp_interpolate_4th_order_impl<IS_24BIT, LOOPING, false>(\n+               rvoice, dsp_buf, dsp_phase_incr);\n+}\n+\n /* Nth order sinc interpolation (N = SINC_ORDER).\n  * Returns number of samples processed (usually FLUID_BUFSIZE but could be\n  * smaller if end of sample occurs).\n",
+  "candidate_source_diff_sha256": "4f2dad95c9d8f24f611b01142eb9f4a1c26a47f6c1f622772e3df3da0b2a600c",
+  "probe_sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_sha256": {
+    "Maestro_1": "de94744a9c06c2c133b6f81e7f08a8707eb8ba614a10c878dd9572fc1eb868c9",
+    "POP909_010": "711c7230a53a806e7f78ceb360b440646b310d47a008ae82c4c9b2631276509b",
+    "All The Small Things": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1"
+  },
+  "libraries": {
+    "double": {
+      "baseline": {
+        "path": "/root/code/fluidsynth-analysis-20261015/build-partition/src/libfluidsynth.so.3.6.1",
+        "sha256": "0e42fbf40f7fbafd0cdec6cf39d21accf5242843356f9a67cdf991d2838d66dc"
+      },
+      "candidate": {
+        "path": "/root/code/fluidsynth-analysis-20261015/combined/build-interp-double/src/libfluidsynth.so.3.6.1",
+        "sha256": "d0353dfafb710d5148ba39e43fcf1fde93b1e89d37f9e182adbe243ec19ccfc5"
+      }
+    },
+    "float": {
+      "baseline": {
+        "path": "/root/code/fluidsynth-analysis-20261015/build-partition-float/src/libfluidsynth.so.3.6.1",
+        "sha256": "98fef3bad95e3921e1ac74abd934b212da5e6bfb2b92e5f56a9ef5dfe5158d10"
+      },
+      "candidate": {
+        "path": "/root/code/fluidsynth-analysis-20261015/combined/build-interp-float/src/libfluidsynth.so.3.6.1",
+        "sha256": "2a8eaf3fc06b5d445be49d6e6e2a24a2a463e36c5ede6d837fc4ba961bae9c55"
+      }
+    }
+  },
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 60,
+    "effects": true,
+    "OMP_NUM_THREADS": "1",
+    "OMP_DYNAMIC": "FALSE",
+    "player_timing_source": "sample"
+  },
+  "blocks": [
+    64,
+    8192
+  ],
+  "repetitions": 5,
+  "warmup": "One unmeasured render per precision/MIDI/block/arm",
+  "order": "AB/BA alternation with rotated case order",
+  "host": {
+    "platform": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "lscpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           46 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  6\nOn-line CPU(s) list:                     0-5\nVendor ID:                               GenuineIntel\nModel name:                              Intel(R) Xeon(R) Gold 6140 CPU @ 2.30GHz\nCPU family:                              6\nModel:                                   85\nThread(s) per core:                      1\nCore(s) per socket:                      1\nSocket(s):                               6\nStepping:                                4\nBogoMIPS:                                4589.21\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves arat umip pku ospke md_clear flush_l1d arch_capabilities\nHypervisor vendor:                       KVM\nVirtualization type:                     full\nL1d cache:                               192 KiB (6 instances)\nL1i cache:                               192 KiB (6 instances)\nL2 cache:                                6 MiB (6 instances)\nL3 cache:                                148.5 MiB (6 instances)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-5\nVulnerability Gather data sampling:      Not affected\nVulnerability Indirect target selection: Mitigation; Aligned branch/return thunks\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Mitigation; PTE Inversion\nVulnerability Mds:                       Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Meltdown:                  Mitigation; PTI\nVulnerability Mmio stale data:           Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Mitigation; IBRS\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; IBRS; IBPB conditional; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI SW loop, KVM SW loop\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Vmscape:                   Not affected\n",
+    "compiler": "c++ (Debian 14.2.0-19) 14.2.0"
+  }
+}
