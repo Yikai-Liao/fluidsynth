@@ -1,0 +1,29 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "archive/failed-pcm-output-layout-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/pcm-output-layout/ARCHIVE.md",
+      "sha256": "bb533c797bf58a4dc510ef76d54be79ec90630b08783f3a3edd211835927b41a",
+      "size_bytes": 783
+    },
+    {
+      "path": "doc/performance-evidence/failed/pcm-output-layout/sources/pcm-output-layout/RESEARCH.md",
+      "sha256": "280f387163768f10e37ac94d1e2c1d7da12ff42221b86f8c3f71e9e1c606a002",
+      "size_bytes": 1841
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [],
+  "schema": 1,
+  "source_roots": [
+    "pcm-output-layout"
+  ],
+  "status": "stopped at profile screen",
+  "summary": "The float output writer accounted for 0.16% self samples in the diagnostic profile, and no integer writer appeared among top symbols. A specialized shared kernel was not justified before a prototype.",
+  "title": "Common PCM output-layout kernel"
+}
