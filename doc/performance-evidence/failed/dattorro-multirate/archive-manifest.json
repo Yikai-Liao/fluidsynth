@@ -1,0 +1,84 @@
+{
+  "audit_only_source_roots": [],
+  "branch": "explore/dattorro-multirate-20261016",
+  "experiment_baseline_commits": [
+    "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+    "6be67a906b9d679ea930c8841fd0cac0d8a0a25e"
+  ],
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/ARCHIVE.md",
+      "sha256": "fac4061756657620b4e5df84198b10b881a250a7e41fa2c0b1b8ac0daae7e767",
+      "size_bytes": 986
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/PROFILE.md",
+      "sha256": "4191b168e6be5539c34353d50272ac5fb20e35440ab765128eced1b7334d4091",
+      "size_bytes": 3578
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/dattorro-multirate/FILTER_SCREEN.md",
+      "sha256": "d5172d9c0dfebd7ecce5a719c63cda4f0638571870258bb8a35e54fb3af47b81",
+      "size_bytes": 3750
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/dattorro-multirate/analyze_fdn.cpp",
+      "sha256": "2e13ce60ccfa3a236257ac0332896c01c3ab152817e63aee660e8ab8c37201bc",
+      "size_bytes": 5521
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/dattorro-multirate/fdn-quality.txt",
+      "sha256": "fe05ea2a1782c141111b4e2d0d722145b5afd96fca2bcd40847423963ecbd3d8",
+      "size_bytes": 4492
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/dattorro-multirate/filter_screen.cpp",
+      "sha256": "ab2a83c4256a8171d2b5ff14db96b4b11b450c60261c0412987c47149884614e",
+      "size_bytes": 3086
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/dattorro-multirate/probe-hook.patch",
+      "sha256": "2825ba1717e2f034f11b29dca09c70aabb3b053ab8d17ca8c158c62d020c78b4",
+      "size_bytes": 3152
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/dattorro-multirate/test_dattorro_multirate_probe.cpp",
+      "sha256": "8942e14d9f0fdd760582a0788a5a1bac783d0cfab1cc3fc31601c97c762cad3f",
+      "size_bytes": 7446
+    },
+    {
+      "path": "doc/performance-evidence/failed/dattorro-multirate/sources/algorithm-route-profile/dattorro-multirate/test_fdn_probe.cpp",
+      "sha256": "2425ef121d768a8c6ec6725e0621cea8f8be079c3ed0e5bc7044c29ce86e778e",
+      "size_bytes": 3355
+    }
+  ],
+  "omission_policy": "Generated build outputs and binary audio/PCM/SF2/MIDI assets are not committed; manifests and hashes preserve provenance.",
+  "omitted_files": [
+    {
+      "path": "sources/algorithm-route-profile/dattorro-multirate/analyze_fdn",
+      "reason": "unsupported file type",
+      "sha256": "1abfd4f29d93f023ee86822b41d76e3006f72dc52068800e75aebd1cf5282a30",
+      "size_bytes": 26960
+    },
+    {
+      "path": "sources/algorithm-route-profile/dattorro-multirate/fdn4-impulse.f64le",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "159056fc4ea1ca3044f393abf2e8c48efe0d1aa0e5e60141832a307cd18934ca",
+      "size_bytes": 8468480
+    },
+    {
+      "path": "sources/algorithm-route-profile/dattorro-multirate/fdn8-impulse.f64le",
+      "reason": "binary or raw media excluded from Git",
+      "sha256": "c461bb0a172e6257e6f450302d5e9e00cb27e76fed1b1702149fc46bc66d5055",
+      "size_bytes": 8468480
+    }
+  ],
+  "schema": 1,
+  "source_roots": [
+    "algorithm-route-profile/dattorro-multirate",
+    "algorithm-route-profile/PROFILE.md"
+  ],
+  "status": "stopped at net-cost gate",
+  "summary": "The tested Kaiser FIR choices traded passband against group delay, and measured conversion alone took 2.77\u00d7 a full-rate Dattorro tank; the complete candidate took 3.41\u00d7. This rejects the specified FIR/scalar implementation, not every possible multirate design.",
+  "title": "Wet-only multirate Dattorro reverb"
+}
