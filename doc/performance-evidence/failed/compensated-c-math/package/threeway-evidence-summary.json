@@ -1,0 +1,477 @@
+{
+  "static_frequency_response": {
+    "float": {
+      "compensated-6pt-65tap": {
+        "frequency_count_through_0p4": 7,
+        "max_abs_gain_error_db_through_0p4": 0.0036844646635,
+        "worst_relative_error_db_through_0p4": -67.4447823259,
+        "selected_frequency_points": {
+          "0.1": {
+            "measured_frequency": 0.1,
+            "gain_error_db": -0.00177959396364,
+            "relative_error_db": -73.7631893579
+          },
+          "0.2": {
+            "measured_frequency": 0.2,
+            "gain_error_db": -0.0036844646635,
+            "relative_error_db": -67.4447823259
+          },
+          "0.3": {
+            "measured_frequency": 0.3,
+            "gain_error_db": -0.00138328929012,
+            "relative_error_db": -75.8488069645
+          },
+          "0.4": {
+            "measured_frequency": 0.4,
+            "gain_error_db": -0.00190139098117,
+            "relative_error_db": -73.0176332252
+          },
+          "0.45": {
+            "measured_frequency": 0.45,
+            "gain_error_db": -3.48309373876,
+            "relative_error_db": -9.62040984354
+          },
+          "0.49": {
+            "measured_frequency": 0.49,
+            "gain_error_db": -8.39507325385,
+            "relative_error_db": -4.15784335214
+          }
+        }
+      },
+      "lut-sinc25-4096row": {
+        "frequency_count_through_0p4": 7,
+        "max_abs_gain_error_db_through_0p4": 0.0107213,
+        "worst_relative_error_db_through_0p4": -55.1544,
+        "selected_frequency_points": {
+          "0.1": {
+            "measured_frequency": 0.1,
+            "gain_error_db": 0.000274657,
+            "relative_error_db": -84.2097
+          },
+          "0.2": {
+            "measured_frequency": 0.2,
+            "gain_error_db": -0.000170867,
+            "relative_error_db": -91.6044
+          },
+          "0.3": {
+            "measured_frequency": 0.3,
+            "gain_error_db": -0.00347715,
+            "relative_error_db": -64.8734
+          },
+          "0.4": {
+            "measured_frequency": 0.4,
+            "gain_error_db": 0.0107213,
+            "relative_error_db": -55.1544
+          },
+          "0.45": {
+            "measured_frequency": 0.45,
+            "gain_error_db": -0.358619,
+            "relative_error_db": -24.6614
+          },
+          "0.49": {
+            "measured_frequency": 0.49,
+            "gain_error_db": -2.75781,
+            "relative_error_db": -5.46609
+          }
+        }
+      },
+      "production-cubic-256row": {
+        "frequency_count_through_0p4": 7,
+        "max_abs_gain_error_db_through_0p4": 2.30494,
+        "worst_relative_error_db_through_0p4": -8.0819,
+        "selected_frequency_points": {
+          "0.1": {
+            "measured_frequency": 0.1,
+            "gain_error_db": -0.0163064,
+            "relative_error_db": -48.0939
+          },
+          "0.2": {
+            "measured_frequency": 0.2,
+            "gain_error_db": -0.234014,
+            "relative_error_db": -27.8392
+          },
+          "0.3": {
+            "measured_frequency": 0.3,
+            "gain_error_db": -0.987569,
+            "relative_error_db": -15.8309
+          },
+          "0.4": {
+            "measured_frequency": 0.4,
+            "gain_error_db": -2.30494,
+            "relative_error_db": -8.0819
+          },
+          "0.45": {
+            "measured_frequency": 0.45,
+            "gain_error_db": -2.89585,
+            "relative_error_db": -5.27183
+          },
+          "0.49": {
+            "measured_frequency": 0.49,
+            "gain_error_db": -3.13063,
+            "relative_error_db": -3.41644
+          }
+        }
+      }
+    },
+    "double": {
+      "compensated-6pt-65tap": {
+        "frequency_count_through_0p4": 7,
+        "max_abs_gain_error_db_through_0p4": 0.00368472251904,
+        "worst_relative_error_db_through_0p4": -67.4441760034,
+        "selected_frequency_points": {
+          "0.1": {
+            "measured_frequency": 0.1,
+            "gain_error_db": -0.00177975476679,
+            "relative_error_db": -73.7624010146
+          },
+          "0.2": {
+            "measured_frequency": 0.2,
+            "gain_error_db": -0.00368472251904,
+            "relative_error_db": -67.4441760034
+          },
+          "0.3": {
+            "measured_frequency": 0.3,
+            "gain_error_db": -0.00138359859952,
+            "relative_error_db": -75.8470089723
+          },
+          "0.4": {
+            "measured_frequency": 0.4,
+            "gain_error_db": -0.00190195184568,
+            "relative_error_db": -73.0152348346
+          },
+          "0.45": {
+            "measured_frequency": 0.45,
+            "gain_error_db": -3.48309377473,
+            "relative_error_db": -9.62040977061
+          },
+          "0.49": {
+            "measured_frequency": 0.49,
+            "gain_error_db": -8.39507363218,
+            "relative_error_db": -4.15784311987
+          }
+        }
+      },
+      "lut-sinc25-4096row": {
+        "frequency_count_through_0p4": 7,
+        "max_abs_gain_error_db_through_0p4": 0.0107212,
+        "worst_relative_error_db_through_0p4": -55.1545,
+        "selected_frequency_points": {
+          "0.1": {
+            "measured_frequency": 0.1,
+            "gain_error_db": 0.000274541,
+            "relative_error_db": -84.2106
+          },
+          "0.2": {
+            "measured_frequency": 0.2,
+            "gain_error_db": -0.000170989,
+            "relative_error_db": -91.6012
+          },
+          "0.3": {
+            "measured_frequency": 0.3,
+            "gain_error_db": -0.00347727,
+            "relative_error_db": -64.8732
+          },
+          "0.4": {
+            "measured_frequency": 0.4,
+            "gain_error_db": 0.0107212,
+            "relative_error_db": -55.1545
+          },
+          "0.45": {
+            "measured_frequency": 0.45,
+            "gain_error_db": -0.358619,
+            "relative_error_db": -24.6614
+          },
+          "0.49": {
+            "measured_frequency": 0.49,
+            "gain_error_db": -2.75781,
+            "relative_error_db": -5.46609
+          }
+        }
+      },
+      "production-cubic-256row": {
+        "frequency_count_through_0p4": 7,
+        "max_abs_gain_error_db_through_0p4": 2.30494,
+        "worst_relative_error_db_through_0p4": -8.0819,
+        "selected_frequency_points": {
+          "0.1": {
+            "measured_frequency": 0.1,
+            "gain_error_db": -0.0163066,
+            "relative_error_db": -48.0938
+          },
+          "0.2": {
+            "measured_frequency": 0.2,
+            "gain_error_db": -0.234014,
+            "relative_error_db": -27.8392
+          },
+          "0.3": {
+            "measured_frequency": 0.3,
+            "gain_error_db": -0.987569,
+            "relative_error_db": -15.8309
+          },
+          "0.4": {
+            "measured_frequency": 0.4,
+            "gain_error_db": -2.30494,
+            "relative_error_db": -8.0819
+          },
+          "0.45": {
+            "measured_frequency": 0.45,
+            "gain_error_db": -2.89585,
+            "relative_error_db": -5.27183
+          },
+          "0.49": {
+            "measured_frequency": 0.49,
+            "gain_error_db": -3.13063,
+            "relative_error_db": -3.41644
+          }
+        }
+      }
+    }
+  },
+  "spectral_images": {
+    "float": {
+      "method": "16,384-frame interior sine render; same rate/frequency grid and FFT residual procedure for all arms",
+      "input_frequency_limit_cycles_per_original_sample": 0.4,
+      "rates": {
+        "0.5": {
+          "production_cubic": {
+            "tone_count": 3,
+            "worst_residual_rms_dbfs": -16.9761,
+            "worst_max_spur_dbc": -16.6926,
+            "worst_analytic_error_dbfs": -13.7994
+          },
+          "lut_sinc25": {
+            "tone_count": 3,
+            "worst_residual_rms_dbfs": -78.6772,
+            "worst_max_spur_dbc": -79.7762,
+            "worst_analytic_error_dbfs": -75.7946
+          },
+          "compensated_6pt": {
+            "tone_count": 3,
+            "worst_residual_rms_dbfs": -146.072,
+            "worst_max_spur_dbc": -152.944,
+            "worst_analytic_error_dbfs": -66.3281
+          }
+        },
+        "1.0": {
+          "production_cubic": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -145.845,
+            "worst_max_spur_dbc": -151.243,
+            "worst_analytic_error_dbfs": -7.44983
+          },
+          "lut_sinc25": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -140.396,
+            "worst_max_spur_dbc": -140.697,
+            "worst_analytic_error_dbfs": -54.5937
+          },
+          "compensated_6pt": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -146.071,
+            "worst_max_spur_dbc": -150.659,
+            "worst_analytic_error_dbfs": -66.3283
+          }
+        },
+        "2.0": {
+          "production_cubic": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -145.843,
+            "worst_max_spur_dbc": -151.677,
+            "worst_analytic_error_dbfs": -26.5145
+          },
+          "lut_sinc25": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -140.721,
+            "worst_max_spur_dbc": -145.954,
+            "worst_analytic_error_dbfs": -86.0674
+          },
+          "compensated_6pt": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -143.836,
+            "worst_max_spur_dbc": -150.043,
+            "worst_analytic_error_dbfs": -67.6528
+          }
+        }
+      }
+    },
+    "double": {
+      "method": "16,384-frame interior sine render; same rate/frequency grid and FFT residual procedure for all arms",
+      "input_frequency_limit_cycles_per_original_sample": 0.4,
+      "rates": {
+        "0.5": {
+          "production_cubic": {
+            "tone_count": 3,
+            "worst_residual_rms_dbfs": -16.9761,
+            "worst_max_spur_dbc": -16.6926,
+            "worst_analytic_error_dbfs": -13.7994
+          },
+          "lut_sinc25": {
+            "tone_count": 3,
+            "worst_residual_rms_dbfs": -78.6763,
+            "worst_max_spur_dbc": -79.7754,
+            "worst_analytic_error_dbfs": -75.7943
+          },
+          "compensated_6pt": {
+            "tone_count": 3,
+            "worst_residual_rms_dbfs": -156.917,
+            "worst_max_spur_dbc": -161.189,
+            "worst_analytic_error_dbfs": -66.3271
+          }
+        },
+        "1.0": {
+          "production_cubic": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -246.475,
+            "worst_max_spur_dbc": -252.602,
+            "worst_analytic_error_dbfs": -7.44983
+          },
+          "lut_sinc25": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -240.257,
+            "worst_max_spur_dbc": -249.769,
+            "worst_analytic_error_dbfs": -54.5937
+          },
+          "compensated_6pt": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -155.796,
+            "worst_max_spur_dbc": -159.628,
+            "worst_analytic_error_dbfs": -66.3273
+          }
+        },
+        "2.0": {
+          "production_cubic": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -247.856,
+            "worst_max_spur_dbc": -255.554,
+            "worst_analytic_error_dbfs": -26.5145
+          },
+          "lut_sinc25": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -245.364,
+            "worst_max_spur_dbc": -251.307,
+            "worst_analytic_error_dbfs": -86.0646
+          },
+          "compensated_6pt": {
+            "tone_count": 6,
+            "worst_residual_rms_dbfs": -154.406,
+            "worst_max_spur_dbc": -156.4,
+            "worst_analytic_error_dbfs": -67.6523
+          }
+        }
+      }
+    }
+  },
+  "full_renderer_64_frame_callback": {
+    "profile": "MuseScore General GM Strings program 48; 16 repeated note-ons at MIDI 60; 32 active voices; 44.1 kHz; built-in reverb and chorus enabled; 30,000 measured 64-frame calls per run; CPU 2 pinned; release build",
+    "renderer": {
+      "production_cubic": {
+        "runs": [
+          {
+            "file": "renderer-cubic-strings-fx.json",
+            "blocks": 30000,
+            "active_voices": 32,
+            "p50_us": 8.975,
+            "p99_us": 33.251,
+            "p999_us": 51.138,
+            "max_us": 185.064,
+            "render_wall_ms": 339.83213,
+            "audio_hash": "1d79e1ea79b70adc",
+            "candidate_prepare_ms": 0.00053,
+            "candidate_table_bytes": 0,
+            "source_pcm_bytes": 0,
+            "combined_storage_ratio": 1
+          },
+          {
+            "file": "renderer-cubic-strings-fx-aa2.json",
+            "blocks": 30000,
+            "active_voices": 32,
+            "p50_us": 8.958,
+            "p99_us": 33.023,
+            "p999_us": 45.64,
+            "max_us": 909.168,
+            "render_wall_ms": 331.8088,
+            "audio_hash": "1d79e1ea79b70adc",
+            "candidate_prepare_ms": 0.000259,
+            "candidate_table_bytes": 0,
+            "source_pcm_bytes": 0,
+            "combined_storage_ratio": 1
+          }
+        ],
+        "p50_us_median": 8.9665,
+        "p99_us_median": 33.137,
+        "p999_us_median": 48.388999999999996,
+        "render_wall_ms_median": 335.820465,
+        "deadline_us": 1451.2472
+      },
+      "compensated_6pt": {
+        "runs": [
+          {
+            "file": "renderer-sixpoint-strings-fx.json",
+            "blocks": 30000,
+            "active_voices": 32,
+            "p50_us": 12.099,
+            "p99_us": 55.066,
+            "p999_us": 85.71,
+            "max_us": 1827.145,
+            "render_wall_ms": 486.23375,
+            "audio_hash": "e4652f44e556f00a",
+            "candidate_prepare_ms": 1884.4113,
+            "candidate_table_bytes": 3207920,
+            "source_pcm_bytes": 305110,
+            "combined_storage_ratio": 11.513979
+          },
+          {
+            "file": "renderer-sixpoint-strings-fx-aa2.json",
+            "blocks": 30000,
+            "active_voices": 32,
+            "p50_us": 12.792,
+            "p99_us": 84.495,
+            "p999_us": 98.488,
+            "max_us": 415.595,
+            "render_wall_ms": 515.00015,
+            "audio_hash": "e4652f44e556f00a",
+            "candidate_prepare_ms": 2051.8799,
+            "candidate_table_bytes": 3207920,
+            "source_pcm_bytes": 305110,
+            "combined_storage_ratio": 11.513979
+          }
+        ],
+        "p50_us_median": 12.4455,
+        "p99_us_median": 69.7805,
+        "p999_us_median": 92.09899999999999,
+        "render_wall_ms_median": 500.61695,
+        "deadline_us": 1451.2472
+      },
+      "lut_sinc25": {
+        "runs": [
+          {
+            "file": "renderer-sinc25-strings-fx.json",
+            "blocks": 30000,
+            "active_voices": 32,
+            "p50_us": 160.542,
+            "p99_us": 2431.342,
+            "p999_us": 2856.653,
+            "max_us": 18684.912,
+            "render_wall_ms": 6430.6283,
+            "audio_hash": "af2a4de87e2c9285",
+            "candidate_prepare_ms": 0.000823,
+            "candidate_table_bytes": 0,
+            "source_pcm_bytes": 0,
+            "combined_storage_ratio": 1
+          }
+        ],
+        "p50_us_median": 160.542,
+        "p99_us_median": 2431.342,
+        "p999_us_median": 2856.653,
+        "render_wall_ms_median": 6430.6283,
+        "deadline_us": 1451.2472
+      }
+    },
+    "relative_medians_vs_cubic": {
+      "compensated6_p50_ratio": 1.3879997769475267,
+      "compensated6_p99_ratio": 2.1058182696079912,
+      "compensated6_p999_ratio": 1.903304470024179,
+      "compensated6_render_wall_ratio": 1.4907279400021078
+    }
+  }
+}

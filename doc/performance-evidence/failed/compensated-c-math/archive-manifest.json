@@ -1,0 +1,323 @@
+{
+  "archive_branch": "archive/failed-compensated-c-20261016",
+  "baseline_source_commit": "6be67a906b9d679ea930c8841fd0cac0d8a0a25e",
+  "created": "2026-10-16",
+  "included_files": [
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/ARCHIVE.md",
+      "sha256": "660a4322e8409190c203f445efdd158edd7bdc3fba510e759664a7f663a0c9a6",
+      "size_bytes": 1168
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/DIAGNOSIS.md",
+      "sha256": "4a5796dd4571b330150cc008ad7f1b29acab10985f1b54f60c57376241592350",
+      "size_bytes": 4008
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/INPUT_ASSESSMENT.md",
+      "sha256": "bc426209625e376d2c8e74f4888e33defb856359b6a3096830eec4bb7cd8766f",
+      "size_bytes": 6773
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/PERF_REPORT.md",
+      "sha256": "b9b558323c66e83107db9110dab0ce2181b03875bfd8d0fb22ac37d0fd826721",
+      "size_bytes": 6174
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/REPORT.md",
+      "sha256": "35718c8de3035faea57894ed528385dc096addbc49608026ee59778984c6cb36",
+      "size_bytes": 9488
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/THREEWAY_FINAL_REPORT.md",
+      "sha256": "b0ab659df08b13b2dd855f1eab92ca6bda781292566153047dcae333c2232415",
+      "size_bytes": 10334
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/alignment-diagnosis.json",
+      "sha256": "a359cd1f364906aa50d4c8ea08e7ec85eb59e4c349eb52a801a9606f45b4bbd1",
+      "size_bytes": 4159
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/baseline-reproduction.csv",
+      "sha256": "051eb6ffd2494790cb00256c73d316bf82794ec6bcb7649b633272ade3eef30d",
+      "size_bytes": 5106
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/compensated_c_math.py",
+      "sha256": "c60e6fb3db286ee3f33ab005c856e8f6635adbd1bc07bae6fdd5885b27f9962c",
+      "size_bytes": 27169
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/compensated_c_perf_screen.cpp",
+      "sha256": "0572b6b85e58b4e588130fc148e1c517dee201669713b287b3d17e05c6e05b20",
+      "size_bytes": 26462
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/compensated_c_sf2_screen.cpp",
+      "sha256": "82ec85f995f02f6516ac1423d8efc5f5f2fc5c2278e1dab06829cd381ffb459a",
+      "size_bytes": 36522
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/diagnose_alignment.py",
+      "sha256": "6cb64b02f4cae69c01b8d47a7fa9bc2e69a033f76b53b0cffef49d4a058c463f",
+      "size_bytes": 8102
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/export_prefilter_coefficients.py",
+      "sha256": "dcb903cef36d7118325fada5e2167a43984c806e96b3f4da7be49024eb32ef1a",
+      "size_bytes": 2122
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/folded_image_screen.csv",
+      "sha256": "c3565746a5e4daee0832bc5e693417611c75327422b61684fb4ab4eb67305b71",
+      "size_bytes": 2794
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/frequency_response.csv",
+      "sha256": "e0f63847b215902e361c07bf14613a0571422db28f727ba0b223906a3eaa4b25",
+      "size_bytes": 974370
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/full_renderer_probe.cpp",
+      "sha256": "16339766d8e512d8fc1a50095c1765b3e698650c7c6528fc7768975c326752e7",
+      "size_bytes": 11561
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/image-threeway-double.csv",
+      "sha256": "c38474177e1735bffd3ab8e16c01a112a086dfe039e09be77f54e02b2ae54a80",
+      "size_bytes": 21304
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/image-threeway-float.csv",
+      "sha256": "120f37e23b2f224c8a7fca84594517642d08fb0945fb0e5a430fbaf7ffaa5695",
+      "size_bytes": 21100
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/image_threeway.cpp",
+      "sha256": "8f77fd02568dbc9dfc84e87057a838476be7751cb7b9029ebe6be301f360ea60",
+      "size_bytes": 14819
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/join_static_threeway.py",
+      "sha256": "955db851d2ce59e7353d8a8ca69b1512236a057b9c287df79b6de23f9ec959d0",
+      "size_bytes": 1283
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/loop-entry.csv",
+      "sha256": "d132d74544e7bb4647a0bb9e26fc037b36928294f80a97226f453f0d60b2df20",
+      "size_bytes": 2018
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/make_manifest.py",
+      "sha256": "8313e6f2968ff2c07977c05e809083e65bb41dd6ad6afa8e2108dc34963b0463",
+      "size_bytes": 4648
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/manifest.json",
+      "sha256": "8ce7ca76acb9d6657f5b078cf69368b4c9232283c7cf8b00fec2049f36d546c8",
+      "size_bytes": 22811
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/math-summary.json",
+      "sha256": "6ba0cb02667a2c56b2e3b815a94e9b9f8662c82aa0e61592d46e4c9d3c1ccd5c",
+      "size_bytes": 32190
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/perf-raw.csv",
+      "sha256": "567a5bc9ffda40c2d7cb4dc9615d7eb19188620becc5613f88130bc7af7529d4",
+      "size_bytes": 50093
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/perf-summary.json",
+      "sha256": "0bfcd29459c668c267e071ffef042630dc59f7592f341499c4898de99a9ae259",
+      "size_bytes": 8095
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/perf-summary.txt",
+      "sha256": "97f1fc659c6d7d2923608c426088cdbc6259b5b7d22d87725b5146d22ffe67a3",
+      "size_bytes": 1193
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/prefilter_coefficients.csv",
+      "sha256": "a4804fc6ace4e3d119f30a1707a7c731d299282b6809625de2150707bbd1cf20",
+      "size_bytes": 3123
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/quality-threeway-summary.json",
+      "sha256": "8218f21c7835b915f8a9ff5fb115148f9f80cf2075a6f7fc37f4bfa9cacafec3",
+      "size_bytes": 29672
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/quality.csv",
+      "sha256": "3af6e7ece17ac55aff35793d9c03a4c7fb501c64cb471aec088a7e9e17546aa3",
+      "size_bytes": 15223
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-cubic-strings-fx-aa2.csv",
+      "sha256": "59ff6bedc883e08c49c93d3ab2b1383143f152eedb2f012d7420b0df3f4dab43",
+      "size_bytes": 350238
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-cubic-strings-fx-aa2.json",
+      "sha256": "504d84d4b689bbd65979df065b5b9a1ef05875c34d639fa6308ffd7d63fd1ed8",
+      "size_bytes": 534
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-cubic-strings-fx.csv",
+      "sha256": "e424bf5fceff769f3568547fb696558e12633a9cd29239d75d75fd8bed2d0d10",
+      "size_bytes": 351611
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-cubic-strings-fx.json",
+      "sha256": "18369708727a4afd25ab166628af8f30f59912d0bfedeed9f74ed2928595e02a",
+      "size_bytes": 535
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sinc25-strings-fx.csv",
+      "sha256": "875a9905726dd422206d3e92ddc3c71657db1a167bdf7591781d3e186e5b85a5",
+      "size_bytes": 406063
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sinc25-strings-fx.json",
+      "sha256": "8070f7ef8823123b8b8832801e537aa28edb62f8a1a70fc7d95639fed29ce667",
+      "size_bytes": 545
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sixpoint-strings-fx-aa2.csv",
+      "sha256": "0eba51f90d72e4b3bdcd0a34ce9d04e05ea47795f121b12471c914eabfd0b5cf",
+      "size_bytes": 375460
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sixpoint-strings-fx-aa2.csv.prepare.csv",
+      "sha256": "cf8ea25e2411995524ede88a7b392058eefe648e4c69e29a544399610227a893",
+      "size_bytes": 171
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sixpoint-strings-fx-aa2.json",
+      "sha256": "4f961d1387bce1df550d471ffa83602c4e3a0708180bc62ebb0d8531fce89d18",
+      "size_bytes": 562
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sixpoint-strings-fx.csv",
+      "sha256": "1ee117dec6fea9fe62cc0d2a8d6cc84e3311d5d5d49eb6507a64686ad316989b",
+      "size_bytes": 375471
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sixpoint-strings-fx.csv.prepare.csv",
+      "sha256": "16eacd43c63114d1abb1eef24f9f1628a08f9075d40f483eb8cb329982258b70",
+      "size_bytes": 171
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/renderer-sixpoint-strings-fx.json",
+      "sha256": "6b17209221376bdd48dd99a8ab27fb7941b847f500322c70130d4b9573774fea",
+      "size_bytes": 563
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/run_all.sh",
+      "sha256": "6d2a6261a441448278b734e0c03200f6dd3590438108b6fedcc01fd570325945",
+      "size_bytes": 375
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/run_full_renderer_probe.sh",
+      "sha256": "1539817bbed2633fe2849738c82e0bf2ab1019b7d12b706b2ce4158433e6eb73",
+      "size_bytes": 1819
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/run_image_threeway.sh",
+      "sha256": "ece16141255ddb2c710f5408124253ab1fa5d2e563c9a4455180d35698e0bdea",
+      "size_bytes": 769
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/run_math.sh",
+      "sha256": "87d8b2ea5c067495430165504ac64ca6f2640983fa2cce1a37397873123dcce6",
+      "size_bytes": 206
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/run_perf_screen.sh",
+      "sha256": "e5109a4b6d26dc00cec893179e4405c47a53e9fb15b3fc3a157d4c2e09deb574",
+      "size_bytes": 552
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/run_sf2_screen.sh",
+      "sha256": "3b30fb72825d2aed6f5eda8c6787367fc5173350f4bd3c674b197c4dc257bd6f",
+      "size_bytes": 758
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/setup.csv",
+      "sha256": "61c27ac3a5391b14d634969ee8f3497ab7eb0d13f12e3221bdba3bac06079654",
+      "size_bytes": 519
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/sf2-summary.json",
+      "sha256": "f148acf73fdd202aeee2656cef988ddc78054c22165fcbbfe3ac58cc44d62bdb",
+      "size_bytes": 12705
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/static-threeway-kernel.csv",
+      "sha256": "9a4e36478019a13bc0d18f2a5c0932851e5e06eb23bd6839465b439cc0bf57fc",
+      "size_bytes": 2242
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/static-threeway.csv",
+      "sha256": "611c891791717d9fae8d400e28d9c889d6867f9bf5ca5fbd1a1776c6f92b2197",
+      "size_bytes": 3710
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/static.csv",
+      "sha256": "048bfadbcd3110f74874db2ca20334d4be497e9ff8ccd63201f867e4c6f72340",
+      "size_bytes": 1462
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/storage.csv",
+      "sha256": "25f007346b292d5061b2a36f4694511430093ee2a067b1fda7c21bd70735368e",
+      "size_bytes": 820
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/summarize_perf_screen.py",
+      "sha256": "da108e8d3686ab7d491383f6d5cb0215bcfc5b7f4e9c4160bba430bfc176aac3",
+      "size_bytes": 7072
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/summarize_quality_threeway.py",
+      "sha256": "5d874accfb77a17b78d4d448f28c32802e5142bf238ba04320930dc8bf9a0ab2",
+      "size_bytes": 4433
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/summarize_sf2.py",
+      "sha256": "cdcbbae1524ff0c9165a986fb44c0dda4520d7fa1ebf156278b437715109a38d",
+      "size_bytes": 7662
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/summarize_threeway.py",
+      "sha256": "eee943eaad3a4bf4b07a1eae26ab6552fa45d638cd144958710749e4c086fadf",
+      "size_bytes": 5833
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/summarize_threeway_evidence.py",
+      "sha256": "03b8586946aab20a8f1733550c8a8e6a2be9f0a3bb2ef51d495746d699bd6f60",
+      "size_bytes": 5431
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/threeway-evidence-summary.json",
+      "sha256": "979364630e0dd636556f3556635171ee4633cbe90dd8815926e33edc5c84568b",
+      "size_bytes": 15681
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/threeway-raw.csv",
+      "sha256": "55fe8511de1016b0e11311c7cb069d9944750bf64005826e10f8a80eace60aa9",
+      "size_bytes": 51519
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/threeway-summary.json",
+      "sha256": "5a6e35e3fe59efeffa0523b2c17ac26dd7d10fd5edb5f01022076e49b6814e38",
+      "size_bytes": 11112
+    },
+    {
+      "path": "doc/performance-evidence/failed/compensated-c-math/package/threeway-summary.txt",
+      "sha256": "21612ecb936e4ad54df9dce603bf0d719c4071c0e79449274d26a9e3be31c5ba",
+      "size_bytes": 2161
+    }
+  ],
+  "screen": "compensated six-point interpolation report-only archive"
+}

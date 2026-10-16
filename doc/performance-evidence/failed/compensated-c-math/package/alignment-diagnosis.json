@@ -1,0 +1,112 @@
+{
+  "complex_response": {
+    "causal_fir_linear_phase_delay_if_used_causally_source_samples": 32.0,
+    "effective_delay_in_this_offline_centered_application_source_samples": 0.0,
+    "finite_half_phase_output_error_bound_6point": 7.155344754013992e-10,
+    "finite_half_phase_table_max_complex_error": 1.4272071302556814e-09,
+    "formula": "H_total(f,z)=H_prefilter_centered(f)*H_6pt(z,f)*exp(-j*pi*f*z); table half-phase reconstruction is bounded separately",
+    "frequency_grid_step": 0.0005,
+    "max_sampled_composite_magnitude_error_at": {
+      "frequency": 0.3955,
+      "z": -0.38671875
+    },
+    "max_sampled_composite_magnitude_error_db": 0.010194018431390565,
+    "max_sampled_composite_phase_error_at": {
+      "frequency": 0.4,
+      "z": -0.5
+    },
+    "max_sampled_composite_phase_error_deg": 0.009554412014235661,
+    "max_sampled_composite_phase_error_rad": 0.0001667559477405156,
+    "model": "centered 65-tap float32 FIR * six-point polynomial response * ideal-delay removal",
+    "phase_error_is_single_constant_delay": false,
+    "phase_grid_step_z": 0.0009765625,
+    "prefilter_centered_phase_through_passband_rad": 0.0,
+    "prefilter_coefficient_sum": 0.9999999478841914,
+    "prefilter_symmetry_max_abs": 0.0,
+    "prefilter_taps": 65,
+    "response_points": [
+      {
+        "frequency": 0.05,
+        "magnitude_error_db": -0.0028213775075771755,
+        "phase_error_deg": 0.00018430733679961485,
+        "z": -0.5
+      },
+      {
+        "frequency": 0.05,
+        "magnitude_error_db": -0.002850982475137786,
+        "phase_error_deg": 0.0,
+        "z": 0.0
+      },
+      {
+        "frequency": 0.05,
+        "magnitude_error_db": -0.0028213775075771755,
+        "phase_error_deg": -0.00018430733679961485,
+        "z": 0.5
+      },
+      {
+        "frequency": 0.2,
+        "magnitude_error_db": -0.0032501646819344276,
+        "phase_error_deg": 0.0013499316780217557,
+        "z": -0.5
+      },
+      {
+        "frequency": 0.2,
+        "magnitude_error_db": -0.0035900023771854987,
+        "phase_error_deg": 0.0,
+        "z": 0.0
+      },
+      {
+        "frequency": 0.2,
+        "magnitude_error_db": -0.0032501646819344276,
+        "phase_error_deg": -0.0013499316780217557,
+        "z": 0.5
+      },
+      {
+        "frequency": 0.4,
+        "magnitude_error_db": -0.002373433921076934,
+        "phase_error_deg": 0.009554412014233628,
+        "z": -0.5
+      },
+      {
+        "frequency": 0.4,
+        "magnitude_error_db": -0.0021450722392418594,
+        "phase_error_deg": 0.0,
+        "z": 0.0
+      },
+      {
+        "frequency": 0.4,
+        "magnitude_error_db": -0.002373433921076934,
+        "phase_error_deg": -0.009554412014233628,
+        "z": 0.5
+      }
+    ],
+    "scope": "Analytic coefficient response uses the actual quantized FIR coefficients and six-point constants. Per-sample float rounding is not a linear frequency response; the SF2 error measurement includes it."
+  },
+  "window": {
+    "candidate_error_max_dbfs": -75.3942535082,
+    "candidate_error_relative_to_reference_rms_db": -69.10482466319999,
+    "candidate_error_rms_dbfs": -81.6724930594,
+    "candidate_error_rms_linear": 8.248506994934546e-05,
+    "candidate_to_sinc25_error_delta_db": 15.677980528626307,
+    "crosses_loop_boundary": false,
+    "distance_from_loop_start_at_window_start": 1024.2718279999972,
+    "distance_to_loop_end_at_window_end": 29518.030840672087,
+    "frames": 882,
+    "loop_end": 68984,
+    "loop_start": 38140,
+    "precision": "double",
+    "reference_convergence_margin_db": -52.3412218772,
+    "reference_raw_path": "cubic-sinc25/sf2-raw/strings-mid-sustain-r0.342449.csv",
+    "reference_rms_dbfs": -12.5676683962,
+    "sample": "strings-mid",
+    "segment": "sustain",
+    "sinc25_error_max_dbfs": -88.40432806766145,
+    "sinc25_error_relative_to_reference_rms_db": -84.7828051918263,
+    "sinc25_error_rms_dbfs": -97.3504735880263,
+    "sinc25_error_rms_linear": 1.3566765570724765e-05,
+    "step_source_samples_per_output": 0.3424487302246507,
+    "transpose_factor": 0.5,
+    "window_last_source_position": 39465.96915932791,
+    "window_start_source_position": 39164.271828
+  }
+}

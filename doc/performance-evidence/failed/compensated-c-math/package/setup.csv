@@ -1,0 +1,4 @@
+sample,frames,loop_frames,base_load_ms,candidate_prepare_ms,original_pcm_bytes,candidate_unique_table_bytes,candidate_prototype_allocated_table_bytes,combined_storage_bytes,combined_storage_ratio,generated_midpoints,attack_rebuilt_midpoints
+piano-mid,321868,81107,4.143161,2612.533039,643736,5798744,5798744,6442480,10.007953571,402975,2079
+strings-mid,69013,30844,0.669044,801.332341,138026,1350960,1350960,1488986,10.787721154,99857,2079
+cymbal,375831,0,3.250499,2169.803924,751662,3006648,6013296,3758310,5,375831,0
