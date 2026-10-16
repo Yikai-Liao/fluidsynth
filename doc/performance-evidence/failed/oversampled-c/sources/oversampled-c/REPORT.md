@@ -39,3 +39,13 @@ The single preparation run took 5.72 seconds total across the five samples. Sinc
 This is a first-stage analysis on five samples and 54 existing windows plus nine loop-entry probes. It does not cover all SoundFonts, multiple zones sharing PCM, arbitrary loop lengths, rapid pitch modulation, cross-layer transitions, full MIDI renders or real-time callback behavior.
 
 Run `./run.sh` in this folder to rebuild the evaluator, rerun the screen and regenerate CSVs, summary and hashes. Raw tables are `quality.csv`, `static.csv`, `loop-entry.csv`, `baseline-reproduction.csv` and `storage.csv`; file identities are in `manifest.json`.
+
+
+## Later compensated-C screen (2026-10-16)
+
+A follow-up added a phase-independent 65-tap float32 source-rate pre-emphasis filter. It reduced six-point static passband gain error to 0.0102 dB maximum through 0.40 cycles per source sample, but the real-SF2 active-window error versus sinc25 worsened by a median 7.28 dB and a worst 15.68 dB. The frozen +1 dB median and +3 dB worst-case gates failed, so playback performance and integration were skipped. See the reproducible [compensated-C report](../compensated-c-math/REPORT.md).
+
+
+## Error and alignment localization
+
+A focused check confirms that the compensated six-point error also occurs in an interior periodic-sustain window, away from loop entry, with no loop-boundary crossing. It reports both algorithms' absolute errors, the composite FIR-plus-interpolator complex response, and the centered-filter/table-grid delay check. See [the localization report](../compensated-c-math/DIAGNOSIS.md).

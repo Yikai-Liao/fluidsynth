@@ -1,6 +1,8 @@
 {
   "audit_only_source_roots": [
-    "cubic-sinc25/sf2-samples"
+    "cubic-sinc25/sf2-samples",
+    "cubic-sinc25/sf2-raw",
+    "fractional-delay-ab/samples.csv"
   ],
   "branch": "archive/failed-oversampled-c-20261016",
   "experiment_baseline_commits": [
@@ -10,13 +12,128 @@
   "included_files": [
     {
       "path": "doc/performance-evidence/failed/oversampled-c/ARCHIVE.md",
-      "sha256": "9a2af14ecd8a2b93047b7fbd89770cf4d6c1428156b6f2f6b7847ca92993dad1",
-      "size_bytes": 1106
+      "sha256": "1e137f57822b5a0a458751fd2ca3b440e2844a18f5a8668ee2c28db0f6d74bb5",
+      "size_bytes": 1588
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/DIAGNOSIS.md",
+      "sha256": "4a5796dd4571b330150cc008ad7f1b29acab10985f1b54f60c57376241592350",
+      "size_bytes": 4008
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/INPUT_ASSESSMENT.md",
+      "sha256": "bc426209625e376d2c8e74f4888e33defb856359b6a3096830eec4bb7cd8766f",
+      "size_bytes": 6773
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/REPORT.md",
+      "sha256": "a35da80f2c54dc490a4fbddfb562db73a221408b205341defc7c5ec52de8efcd",
+      "size_bytes": 8960
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/alignment-diagnosis.json",
+      "sha256": "a359cd1f364906aa50d4c8ea08e7ec85eb59e4c349eb52a801a9606f45b4bbd1",
+      "size_bytes": 4159
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/baseline-reproduction.csv",
+      "sha256": "051eb6ffd2494790cb00256c73d316bf82794ec6bcb7649b633272ade3eef30d",
+      "size_bytes": 5106
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/compensated_c_math.py",
+      "sha256": "c60e6fb3db286ee3f33ab005c856e8f6635adbd1bc07bae6fdd5885b27f9962c",
+      "size_bytes": 27169
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/compensated_c_sf2_screen.cpp",
+      "sha256": "da29ac626e34a7e6184975618c6e1562b90d451dc0b367ceeebeafeb3842cf72",
+      "size_bytes": 35945
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/diagnose_alignment.py",
+      "sha256": "6cb64b02f4cae69c01b8d47a7fa9bc2e69a033f76b53b0cffef49d4a058c463f",
+      "size_bytes": 8102
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/export_prefilter_coefficients.py",
+      "sha256": "dcb903cef36d7118325fada5e2167a43984c806e96b3f4da7be49024eb32ef1a",
+      "size_bytes": 2122
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/folded_image_screen.csv",
+      "sha256": "3f79c2b1f273515f26e88c665ef1b5a1797e19e45c140e78beae2881b0ee62da",
+      "size_bytes": 2883
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/frequency_response.csv",
+      "sha256": "e0f63847b215902e361c07bf14613a0571422db28f727ba0b223906a3eaa4b25",
+      "size_bytes": 974370
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/loop-entry.csv",
+      "sha256": "d132d74544e7bb4647a0bb9e26fc037b36928294f80a97226f453f0d60b2df20",
+      "size_bytes": 2018
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/make_manifest.py",
+      "sha256": "4681e03b94caeed58fb0c2fc116708773214b3adfb1c6170354eebece56985c1",
+      "size_bytes": 2754
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/math-summary.json",
+      "sha256": "145518a3fd7d4b51ccfe6319c955b5808a64281e3bb011cf3db2991d05d925db",
+      "size_bytes": 32159
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/prefilter_coefficients.csv",
+      "sha256": "a4804fc6ace4e3d119f30a1707a7c731d299282b6809625de2150707bbd1cf20",
+      "size_bytes": 3123
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/quality.csv",
+      "sha256": "3af6e7ece17ac55aff35793d9c03a4c7fb501c64cb471aec088a7e9e17546aa3",
+      "size_bytes": 15223
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/run_all.sh",
+      "sha256": "6d2a6261a441448278b734e0c03200f6dd3590438108b6fedcc01fd570325945",
+      "size_bytes": 375
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/run_math.sh",
+      "sha256": "87d8b2ea5c067495430165504ac64ca6f2640983fa2cce1a37397873123dcce6",
+      "size_bytes": 206
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/run_sf2_screen.sh",
+      "sha256": "3b30fb72825d2aed6f5eda8c6787367fc5173350f4bd3c674b197c4dc257bd6f",
+      "size_bytes": 758
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/sf2-summary.json",
+      "sha256": "c784c335851b49e911744507dec753d5fc6d0a59f463d9f6f239ac11ea9ef51a",
+      "size_bytes": 12689
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/static.csv",
+      "sha256": "048bfadbcd3110f74874db2ca20334d4be497e9ff8ccd63201f867e4c6f72340",
+      "size_bytes": 1462
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/storage.csv",
+      "sha256": "a58aae0245180c517cd007ac322749135afd98ffec596c18f99f539212ad98e8",
+      "size_bytes": 820
+    },
+    {
+      "path": "doc/performance-evidence/failed/oversampled-c/sources/compensated-c-math/summarize_sf2.py",
+      "sha256": "cdcbbae1524ff0c9165a986fb44c0dda4520d7fa1ebf156278b437715109a38d",
+      "size_bytes": 7662
     },
     {
       "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/REPORT.md",
-      "sha256": "879b447f6cfb766acc85eaac2212f1e186ce168c6c1e9ce6290cf9b66d321a01",
-      "size_bytes": 5868
+      "sha256": "1fb548091bae0427ed4155e60bd9f5f95de9997535f8773a3fe4ca47678a67f0",
+      "size_bytes": 6822
     },
     {
       "path": "doc/performance-evidence/failed/oversampled-c/sources/oversampled-c/baseline-reproduction.csv",
@@ -112,13 +229,344 @@
       "reason": "input asset retained by hash only; not copied",
       "sha256": "43e322215dd2a87db518b4127e3d3c6178b1b38b4584e1cfa92d419601e03055",
       "size_bytes": 138026
+    },
+    {
+      "path": "audit-only/compensated-c-math/fractional-delay-ab/samples.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "f2d8283f3319b47264bc6063c65488969d90b234e526011e1f166e74bba3416f",
+      "size_bytes": 353
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-attack-r0.500000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "5c1df1b27e208d2ca7dfe50dc43395e5197055a4b162ebc8239e09092486808f",
+      "size_bytes": 47510
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-attack-r1.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "7a7b31370b612ed258a7c1e3618ad78493c4574ade288c979b04d29b9fed1ffa",
+      "size_bytes": 46795
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-attack-r2.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "b02b7f30e12024b9883cb4e68f3cb2aa09fda3590e51b2f02a0f40873ee1a3fb",
+      "size_bytes": 46655
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-interior-r0.500000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "835326bb58ac038874ac7f326aae34076ac97d6559a6483a602b1193e559489c",
+      "size_bytes": 46515
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-interior-r1.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "94468b09774ea86999980f5378f31c5df6966f758a50b7a38213fbdeb7f55547",
+      "size_bytes": 46366
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-interior-r2.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "e031753ca089697f6c6ae559452a3c4722db0cc8c60e2c745ac227fe7d26a08d",
+      "size_bytes": 46358
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-tail-r0.500000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "38cd00ccb630fbea8fcc1cdaf7aa00f2a56bb6dd116064fcb233b9da9f260d20",
+      "size_bytes": 52506
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-tail-r1.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "12481dc8362b8558773bff5ee576bd8f42a9a63511e4f6a26b2752a3d59feb30",
+      "size_bytes": 52437
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/cymbal-tail-r2.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "67e9dde60adb1ff01bd290c4e79e4856f66ccf2467bb93ebf5fb0bce107a127c",
+      "size_bytes": 54983
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-attack-r0.500000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "9d4033035407faa171e30509a278fc5d1065d841339e54ccce817baea3f643f8",
+      "size_bytes": 46521
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-attack-r1.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "23a4f367828323d82233220d6311e8bfcbcd5658dc0e0d43b4b216ac540ec3ec",
+      "size_bytes": 46537
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-attack-r2.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "3575ec0be8231679a2ad785271cb0d9eaad3e8bb44fc68746809461dc4a4d735",
+      "size_bytes": 46851
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-interior-r0.500000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "55c734a219c3013cc3230dd879ddf5c512f64c5ce7360fb7a4b386b89bd0c8a0",
+      "size_bytes": 46447
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-interior-r1.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "0e17f761f39d250d1c53b8604ea29379561f09edd59b319cec81e437a27c7c18",
+      "size_bytes": 46691
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-interior-r2.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "05b42e87f3fe0ec1696727cb7d0499c984dc275ad6783441d40b540f85d073ac",
+      "size_bytes": 47474
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-tail-r0.500000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "d4df2488c81f58dc8ae35d7c3e42ffea317f8d45e65172b711625ea021020519",
+      "size_bytes": 58273
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-tail-r1.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "7e8ea77f2088f342f344d53ab3b25a9803320cbf983e20b6f8000aa987b6dd38",
+      "size_bytes": 58552
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/hihat-tail-r2.000000.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "b1d6ef65cd25731641f95db560104a39fa8b09a9c3fcb82087ce4ee55ed1d3d3",
+      "size_bytes": 58283
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-attack-r0.498558.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "faed17e4561080c491f08d0aaac8ba5105b305dbc5eded530bafaafe23c9f4c8",
+      "size_bytes": 46740
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-attack-r0.997116.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "5e0035859a5f5b5e39503490a05388b3b31fd4852f529fe3d67b863050daaaa2",
+      "size_bytes": 45894
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-attack-r1.994232.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "e6c18f6eeca11acb03b37a0c3f498d56ba3ef9c8ebe009e8c59a34762a4c8f46",
+      "size_bytes": 45500
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-loop_seam-r0.498558.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "50a86db34f532544d466810679c781dbab7c0c20fdf52d3412f5c5d42d3f4214",
+      "size_bytes": 52918
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-loop_seam-r0.997116.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "a0332208e140550446ab4ab5e2051a049c602cf6c7380007f8a644d611f4208c",
+      "size_bytes": 52878
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-loop_seam-r1.994232.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "a5f94582517dc093405a52b1e0b74b51e3be27c155efd4d877167238d1adca1e",
+      "size_bytes": 53248
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-release_exit-r0.498558.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "9558c77cdd4d903af92ad4f0f439f17800976c5444f6bca67cecbc5fb201d08b",
+      "size_bytes": 52893
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-release_exit-r0.997116.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "3e67a9b0ba0e81e17710c3ba4ed1f26323ff92729b2bbb814973bf450c9796e9",
+      "size_bytes": 53335
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-release_exit-r1.994232.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "4dcb17a8d10481cc1033afb02dc9aabbfbcb9ac81a68a6760e5bc7c7b4b14b59",
+      "size_bytes": 54513
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-sustain-r0.498558.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "03d542d612289df63ce63608cfb2d70b7764256e68651e8a3cd710cd25286045",
+      "size_bytes": 53337
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-sustain-r0.997116.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "2697fc476e1c6d73bff66aae6cd75e424afca9feb92c42d2d9f60f69c14fcde2",
+      "size_bytes": 53663
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/piano-mid-sustain-r1.994232.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "67dbaa955d73619db6546e1f6a00d64d8c886e5e42195c2600229813fc34fddb",
+      "size_bytes": 54612
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-attack-r0.384820.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "0c011e2b5141768ac760df7939f12e9f135daa2650d2a60826ad8211ed69bb64",
+      "size_bytes": 45492
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-attack-r0.769640.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "5559187aad906d64ed74faf600d1b0e01813978954faf028099e55b1babb97d0",
+      "size_bytes": 45360
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-attack-r1.539280.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "7d7b438da4edf6dc465d35d209f45ea62f8d3580cff1d6bfbbb4f7f3be6e7fea",
+      "size_bytes": 45335
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-loop_seam-r0.384820.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "7500c582527290ef4560e1f505a93c176b2be20dae29f6a473b56e4b2fe8f8e6",
+      "size_bytes": 45314
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-loop_seam-r0.769640.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "44b8d7e567d864517da3db189afca72e55852fb1bbdaeb394b915470b9fb1d28",
+      "size_bytes": 45240
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-loop_seam-r1.539280.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "51b482b98b99531ae7a14a456bf72716e7e4ef578c32a0b5e7b7ad4315b779bc",
+      "size_bytes": 45282
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-release_exit-r0.384820.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "ce1390020e5012a106fdd44a668fe666e1227031962c90d5d80a888ae3e24356",
+      "size_bytes": 45270
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-release_exit-r0.769640.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "c11c0a242ddda308fa48893431ddf84809d1309bfaadd930978b022f282f2543",
+      "size_bytes": 45368
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-release_exit-r1.539280.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "d1080d009a25a71d73fb572ee2fe2fece932c6c28b1adf5d462febedfab40589",
+      "size_bytes": 45302
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-sustain-r0.384820.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "37d22a92284149bdc19e330336c155e34e38b9791847999d916c0b5d90304cbf",
+      "size_bytes": 44983
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-sustain-r0.769640.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "66b129757a892b80d9858b37e6e2bf71db1252e7fd0a33660c7f8160e72d93fd",
+      "size_bytes": 45301
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/saw-lead-mid-sustain-r1.539280.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "92f2de074ec6e5ef8b9e59b8b0e8adc7c88a9ff5ca3c51fa19331990b1c8d7b0",
+      "size_bytes": 45220
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-attack-r0.342449.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "b008a8e443c1e49b6c83267d9d53a4b8eeba14451e6d6b5a7a926d3ff8b6f9e7",
+      "size_bytes": 51168
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-attack-r0.684897.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "e85a9c020b55f9f9b65e7ffc9dab4b79a5b64d34f2070190f28290fe0fad4d31",
+      "size_bytes": 50815
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-attack-r1.369795.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "e7df163a6579c37e35864e6b17273edf8a758640cc7e26eaf9c83af768f299ed",
+      "size_bytes": 50225
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-loop_seam-r0.342449.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "75838b065e14e56db984b722bd381ea7a580b7d5858541f93fee0bf893fa5d8d",
+      "size_bytes": 47019
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-loop_seam-r0.684897.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "015a11133ab58dee25242071e4364df7bdaed630dbe3449f4c9892f967c353e8",
+      "size_bytes": 47177
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-loop_seam-r1.369795.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "266c37d0cf1592b4f5ece412fca606c6c4ddd0e46c1f0e1a58c25e237e3dbe13",
+      "size_bytes": 47038
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-release_exit-r0.342449.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "dca1bef7974fbe53800bb1fc15480ba4d4af4bf24fa59a173ed31a554a584d4f",
+      "size_bytes": 47940
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-release_exit-r0.684897.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "37f0cd5ab7870a31bc5e9a8898a50788599db56a11c9de63d0343bda4b37f79c",
+      "size_bytes": 47877
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-release_exit-r1.369795.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "fca04393e49de6f5c79fc220809a754ade54c15be8174e1808ac82f035bcf9b5",
+      "size_bytes": 47510
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-sustain-r0.342449.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "6c43a06ee7532c0cd4a38c127dec425d1276fa57d295b16134660e543a39deb9",
+      "size_bytes": 45996
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-sustain-r0.684897.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "f4b0a953a8352e7a7b5004d79db05b10bc71481a6655b39e23ece18dec6f8de2",
+      "size_bytes": 46270
+    },
+    {
+      "path": "audit-only/compensated-c-math/cubic-sinc25/sf2-raw/strings-mid-sustain-r1.369795.csv",
+      "reason": "external input retained by hash only; not copied",
+      "sha256": "2d704b1902ab26cc345378484b452f3afde2ecc6eb912dd58965cc22db465805",
+      "size_bytes": 46460
     }
   ],
   "schema": 1,
   "source_roots": [
-    "oversampled-c"
+    "oversampled-c",
+    "compensated-c-math"
   ],
-  "status": "stopped at static and SF2 quality gates",
-  "summary": "The direct, un-pre-emphasized 2\u00d7 float representation with 4/6-point polynomial reconstruction missed both passband and real-SF2 error budgets. The screen rejects this direct form only; an equalized/pre-emphasized form remains untested.",
+  "status": "stopped at real-SF2 quality gate",
+  "summary": "The direct 2x table and the phase-independent compensated follow-up both fail frozen real-SF2 quality gates. The follow-up also fails in an interior periodic window; no fixed alignment delay was found. Neither form was advanced to performance testing.",
   "title": "Two-times oversampled interpolation table"
 }
