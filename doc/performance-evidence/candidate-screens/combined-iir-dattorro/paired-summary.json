@@ -1,0 +1,348 @@
+{
+  "repetitions": 5,
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 60,
+    "effects": true,
+    "OMP_NUM_THREADS": "1",
+    "OMP_DYNAMIC": "FALSE",
+    "player_timing_source": "sample"
+  },
+  "cases": [
+    {
+      "precision": "double",
+      "name": "Maestro_1",
+      "block": 64,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.8559666476336079,
+        "ratio_range": [
+          0.7709987046630278,
+          0.8755936542574351
+        ],
+        "candidate_faster_percent": 14.403335236639215
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.8534653392501884
+      },
+      "rss_candidate_over_baseline_median": 0.9997923123622072,
+      "pcm_hashes": {
+        "baseline": [
+          "6d2a0ad7c57a9564"
+        ],
+        "candidate": [
+          "6d2a0ad7c57a9564"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "double",
+      "name": "Maestro_1",
+      "block": 8192,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.8440496844169388,
+        "ratio_range": [
+          0.825488733120616,
+          0.8839127044143458
+        ],
+        "candidate_faster_percent": 15.595031558306117
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.8467495531993292
+      },
+      "rss_candidate_over_baseline_median": 1.0002392077439521,
+      "pcm_hashes": {
+        "baseline": [
+          "6d2a0ad7c57a9564"
+        ],
+        "candidate": [
+          "6d2a0ad7c57a9564"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "double",
+      "name": "POP909_010",
+      "block": 64,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.8150803770049325,
+        "ratio_range": [
+          0.7744874944536773,
+          0.8417769280244136
+        ],
+        "candidate_faster_percent": 18.49196229950675
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.8114088193367643
+      },
+      "rss_candidate_over_baseline_median": 1.000559480801816,
+      "pcm_hashes": {
+        "baseline": [
+          "9642ba282c525185"
+        ],
+        "candidate": [
+          "9642ba282c525185"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "double",
+      "name": "POP909_010",
+      "block": 8192,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.8036383618479852,
+        "ratio_range": [
+          0.7531167858244898,
+          0.8138282556708315
+        ],
+        "candidate_faster_percent": 19.636163815201478
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.8030041787821189
+      },
+      "rss_candidate_over_baseline_median": 0.9998563516511579,
+      "pcm_hashes": {
+        "baseline": [
+          "9642ba282c525185"
+        ],
+        "candidate": [
+          "9642ba282c525185"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "double",
+      "name": "All The Small Things",
+      "block": 64,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.9338734658169334,
+        "ratio_range": [
+          0.9087423408015081,
+          0.9717183259911784
+        ],
+        "candidate_faster_percent": 6.612653418306658
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.9326158612262238
+      },
+      "rss_candidate_over_baseline_median": 1.0,
+      "pcm_hashes": {
+        "baseline": [
+          "124f8cd830b16bbe"
+        ],
+        "candidate": [
+          "124f8cd830b16bbe"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "double",
+      "name": "All The Small Things",
+      "block": 8192,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.9346227237354974,
+        "ratio_range": [
+          0.9027138935574184,
+          0.950837417782602
+        ],
+        "candidate_faster_percent": 6.537727626450263
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.9362458669482026
+      },
+      "rss_candidate_over_baseline_median": 1.0004148053605615,
+      "pcm_hashes": {
+        "baseline": [
+          "124f8cd830b16bbe"
+        ],
+        "candidate": [
+          "124f8cd830b16bbe"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "float",
+      "name": "Maestro_1",
+      "block": 64,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.8434723117908365,
+        "ratio_range": [
+          0.8201199758790315,
+          0.8694908761272376
+        ],
+        "candidate_faster_percent": 15.652768820916352
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.8408045686261377
+      },
+      "rss_candidate_over_baseline_median": 1.0,
+      "pcm_hashes": {
+        "baseline": [
+          "ab25b9a8d74a854c"
+        ],
+        "candidate": [
+          "ab25b9a8d74a854c"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "float",
+      "name": "Maestro_1",
+      "block": 8192,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.8412982124248471,
+        "ratio_range": [
+          0.7892822724671218,
+          0.8497566797772854
+        ],
+        "candidate_faster_percent": 15.870178757515285
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.8416963966331859
+      },
+      "rss_candidate_over_baseline_median": 0.9998561679957809,
+      "pcm_hashes": {
+        "baseline": [
+          "56f71990173d8974"
+        ],
+        "candidate": [
+          "56f71990173d8974"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "float",
+      "name": "POP909_010",
+      "block": 64,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.8047213089985406,
+        "ratio_range": [
+          0.7326092225917932,
+          0.8429158881414643
+        ],
+        "candidate_faster_percent": 19.527869100145946
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.8056406335504962
+      },
+      "rss_candidate_over_baseline_median": 1.000128,
+      "pcm_hashes": {
+        "baseline": [
+          "c9008dfca65a6217"
+        ],
+        "candidate": [
+          "c9008dfca65a6217"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "float",
+      "name": "POP909_010",
+      "block": 8192,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.7992123540065109,
+        "ratio_range": [
+          0.732777256157064,
+          0.835147926847546
+        ],
+        "candidate_faster_percent": 20.078764599348908
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.7974160458328445
+      },
+      "rss_candidate_over_baseline_median": 1.0000479754365765,
+      "pcm_hashes": {
+        "baseline": [
+          "add20f42ebc092a0"
+        ],
+        "candidate": [
+          "add20f42ebc092a0"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "float",
+      "name": "All The Small Things",
+      "block": 64,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.9171664374509849,
+        "ratio_range": [
+          0.8720662938796521,
+          0.9906354203202307
+        ],
+        "candidate_faster_percent": 8.28335625490151
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.9116926288515285
+      },
+      "rss_candidate_over_baseline_median": 1.0000159997440041,
+      "pcm_hashes": {
+        "baseline": [
+          "25fd82f6f8d9bb80"
+        ],
+        "candidate": [
+          "25fd82f6f8d9bb80"
+        ]
+      },
+      "pcm_equal": true
+    },
+    {
+      "precision": "float",
+      "name": "All The Small Things",
+      "block": 8192,
+      "render_wall_candidate_over_baseline": {
+        "median_ratio": 0.9141196263335967,
+        "ratio_range": [
+          0.8801405904446908,
+          0.9599834859844802
+        ],
+        "candidate_faster_percent": 8.588037366640332
+      },
+      "render_cpu_candidate_over_baseline": {
+        "median_ratio": 0.9156065084954034
+      },
+      "rss_candidate_over_baseline_median": 1.0005279915521352,
+      "pcm_hashes": {
+        "baseline": [
+          "bfa35d267600f6b2"
+        ],
+        "candidate": [
+          "bfa35d267600f6b2"
+        ]
+      },
+      "pcm_equal": true
+    }
+  ],
+  "aggregate": {
+    "double": {
+      "median_case_ratio": 0.8500081660252734,
+      "median_case_improvement_percent": 14.99918339747266,
+      "case_ratio_range": [
+        0.8036383618479852,
+        0.9346227237354974
+      ]
+    },
+    "float": {
+      "median_case_ratio": 0.8423852621078418,
+      "median_case_improvement_percent": 15.761473789215819,
+      "case_ratio_range": [
+        0.7992123540065109,
+        0.9171664374509849
+      ]
+    }
+  },
+  "pcm_equal_all_cases": true
+}

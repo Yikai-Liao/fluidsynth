@@ -1,0 +1,76 @@
+{
+  "baseline_commit": "20913f669dd6220052ad0c68d0d6fe3bebcd7d62",
+  "candidate_commit": "26aa711fb6a26155e45bfc29c2706d685bf6d76c",
+  "candidate_branch": "perf/combined-iir-dattorro-20261016",
+  "combined_source_diff_sha256": "75393d44f3081170e1b2027dad4f98668dae29f7a2ad251b7a3ea3484ca8a876",
+  "combined_source_diff": "diff --git a/src/rvoice/fluid_iir_filter_impl.cpp b/src/rvoice/fluid_iir_filter_impl.cpp\nindex 281782ea..a89bb65a 100644\n--- a/src/rvoice/fluid_iir_filter_impl.cpp\n+++ b/src/rvoice/fluid_iir_filter_impl.cpp\n@@ -24,6 +24,16 @@\n #include <algorithm>\n #include <cmath>\n \n+template<typename R>\n+static inline signed fluid_iir_filter_table_index(R fres)\n+{\n+    signed tab_idx = (static_cast<signed>(fres) - FRES_MIN) / CENTS_STEP;\n+#ifndef DBG_FILTER\n+    fluid_clip(tab_idx, 0, SINCOS_TAB_SIZE - 1);\n+#endif\n+    return tab_idx;\n+}\n+\n \n // Calculating the sine and cosine coefficients for every possible cutoff frequency is too CPU expensive and can harm realtime playback.\n // Therefore, we precalculate the coefficients with a precision of CENTS_STEP and store them in a table.\n@@ -62,10 +72,7 @@ static inline void fluid_iir_filter_calculate_coefficients(R fres,\n      * into account for both significant frequency relocation and for\n      * bandwidth readjustment'. */\n \n-    signed tab_idx = (static_cast<signed>(fres) - FRES_MIN) / CENTS_STEP;\n-#ifndef DBG_FILTER\n-    fluid_clip(tab_idx, 0, SINCOS_TAB_SIZE - 1);\n-#endif\n+    signed tab_idx = fluid_iir_filter_table_index(fres);\n     R sin_coeff = sincos_table[tab_idx].sin;\n     R cos_coeff = sincos_table[tab_idx].cos;\n     R alpha_coeff = sin_coeff / (2.0f * q);\n@@ -183,6 +190,9 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID\n         fluid_real_t dsp_amp_incr = iir_filter->amp_incr;\n         IIR_COEFF_T fres = static_cast<IIR_COEFF_T>(iir_filter->last_fres);\n         IIR_COEFF_T q = static_cast<IIR_COEFF_T>(iir_filter->last_q);\n+        signed coeff_tab_idx = fluid_iir_filter_table_index(fres);\n+        // Preserve the first smoothed recalculation before reusing indices in this block.\n+        bool can_reuse_coefficients = false;\n         \n         const IIR_COEFF_T fres_incr = static_cast<IIR_COEFF_T>(iir_filter->fres_incr);\n         const IIR_COEFF_T q_incr = static_cast<IIR_COEFF_T>(iir_filter->q_incr);\n@@ -224,10 +234,24 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID\n \n             if(fres_incr_count > 0 || q_incr_count > 0)\n             {\n+                const bool q_changes = q_incr_count > 0;\n+                bool coefficients_changed = q_changes || !can_reuse_coefficients;\n+\n                 if(fres_incr_count > 0)\n                 {\n                     --fres_incr_count;\n                     fres += fres_incr;\n+\n+                    if(q_changes)\n+                    {\n+                        coeff_tab_idx = fluid_iir_filter_table_index(fres);\n+                    }\n+                    else\n+                    {\n+                        const signed next_tab_idx = fluid_iir_filter_table_index(fres);\n+                        coefficients_changed = coefficients_changed || next_tab_idx != coeff_tab_idx;\n+                        coeff_tab_idx = next_tab_idx;\n+                    }\n                 }\n                 if(q_incr_count > 0)\n                 {\n@@ -245,7 +269,11 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID\n \n                 LOG_FILTER(\"fres: %.2f Hz  | target_fres: %.2f Hz | fres_incr: %f\\t| fres_incr_count: %d\\t|---| q: %f\\t| target_q: %f\\t| q_incr: %f\\t| q_incr_count: %d\", fres, iir_filter->target_fres, fres_incr, fres_incr_count, q, iir_filter->target_q, q_incr, q_incr_count);\n                 \n-                fluid_iir_filter_calculate_coefficients<IIR_COEFF_T, GAIN_NORM, TYPE>(fres, q, iir_filter->sincos_table, &dsp_a1, &dsp_a2, &dsp_b02, &dsp_b1);\n+                if(coefficients_changed)\n+                {\n+                    fluid_iir_filter_calculate_coefficients<IIR_COEFF_T, GAIN_NORM, TYPE>(fres, q, iir_filter->sincos_table, &dsp_a1, &dsp_a2, &dsp_b02, &dsp_b1);\n+                }\n+                can_reuse_coefficients = true;\n             }\n         }\n \ndiff --git a/src/rvoice/fluid_rev_dattorro.cpp b/src/rvoice/fluid_rev_dattorro.cpp\nindex f0f253fe..f4346b5b 100644\n--- a/src/rvoice/fluid_rev_dattorro.cpp\n+++ b/src/rvoice/fluid_rev_dattorro.cpp\n@@ -91,10 +91,10 @@ static float fluid_dattorro_read_tap(const fluid_reverb_delay_line<float> &delay\n     }\n \n     int index = delay.line_out + tap;\n-    index %= size;\n-    if(index < 0)\n+    /* Configured taps are nonnegative and shorter than their delay lines. */\n+    if(index >= size)\n     {\n-        index += size;\n+        index -= size;\n     }\n     return delay.line[index];\n }\n",
+  "probe": {
+    "path": "/root/code/fluidsynth-analysis-20261015/render_probe",
+    "sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59"
+  },
+  "soundfont": {
+    "path": "/root/code/fluidsynth-analysis-20261015/assets/MuseScore_General.sf2",
+    "sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3"
+  },
+  "midi": {
+    "Maestro_1": {
+      "path": "/root/code/symusic/tests/testcases/One_track_MIDIs/Maestro_1.mid",
+      "sha256": "de94744a9c06c2c133b6f81e7f08a8707eb8ba614a10c878dd9572fc1eb868c9"
+    },
+    "POP909_010": {
+      "path": "/root/code/symusic/tests/testcases/One_track_MIDIs/POP909_010.mid",
+      "sha256": "711c7230a53a806e7f78ceb360b440646b310d47a008ae82c4c9b2631276509b"
+    },
+    "All The Small Things": {
+      "path": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+      "sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1"
+    }
+  },
+  "libraries": {
+    "double": {
+      "baseline": {
+        "path": "/root/code/fluidsynth-analysis-20261015/build-partition/src/libfluidsynth.so.3.6.1",
+        "sha256": "0e42fbf40f7fbafd0cdec6cf39d21accf5242843356f9a67cdf991d2838d66dc"
+      },
+      "candidate": {
+        "path": "/root/code/fluidsynth-analysis-20261015/combined/build-double/src/libfluidsynth.so.3.6.1",
+        "sha256": "e17dac875dff058ccbc799fab1068a15493fb1bbe0d0d23f4872251bac324329"
+      }
+    },
+    "float": {
+      "baseline": {
+        "path": "/root/code/fluidsynth-analysis-20261015/build-partition-float/src/libfluidsynth.so.3.6.1",
+        "sha256": "98fef3bad95e3921e1ac74abd934b212da5e6bfb2b92e5f56a9ef5dfe5158d10"
+      },
+      "candidate": {
+        "path": "/root/code/fluidsynth-analysis-20261015/combined/build-float/src/libfluidsynth.so.3.6.1",
+        "sha256": "c6bc2393abbe6ae6a3b57122a286777f5883564013b660238552541d818c69e4"
+      }
+    }
+  },
+  "settings": {
+    "sample_rate": 44100,
+    "polyphony": 256,
+    "gain": 0.2,
+    "interpolation": 4,
+    "cores": 1,
+    "seconds": 60,
+    "effects": true,
+    "OMP_NUM_THREADS": "1",
+    "OMP_DYNAMIC": "FALSE",
+    "player_timing_source": "sample"
+  },
+  "blocks": [
+    64,
+    8192
+  ],
+  "repetitions": 5,
+  "warmup": "One unmeasured baseline and candidate render for every precision/MIDI/block case.",
+  "order": "Alternating AB/BA by repetition and rotated test order.",
+  "host": {
+    "platform": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "lscpu": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           46 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  6\nOn-line CPU(s) list:                     0-5\nVendor ID:                               GenuineIntel\nModel name:                              Intel(R) Xeon(R) Gold 6140 CPU @ 2.30GHz\nCPU family:                              6\nModel:                                   85\nThread(s) per core:                      1\nCore(s) per socket:                      1\nSocket(s):                               6\nStepping:                                4\nBogoMIPS:                                4589.21\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves arat umip pku ospke md_clear flush_l1d arch_capabilities\nHypervisor vendor:                       KVM\nVirtualization type:                     full\nL1d cache:                               192 KiB (6 instances)\nL1i cache:                               192 KiB (6 instances)\nL2 cache:                                6 MiB (6 instances)\nL3 cache:                                148.5 MiB (6 instances)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-5\nVulnerability Gather data sampling:      Not affected\nVulnerability Indirect target selection: Mitigation; Aligned branch/return thunks\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Mitigation; PTE Inversion\nVulnerability Mds:                       Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Meltdown:                  Mitigation; PTI\nVulnerability Mmio stale data:           Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Mitigation; IBRS\nVulnerability Spec rstack overflow:      Not affected\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; IBRS; IBPB conditional; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI SW loop, KVM SW loop\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Not affected\nVulnerability Tsx async abort:           Mitigation; Clear CPU buffers; SMT Host state unknown\nVulnerability Vmscape:                   Not affected\n",
+    "compiler": "c++ (Debian 14.2.0-19) 14.2.0"
+  }
+}
