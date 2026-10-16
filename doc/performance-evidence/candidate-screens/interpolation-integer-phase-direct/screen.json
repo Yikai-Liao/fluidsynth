@@ -1,0 +1,166 @@
+{
+  "seconds": 10,
+  "block": 64,
+  "midi": "/root/code/symusic/tests/testcases/Multitrack_MIDIs/All The Small Things.mid",
+  "warmups_per_arm": 1,
+  "pairs": 3,
+  "wall_candidate_over_baseline": [
+    0.9193914738936233,
+    0.9533422643969789,
+    1.2133981804693104
+  ],
+  "wall_median_ratio": 0.9533422643969789,
+  "wall_range": [
+    0.9193914738936233,
+    1.2133981804693104
+  ],
+  "cpu_candidate_over_baseline": [
+    0.9200912349676988,
+    0.9530749744923723,
+    1.2092437443423834
+  ],
+  "cpu_median_ratio": 0.9530749744923723,
+  "pcm_hashes": {
+    "baseline": [
+      "fb61cfa69767f603",
+      "fb61cfa69767f603",
+      "fb61cfa69767f603"
+    ],
+    "candidate": [
+      "fb61cfa69767f603",
+      "fb61cfa69767f603",
+      "fb61cfa69767f603"
+    ]
+  },
+  "pcm_equal": true,
+  "rows": [
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.173048875,
+      "render_wall": 0.298172689,
+      "render_cpu": 0.298092132,
+      "maxrss_kib": 232972,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "baseline",
+      "label": "warmup"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.178930413,
+      "render_wall": 0.29380719,
+      "render_cpu": 0.293462384,
+      "maxrss_kib": 233044,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "candidate",
+      "label": "warmup"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.17638368,
+      "render_wall": 0.331095869,
+      "render_cpu": 0.330722318,
+      "maxrss_kib": 233076,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "baseline",
+      "label": "pair-0"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.164074448,
+      "render_wall": 0.304406719,
+      "render_cpu": 0.304294706,
+      "maxrss_kib": 233040,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "candidate",
+      "label": "pair-0"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.172704441,
+      "render_wall": 0.289091963,
+      "render_cpu": 0.288799982,
+      "maxrss_kib": 232936,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "candidate",
+      "label": "pair-1"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.167524876,
+      "render_wall": 0.303240477,
+      "render_cpu": 0.303019164,
+      "maxrss_kib": 233244,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "baseline",
+      "label": "pair-1"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.163564284,
+      "render_wall": 0.282601224,
+      "render_cpu": 0.282387018,
+      "maxrss_kib": 232940,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "baseline",
+      "label": "pair-2"
+    },
+    {
+      "block": 64,
+      "cores": 1,
+      "fx": 1,
+      "frames": 441000,
+      "setup_wall": 0.187389186,
+      "render_wall": 0.342907811,
+      "render_cpu": 0.341474735,
+      "maxrss_kib": 233080,
+      "hash": "fb61cfa69767f603",
+      "rms": 0.0408382734,
+      "peak": 0.227581903,
+      "arm": "candidate",
+      "label": "pair-2"
+    }
+  ],
+  "source_commit": "ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c",
+  "baseline_library_sha256": "6c3c4c5e1345eca83383ba940ed3febf582b714477fe4508b6e4c75af349b0ad",
+  "candidate_library_sha256": "1a5aef9e465f7f4347f3a0cdcc40505c5329412510a7d76217d7efe679dde142",
+  "source_patch_sha256": "f6ee960ce3d7685bf683001b9940611659f15834af3363a2c9d483404156b56e",
+  "probe_sha256": "6b7653ff4c5a67de5de59cba56e4fd643875a2efd3307c0a5b558a549e09cf59",
+  "soundfont_sha256": "ee51d2c4b1525e70f19a45909c4fd7a2e26d91d115fa89dbf5a6bc413d8b9bf3",
+  "midi_sha256": "e7f1a7742122c00c1ab1f3015b6951818dc7f084aa50f1743160879482ab92c1",
+  "compiler": "c++ (Debian 14.2.0-19) 14.2.0"
+}

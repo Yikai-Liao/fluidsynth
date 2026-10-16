@@ -1,0 +1,80 @@
+diff --git a/src/rvoice/fluid_rvoice_dsp.cpp b/src/rvoice/fluid_rvoice_dsp.cpp
+index 3452ea4d..a51b1610 100644
+--- a/src/rvoice/fluid_rvoice_dsp.cpp
++++ b/src/rvoice/fluid_rvoice_dsp.cpp
+@@ -98,7 +98,6 @@ static int fluid_rvoice_dsp_silence_local(fluid_rvoice_t *rvoice, fluid_real_t *
+ 
+     /* Convert playback "speed" floating point value to phase index/fract */
+     fluid_phase_set_float(dsp_phase_incr, voice->phase_incr);
+-
+     end_index = LOOPING ? voice->loopend - 1 : voice->end;
+ 
+     while(1)
+@@ -206,7 +205,6 @@ fluid_rvoice_dsp_interpolate_none_local(fluid_rvoice_t *rvoice, fluid_real_t *FL
+     }
+ 
+     voice->phase = dsp_phase;
+-
+     return (dsp_i);
+ }
+ 
+@@ -340,6 +338,10 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
+ 
+     /* Convert playback "speed" floating point value to phase index/fract */
+     fluid_phase_set_float(dsp_phase_incr, voice->phase_incr);
++    /* Table row zero is the exact sample pick; an integer phase and step keep
++       every sample in the interior loop on that row. */
++    const bool integer_phase = fluid_phase_fract(dsp_phase) == 0
++                               && fluid_phase_fract(dsp_phase_incr) == 0;
+ 
+     /* last index before 4th interpolation point must be specially handled */
+     end_index = (LOOPING ? voice->loopend - 1 : voice->end) - 2;
+@@ -402,19 +404,31 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
+         /* interpolate the sequence of sample points */
+         safe_count = compute_interpolation_steps(dsp_phase, dsp_phase_incr, end_index, dsp_i);
+ 
+-        for(; safe_count--; dsp_i++)
++        if(integer_phase)
+         {
+-            fluid_real_t sample = interp_cubic(
+-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index - 1),
+-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index),
+-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 1),
+-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 2));
++            for(; safe_count--; dsp_i++)
++            {
++                dsp_buf[dsp_i] = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index);
++                fluid_phase_incr(dsp_phase, dsp_phase_incr);
++                dsp_phase_index = fluid_phase_index(dsp_phase);
++            }
++        }
++        else
++        {
++            for(; safe_count--; dsp_i++)
++            {
++                fluid_real_t sample = interp_cubic(
++                                          fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index - 1),
++                                          fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index),
++                                          fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 1),
++                                          fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 2));
+ 
+-            dsp_buf[dsp_i] = sample;
++                dsp_buf[dsp_i] = sample;
+ 
+-            /* increment phase and amplitude */
+-            fluid_phase_incr(dsp_phase, dsp_phase_incr);
+-            dsp_phase_index = fluid_phase_index(dsp_phase);
++                /* increment phase and amplitude */
++                fluid_phase_incr(dsp_phase, dsp_phase_incr);
++                dsp_phase_index = fluid_phase_index(dsp_phase);
++            }
+         }
+ 
+         /* break out if buffer filled */
+@@ -818,4 +832,4 @@ fluid_rvoice_dsp_interpolate(fluid_rvoice_t *rvoice, fluid_real_t *FLUID_RESTRIC
+     case FLUID_INTERP_HIGHEST:
+         return dsp_invoker<InterpolateSinc<25>>(rvoice, dsp_buf, looping);
+     }
+-}
+\ No newline at end of file
++}
