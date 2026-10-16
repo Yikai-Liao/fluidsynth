@@ -1,0 +1,36 @@
+{
+  "double": {
+    "sample_rate_hz": [
+      8000,
+      96000
+    ],
+    "integer_rates_checked": 88001,
+    "tap_pairs_checked": 1232014,
+    "minimum_delay_minus_tap_samples": {
+      "margin_samples": 153,
+      "rate_hz": 8010,
+      "tap_index": 9,
+      "tap_samples": 331,
+      "delay_samples": 484
+    },
+    "maximum_tap_over_delay_ratio": 0.8152085036794767,
+    "violations": 0
+  },
+  "float": {
+    "sample_rate_hz": [
+      8000,
+      96000
+    ],
+    "integer_rates_checked": 88001,
+    "tap_pairs_checked": 1232014,
+    "minimum_delay_minus_tap_samples": {
+      "margin_samples": 153,
+      "rate_hz": 8010,
+      "tap_index": 9,
+      "tap_samples": 331,
+      "delay_samples": 484
+    },
+    "maximum_tap_over_delay_ratio": 0.8152085036794767,
+    "violations": 0
+  }
+}

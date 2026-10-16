@@ -1,0 +1,42 @@
+{
+  "settings": {
+    "sample_rate": 44100,
+    "block": 64,
+    "cores": 1,
+    "seconds": 60,
+    "fx": 1,
+    "omp_threads": 1
+  },
+  "inputs": {
+    "Maestro_1": {
+      "wall_ratio_median": 0.9621847567534522,
+      "wall_ratio_min": 0.9422526766767327,
+      "wall_ratio_max": 0.9942741362628099,
+      "cpu_ratio_median": 0.962219872410278,
+      "cpu_ratio_min": 0.9421054572326378,
+      "cpu_ratio_max": 0.9940018410772213,
+      "rss_ratio_median": 1.000415581094257,
+      "candidate_wall_wins": 5
+    },
+    "POP909_010": {
+      "wall_ratio_median": 0.9353165844835557,
+      "wall_ratio_min": 0.8848970224453592,
+      "wall_ratio_max": 0.9768287849133931,
+      "cpu_ratio_median": 0.9352475665234227,
+      "cpu_ratio_min": 0.8846217587938703,
+      "cpu_ratio_max": 0.976149280916113,
+      "rss_ratio_median": 0.9997443272611057,
+      "candidate_wall_wins": 5
+    },
+    "All The Small Things": {
+      "wall_ratio_median": 0.9311795787563674,
+      "wall_ratio_min": 0.862381128089723,
+      "wall_ratio_max": 0.9836687227005158,
+      "cpu_ratio_median": 0.9316423369478748,
+      "cpu_ratio_min": 0.8627530965836759,
+      "cpu_ratio_max": 0.9817116549014668,
+      "rss_ratio_median": 1.0005274936061381,
+      "candidate_wall_wins": 5
+    }
+  }
+}
