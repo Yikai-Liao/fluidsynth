@@ -1,22 +1,167 @@
-# Polyphase IIR halfband wet-rate conversion
+# g-halfband-screen experiment archive
 
-- Branch: archive/failed-g-halfband-screen-20261016
-- Status: stopped at wet-quality gate
-- Analysis source: /root/code/fluidsynth-analysis-20261015
-- Outcome: The first H+C median was 2.827 ms, below the 3.2 ms feasibility ceiling, but the 12-second wet impulse missed the response contract: total energy −3.011 dB, normalized one-third-octave color −3.013 to +13.251 dB, high-band T20 differences up to +35.32%, and late IACC delta −0.056. No integration was attempted.
+- Branch: `archive/failed-g-halfband-screen-20261016`
+- Status: stopped at the frozen quality gate
+- Analysis source: `/root/code/fluidsynth-analysis-20261015`
+- Outcome: The corrected short run has independent medians H+C=2.298 ms, complete=2.882 ms and full rate=3.096 ms (complete/full 0.9309; reciprocal 1.0742). The long run is 36.237 ms complete versus 51.150 ms full (0.7084; reciprocal 1.4115). These are separate medians, not paired estimates. The 12-second wet impulse still fails the response contract: energy −3.011 dB, normalized color −3.013 to +13.251 dB, high-band T20 differences up to +35.32%, and late IACC delta −0.056. No integration was attempted.
 
 ## Preserved files
 
-The original report, reproduction scripts, patches, logs, and text/CSV/JSON evidence are copied below. Binary audio, PCM, SoundFont, MIDI, and build outputs are excluded; their hashes are retained in archive-manifest.json when they were in the selected source trees. The analysis reports also retain hashes for external inputs.
+Reports, reproduction scripts, summary data and text/CSV/JSON evidence are listed below. Binary PCM and build outputs are omitted; their hashes remain in `archive-manifest.json` where available. External input assets are identified by hashes in the experiment manifest.
 
 - sources/g-halfband-screen/REPORT.md
+- sources/g-halfband-screen/analyze_wet.cpp
+- sources/g-halfband-screen/frequency_response.cpp
+- sources/g-halfband-screen/g-hook.patch
+- sources/g-halfband-screen/g_probe.cpp
+- sources/g-halfband-screen/hiir/Downsampler2x16Avx512.h
+- sources/g-halfband-screen/hiir/Downsampler2x16Avx512.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x2F64Neon.h
+- sources/g-halfband-screen/hiir/Downsampler2x2F64Neon.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x2F64Sse2.h
+- sources/g-halfband-screen/hiir/Downsampler2x2F64Sse2.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x3dnow.h
+- sources/g-halfband-screen/hiir/Downsampler2x3dnow.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x4F64Avx.h
+- sources/g-halfband-screen/hiir/Downsampler2x4F64Avx.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x4Neon.h
+- sources/g-halfband-screen/hiir/Downsampler2x4Neon.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x4Sse.h
+- sources/g-halfband-screen/hiir/Downsampler2x4Sse.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x8Avx.h
+- sources/g-halfband-screen/hiir/Downsampler2x8Avx.hpp
+- sources/g-halfband-screen/hiir/Downsampler2x8F64Avx512.h
+- sources/g-halfband-screen/hiir/Downsampler2x8F64Avx512.hpp
+- sources/g-halfband-screen/hiir/Downsampler2xF64Fpu.h
+- sources/g-halfband-screen/hiir/Downsampler2xF64Sse2.h
+- sources/g-halfband-screen/hiir/Downsampler2xF64Sse2.hpp
+- sources/g-halfband-screen/hiir/Downsampler2xFpu.h
+- sources/g-halfband-screen/hiir/Downsampler2xFpuTpl.h
+- sources/g-halfband-screen/hiir/Downsampler2xFpuTpl.hpp
+- sources/g-halfband-screen/hiir/Downsampler2xNeon.h
+- sources/g-halfband-screen/hiir/Downsampler2xNeon.hpp
+- sources/g-halfband-screen/hiir/Downsampler2xNeonOld.h
+- sources/g-halfband-screen/hiir/Downsampler2xNeonOld.hpp
+- sources/g-halfband-screen/hiir/Downsampler2xSse.h
+- sources/g-halfband-screen/hiir/Downsampler2xSse.hpp
+- sources/g-halfband-screen/hiir/Downsampler2xSseOld.h
+- sources/g-halfband-screen/hiir/Downsampler2xSseOld.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi16Avx512.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi16Avx512.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi2F64Sse2.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi2F64Sse2.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi3dnow.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi3dnow.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi4F64Avx.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi4F64Avx.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi4Neon.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi4Neon.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi4Sse.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi4Sse.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi8Avx.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi8Avx.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPi8F64Avx512.h
+- sources/g-halfband-screen/hiir/PhaseHalfPi8F64Avx512.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPiF64Fpu.h
+- sources/g-halfband-screen/hiir/PhaseHalfPiF64Sse2.h
+- sources/g-halfband-screen/hiir/PhaseHalfPiF64Sse2.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPiFpu.h
+- sources/g-halfband-screen/hiir/PhaseHalfPiFpuTpl.h
+- sources/g-halfband-screen/hiir/PhaseHalfPiFpuTpl.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPiNeon.h
+- sources/g-halfband-screen/hiir/PhaseHalfPiNeon.hpp
+- sources/g-halfband-screen/hiir/PhaseHalfPiSse.h
+- sources/g-halfband-screen/hiir/PhaseHalfPiSse.hpp
+- sources/g-halfband-screen/hiir/PolyphaseIir2Designer.h
 - sources/g-halfband-screen/hiir/README.md
+- sources/g-halfband-screen/hiir/StageData3dnow.h
+- sources/g-halfband-screen/hiir/StageDataAvx.h
+- sources/g-halfband-screen/hiir/StageDataAvx512.h
+- sources/g-halfband-screen/hiir/StageDataF64Avx.h
+- sources/g-halfband-screen/hiir/StageDataF64Avx512.h
+- sources/g-halfband-screen/hiir/StageDataF64Sse2.h
+- sources/g-halfband-screen/hiir/StageDataNeonV2.h
+- sources/g-halfband-screen/hiir/StageDataNeonV2F64.h
+- sources/g-halfband-screen/hiir/StageDataNeonV4.h
+- sources/g-halfband-screen/hiir/StageDataSse.h
+- sources/g-halfband-screen/hiir/StageProc16Avx512.h
+- sources/g-halfband-screen/hiir/StageProc16Avx512.hpp
+- sources/g-halfband-screen/hiir/StageProc2F64Neon.h
+- sources/g-halfband-screen/hiir/StageProc2F64Neon.hpp
+- sources/g-halfband-screen/hiir/StageProc2F64Sse2.h
+- sources/g-halfband-screen/hiir/StageProc2F64Sse2.hpp
+- sources/g-halfband-screen/hiir/StageProc3dnow.h
+- sources/g-halfband-screen/hiir/StageProc3dnow.hpp
+- sources/g-halfband-screen/hiir/StageProc4F64Avx.h
+- sources/g-halfband-screen/hiir/StageProc4F64Avx.hpp
+- sources/g-halfband-screen/hiir/StageProc4Neon.h
+- sources/g-halfband-screen/hiir/StageProc4Neon.hpp
+- sources/g-halfband-screen/hiir/StageProc4Sse.h
+- sources/g-halfband-screen/hiir/StageProc4Sse.hpp
+- sources/g-halfband-screen/hiir/StageProc8Avx.h
+- sources/g-halfband-screen/hiir/StageProc8Avx.hpp
+- sources/g-halfband-screen/hiir/StageProc8F64Avx512.h
+- sources/g-halfband-screen/hiir/StageProc8F64Avx512.hpp
+- sources/g-halfband-screen/hiir/StageProcF64Sse2.h
+- sources/g-halfband-screen/hiir/StageProcF64Sse2.hpp
+- sources/g-halfband-screen/hiir/StageProcFpu.h
+- sources/g-halfband-screen/hiir/StageProcFpu.hpp
+- sources/g-halfband-screen/hiir/StageProcNeonV2.h
+- sources/g-halfband-screen/hiir/StageProcNeonV2.hpp
+- sources/g-halfband-screen/hiir/StageProcNeonV4.h
+- sources/g-halfband-screen/hiir/StageProcNeonV4.hpp
+- sources/g-halfband-screen/hiir/StageProcSseV2.h
+- sources/g-halfband-screen/hiir/StageProcSseV2.hpp
+- sources/g-halfband-screen/hiir/StageProcSseV4.h
+- sources/g-halfband-screen/hiir/StageProcSseV4.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x16Avx512.h
+- sources/g-halfband-screen/hiir/Upsampler2x16Avx512.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x2F64Neon.h
+- sources/g-halfband-screen/hiir/Upsampler2x2F64Neon.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x2F64Sse2.h
+- sources/g-halfband-screen/hiir/Upsampler2x2F64Sse2.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x3dnow.h
+- sources/g-halfband-screen/hiir/Upsampler2x3dnow.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x4F64Avx.h
+- sources/g-halfband-screen/hiir/Upsampler2x4F64Avx.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x4Neon.h
+- sources/g-halfband-screen/hiir/Upsampler2x4Neon.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x4Sse.h
+- sources/g-halfband-screen/hiir/Upsampler2x4Sse.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x8Avx.h
+- sources/g-halfband-screen/hiir/Upsampler2x8Avx.hpp
+- sources/g-halfband-screen/hiir/Upsampler2x8F64Avx512.h
+- sources/g-halfband-screen/hiir/Upsampler2x8F64Avx512.hpp
+- sources/g-halfband-screen/hiir/Upsampler2xF64Fpu.h
+- sources/g-halfband-screen/hiir/Upsampler2xF64Sse2.h
+- sources/g-halfband-screen/hiir/Upsampler2xF64Sse2.hpp
+- sources/g-halfband-screen/hiir/Upsampler2xFpu.h
+- sources/g-halfband-screen/hiir/Upsampler2xFpuTpl.h
+- sources/g-halfband-screen/hiir/Upsampler2xFpuTpl.hpp
+- sources/g-halfband-screen/hiir/Upsampler2xNeon.h
+- sources/g-halfband-screen/hiir/Upsampler2xNeon.hpp
+- sources/g-halfband-screen/hiir/Upsampler2xNeonOld.h
+- sources/g-halfband-screen/hiir/Upsampler2xNeonOld.hpp
+- sources/g-halfband-screen/hiir/Upsampler2xSse.h
+- sources/g-halfband-screen/hiir/Upsampler2xSse.hpp
+- sources/g-halfband-screen/hiir/Upsampler2xSseOld.h
+- sources/g-halfband-screen/hiir/Upsampler2xSseOld.hpp
+- sources/g-halfband-screen/hiir/def.h
+- sources/g-halfband-screen/hiir/fnc.h
+- sources/g-halfband-screen/hiir/fnc.hpp
+- sources/g-halfband-screen/hiir/fnc_neon.h
+- sources/g-halfband-screen/hiir/fnc_neon.hpp
 - sources/g-halfband-screen/hiir/license.txt
 - sources/g-halfband-screen/hiir/readme.txt
 - sources/g-halfband-screen/manifest.json
+- sources/g-halfband-screen/query.cpp
 - sources/g-halfband-screen/raw-frequency-response.txt
 - sources/g-halfband-screen/raw-timing-mono-long.txt
 - sources/g-halfband-screen/raw-timing-mono.txt
 - sources/g-halfband-screen/raw-timing.txt
 - sources/g-halfband-screen/raw-wet-quality.txt
 - sources/g-halfband-screen/raw-wet-render.txt
+- sources/g-halfband-screen/run.sh
+- sources/g-halfband-screen/summarize.py
+- sources/g-halfband-screen/summary.json
+- sources/g-halfband-screen/wet_probe.cpp

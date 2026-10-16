@@ -2,10 +2,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-WORKTREE="${FLUIDSYNTH_G_WORKTREE:-/root/code/fluidsynth-worktrees/combined-iir-dattorro-20261016}"
+WORKTREE="${FLUIDSYNTH_G_WORKTREE:-}"
 BUILD_DIR="$SCRIPT_DIR/build"
 TASK_CPU="${FLUIDSYNTH_G_CPU:-2}"
 EXPECTED_HEAD="571bc72e72b756f25333b3e31fb3046161c27632"
+
+if [[ -z "$WORKTREE" ]]; then
+    echo "set FLUIDSYNTH_G_WORKTREE to a clean FluidSynth worktree at $EXPECTED_HEAD" >&2
+    exit 2
+fi
 
 if [[ "$(git -C "$WORKTREE" rev-parse HEAD)" != "$EXPECTED_HEAD" ]]; then
     echo "unexpected FluidSynth worktree revision" >&2

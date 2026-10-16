@@ -1,0 +1,163 @@
+{
+  "experiment": "G polyphase IIR halfband wet reverb screen",
+  "baseline_commit": "571bc72e72b756f25333b3e31fb3046161c27632",
+  "timing": [
+    {
+      "source_file": "raw-timing-mono.txt",
+      "header": {
+        "frames": "65536",
+        "blocks": "1024",
+        "repeats": "7",
+        "taps_per_halfband_path": "6",
+        "transition": "0.062925170",
+        "attenuation_db": "86.722885"
+      },
+      "timing": {
+        "full_rate_core": {
+          "samples_ms": [
+            2.879529,
+            3.026637,
+            3.04624,
+            3.095512,
+            3.146918,
+            3.439715,
+            3.762954
+          ],
+          "median_ms": 3.095512,
+          "min_ms": 2.879529,
+          "max_ms": 3.762954
+        },
+        "half_rate_core_direct": {
+          "samples_ms": [
+            1.469998,
+            1.501458,
+            1.504552,
+            1.538202,
+            1.546906,
+            2.144824,
+            3.155296
+          ],
+          "median_ms": 1.538202,
+          "min_ms": 1.469998,
+          "max_ms": 3.155296
+        },
+        "converter_without_reverb": {
+          "samples_ms": [
+            0.726576,
+            0.732138,
+            0.755885,
+            0.76021,
+            0.771875,
+            0.777228,
+            0.783829
+          ],
+          "median_ms": 0.76021,
+          "min_ms": 0.726576,
+          "max_ms": 0.783829
+        },
+        "complete_multirate": {
+          "samples_ms": [
+            2.563159,
+            2.563872,
+            2.849323,
+            2.881588,
+            2.919893,
+            3.048726,
+            3.497291
+          ],
+          "median_ms": 2.881588,
+          "min_ms": 2.563159,
+          "max_ms": 3.497291
+        },
+        "h_plus_c_median_ms": 2.298412,
+        "complete_over_full_median_ratio": 0.9308922078157023,
+        "full_over_complete_median_ratio": 1.0742382325301187
+      },
+      "comparison_note": "Ratios are ratios of independent sample medians, not paired speedup estimates."
+    },
+    {
+      "source_file": "raw-timing-mono-long.txt",
+      "header": {
+        "frames": "1048576",
+        "blocks": "16384",
+        "repeats": "7",
+        "taps_per_halfband_path": "6",
+        "transition": "0.062925170",
+        "attenuation_db": "86.722885"
+      },
+      "timing": {
+        "full_rate_core": {
+          "samples_ms": [
+            47.438639,
+            48.995355,
+            49.83755,
+            51.149683,
+            53.922317,
+            71.326912,
+            75.789437
+          ],
+          "median_ms": 51.149683,
+          "min_ms": 47.438639,
+          "max_ms": 75.789437
+        },
+        "half_rate_core_direct": {
+          "samples_ms": [
+            23.176223,
+            24.17959,
+            24.255785,
+            24.295539,
+            24.497466,
+            24.90445,
+            25.288224
+          ],
+          "median_ms": 24.295539,
+          "min_ms": 23.176223,
+          "max_ms": 25.288224
+        },
+        "converter_without_reverb": {
+          "samples_ms": [
+            12.325964,
+            12.331362,
+            12.392848,
+            12.748119,
+            13.075692,
+            13.076279,
+            13.174291
+          ],
+          "median_ms": 12.748119,
+          "min_ms": 12.325964,
+          "max_ms": 13.174291
+        },
+        "complete_multirate": {
+          "samples_ms": [
+            35.527191,
+            35.712661,
+            35.890833,
+            36.236817,
+            36.404222,
+            37.052299,
+            37.256492
+          ],
+          "median_ms": 36.236817,
+          "min_ms": 35.527191,
+          "max_ms": 37.256492
+        },
+        "h_plus_c_median_ms": 37.043658,
+        "complete_over_full_median_ratio": 0.7084465606561041,
+        "full_over_complete_median_ratio": 1.4115390708847304
+      },
+      "comparison_note": "Ratios are ratios of independent sample medians, not paired speedup estimates."
+    }
+  ],
+  "wet_quality": {
+    "raw_quality_file": "raw-wet-quality.txt",
+    "raw_delta_db_magnitude": 3.011269,
+    "gain_to_match_field": 0.707027895,
+    "normalized_color_delta_min_db": -3.02,
+    "normalized_color_delta_max_db": 13.251,
+    "t20_delta_min_pct": -4.12,
+    "t20_delta_max_pct": 35.32,
+    "late_iacc_delta": -0.056
+  },
+  "frequency_response_raw_sha256": "b6adb1c21dd3604825620fbbd94510c1e1102c906ef134d7ad587ac437bae88a"
+}

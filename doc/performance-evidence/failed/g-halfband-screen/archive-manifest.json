@@ -8,13 +8,13 @@
   "included_files": [
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/ARCHIVE.md",
-      "sha256": "ee11a9c9ef6821dc83a1b10772e91eea19b326479f778ad6a73b7633186426e0",
-      "size_bytes": 1380
+      "sha256": "bc9f16dbbe0f42ad6ae5ed82bc4a992dc621ff2e3652b88344c99a9a162daae2",
+      "size_bytes": 9140
     },
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/REPORT.md",
-      "sha256": "46f26b2de54441ae11574d74cda76b3205b3fd4282cdbee194d0a263e5909c65",
-      "size_bytes": 3249
+      "sha256": "4742674aff765777be94fa28ebe6495caf041074080e4ff76e04bef5550f933f",
+      "size_bytes": 4092
     },
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/analyze_wet.cpp",
@@ -733,8 +733,8 @@
     },
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/manifest.json",
-      "sha256": "e48107e5a58000d9fae301e2c9f3aef4883106eb4abec3a0f6deb05c4f506668",
-      "size_bytes": 2104
+      "sha256": "ed6e45807fde0b780a2081c6528610331bc058c77cfad0e1f2938acaa19e3580",
+      "size_bytes": 3090
     },
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/query.cpp",
@@ -773,8 +773,18 @@
     },
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/run.sh",
-      "sha256": "7cd9ff95ecd153c2d45c36bde9e9020c93a81add95445a00d0e28b1655c5a481",
-      "size_bytes": 2413
+      "sha256": "ecec5c882109ca098d692794734eeb77b35d9b7c1dbeb311f69ab73e7ec993f4",
+      "size_bytes": 2486
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/summarize.py",
+      "sha256": "a77edf1adbdd0004216840776b9cdc0fbf7e5bf73f97eb8d775cabd56a68d3f3",
+      "size_bytes": 5982
+    },
+    {
+      "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/summary.json",
+      "sha256": "7d44c54434ec689a1585d9fd49e50dc142bd615056723310bfefb600da7386c9",
+      "size_bytes": 4400
     },
     {
       "path": "doc/performance-evidence/failed/g-halfband-screen/sources/g-halfband-screen/wet_probe.cpp",
@@ -813,6 +823,180 @@
       "reason": "binary or raw media excluded from Git",
       "sha256": "fb7afe1860e4aa5c7c9442434b492ea47385783ab576501b54f8226d0753b4ad",
       "size_bytes": 16933888
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/HEAD",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10",
+      "size_bytes": 23
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/config",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "0dbba29f2b34454e0b74c6c5906075c289f0d329ecabb3260738540b08704ac5",
+      "size_bytes": 270
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/description",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee",
+      "size_bytes": 73
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/applypatch-msg.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7",
+      "size_bytes": 478
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/commit-msg.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437",
+      "size_bytes": 896
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/fsmonitor-watchman.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0",
+      "size_bytes": 4726
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/post-update.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5",
+      "size_bytes": 189
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/pre-applypatch.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475",
+      "size_bytes": 424
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/pre-commit.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b",
+      "size_bytes": 1649
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/pre-merge-commit.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53",
+      "size_bytes": 416
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/pre-push.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a",
+      "size_bytes": 1374
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/pre-rebase.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3",
+      "size_bytes": 4898
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/pre-receive.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989",
+      "size_bytes": 544
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/prepare-commit-msg.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619",
+      "size_bytes": 1492
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/push-to-checkout.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f",
+      "size_bytes": 2783
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/sendemail-validate.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92",
+      "size_bytes": 2308
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/hooks/update.sample",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106",
+      "size_bytes": 3650
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/index",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "74e4f899d63f18d9c8bd05e097f8d92047f4c4ecca89380f824db5fb9b2fd868",
+      "size_bytes": 11979
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/info/exclude",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1",
+      "size_bytes": 240
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/logs/HEAD",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "82fc1069a5a5e9538eb2154d6597dd4488a03312a7ca65c2451942c2289fec8a",
+      "size_bytes": 181
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/logs/refs/heads/master",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "82fc1069a5a5e9538eb2154d6597dd4488a03312a7ca65c2451942c2289fec8a",
+      "size_bytes": 181
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/logs/refs/remotes/origin/HEAD",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "82fc1069a5a5e9538eb2154d6597dd4488a03312a7ca65c2451942c2289fec8a",
+      "size_bytes": 181
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/objects/pack/pack-9d73e4d1226e28e0dd451869cf808e4145edcc6b.idx",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "c5865cb4475f2791184f61176ca42185d1aa2ff55e01f9f04ca684be7690b8ab",
+      "size_bytes": 5020
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/objects/pack/pack-9d73e4d1226e28e0dd451869cf808e4145edcc6b.pack",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "2e110f400508d409162bbef468386eeba5074004ba7d1c2873da8498842e70bf",
+      "size_bytes": 79454
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/objects/pack/pack-9d73e4d1226e28e0dd451869cf808e4145edcc6b.rev",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "e4a2ebe79e510470bcc0f5ca7480bf70d4bc014036c48727f987be443e31a86c",
+      "size_bytes": 616
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/packed-refs",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "350db26322e3b920b72479be2a8ac85a03593322bb51a6c6a402d65a60668383",
+      "size_bytes": 114
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/refs/heads/master",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "a5b2a7be8a4162c427aa194bb305e5477f2b0d6985956d12cb63493d924f3526",
+      "size_bytes": 41
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/refs/remotes/origin/HEAD",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "cdc65e67690c4c6475174e5ec662b70655246a2f3924354778835ab3be70aa76",
+      "size_bytes": 32
+    },
+    {
+      "path": "sources/g-halfband-screen/hiir/.git/shallow",
+      "reason": "binary output or unsupported file type omitted from branch",
+      "sha256": "a5b2a7be8a4162c427aa194bb305e5477f2b0d6985956d12cb63493d924f3526",
+      "size_bytes": 41
     }
   ],
   "schema": 1,
@@ -820,6 +1004,7 @@
     "g-halfband-screen"
   ],
   "status": "stopped at wet-quality gate",
-  "summary": "The first H+C median was 2.827 ms, below the 3.2 ms feasibility ceiling, but the 12-second wet impulse missed the response contract: total energy \u22123.011 dB, normalized one-third-octave color \u22123.013 to +13.251 dB, high-band T20 differences up to +35.32%, and late IACC delta \u22120.056. No integration was attempted.",
-  "title": "Polyphase IIR halfband wet-rate conversion"
+  "summary": "The corrected short run has independent medians H+C=2.298 ms, complete=2.882 ms and full rate=3.096 ms (complete/full 0.9309; reciprocal 1.0742). The long run is 36.237 ms complete versus 51.150 ms full (0.7084; reciprocal 1.4115). These are separate medians, not paired estimates. The 12-second wet impulse still fails the response contract: energy \u22123.011 dB, normalized color \u22123.013 to +13.251 dB, high-band T20 differences up to +35.32%, and late IACC delta \u22120.056. No integration was attempted.",
+  "title": "Polyphase IIR halfband wet-rate conversion",
+  "updated_for_report_corrections": "2026-10-16"
 }

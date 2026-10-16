@@ -9,11 +9,11 @@
     "designed_stopband_db": 86.722885
   },
   "timing_medians_ms": {
-    "full_rate_core": 3.20681,
-    "half_rate_core_H": 1.521298,
-    "converter_C": 1.305982,
-    "H_plus_C": 2.82728,
-    "complete_multirate": 2.887131
+    "full_rate_core": 3.095512,
+    "half_rate_core_H": 1.538202,
+    "converter_C": 0.76021,
+    "H_plus_C": 2.298412,
+    "complete_multirate": 2.881588
   },
   "wet_quality": {
     "total_energy_delta_db_candidate_vs_full": -3.011269,
@@ -23,8 +23,8 @@
     "late_iacc_delta_full_minus_candidate": -0.056
   },
   "files_sha256": {
-    "REPORT.md": "46f26b2de54441ae11574d74cda76b3205b3fd4282cdbee194d0a263e5909c65",
-    "run.sh": "7cd9ff95ecd153c2d45c36bde9e9020c93a81add95445a00d0e28b1655c5a481",
+    "REPORT.md": "4742674aff765777be94fa28ebe6495caf041074080e4ff76e04bef5550f933f",
+    "run.sh": "ecec5c882109ca098d692794734eeb77b35d9b7c1dbeb311f69ab73e7ec993f4",
     "g-hook.patch": "0235b621f2dba913fff6f7cbc356e4a8cf6d4d4ca9a37ac605f1c611ffcf00d8",
     "g_probe.cpp": "bf7668513a82492d25c4d499b712f2f2b9eb5d16b66b3e63ffe26848a3249655",
     "wet_probe.cpp": "3b6a339ae42dd3211c94bd329ed4ade2784354bc90442494bd5a1122a883f998",
@@ -36,6 +36,24 @@
     "raw-wet-quality.txt": "ba606509ebeea1bf95e15ab81076e1ddb34410a753fa6dbdd1a0eaabd6bfece0",
     "raw-frequency-response.txt": "b6adb1c21dd3604825620fbbd94510c1e1102c906ef134d7ad587ac437bae88a",
     "wet-full.f64le": "928177b25fa136934a91472d0794dc83e4a4a4113312997b822914cf07de8ec8",
-    "wet-halfband.f64le": "fb7afe1860e4aa5c7c9442434b492ea47385783ab576501b54f8226d0753b4ad"
+    "wet-halfband.f64le": "fb7afe1860e4aa5c7c9442434b492ea47385783ab576501b54f8226d0753b4ad",
+    "summarize.py": "a77edf1adbdd0004216840776b9cdc0fbf7e5bf73f97eb8d775cabd56a68d3f3",
+    "summary.json": "7d44c54434ec689a1585d9fd49e50dc142bd615056723310bfefb600da7386c9",
+    "raw-timing-mono-long.txt": "0b7594abf0187a43837169bc710603ecac2efdc693681632611f96c306326996"
+  },
+  "timing_ratio_convention": "candidate_over_baseline = complete_multirate_median / full_rate_core_median; reciprocal is baseline_over_candidate; neither is a paired estimate.",
+  "timing_ratios": {
+    "complete_over_full_candidate_over_baseline": 0.9308922078157023,
+    "full_over_complete_baseline_over_candidate": 1.0742382325301187,
+    "paired_estimate": false
+  },
+  "long_timing_medians_ms": {
+    "full_rate_core": 51.149683,
+    "half_rate_core_H": 24.295539,
+    "converter_C": 12.748119,
+    "H_plus_C": 37.043658,
+    "complete_multirate": 36.236817,
+    "complete_over_full_candidate_over_baseline": 0.7084465606561041,
+    "full_over_complete_baseline_over_candidate": 1.4115390708847304
   }
 }

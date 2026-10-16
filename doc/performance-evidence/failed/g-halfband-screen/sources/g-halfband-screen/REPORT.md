@@ -12,17 +12,19 @@ The filter response itself is clean over its declared 0–16.5 kHz passband. The
 
 ## Cost screen
 
-One pinned-CPU microbenchmark used 65,536-frame inputs, 1,024 blocks, one warmup, and seven measured repetitions. The medians from `raw-timing-mono.txt` were:
+The saved pinned-CPU runs each used one warmup and seven measured repetitions. The 65,536-frame run used 1,024 blocks; its medians from [`raw-timing-mono.txt`](raw-timing-mono.txt) are:
 
 | Path | Median time |
 | --- | ---: |
-| Full-rate Dattorro core | 3.207 ms |
-| Half-rate Dattorro core alone (H) | 1.521 ms |
-| Converter alone (C) | 1.306 ms |
-| H + C | 2.827 ms |
-| Complete multirate path | 2.887 ms |
+| Full-rate Dattorro core | 3.096 ms |
+| Half-rate Dattorro core alone (H) | 1.538 ms |
+| Converter alone (C) | 0.760 ms |
+| H + C (sum of separate medians) | 2.298 ms |
+| Complete multirate path | 2.882 ms |
 
-The observed H+C median is below the plan's 3.2 ms feasibility ceiling. The complete path median was about 10% below the full-rate median, but the ranges overlap and the measurements were not an AB/BA paired run. This is a cost feasibility signal, not an accepted end-to-end speedup.
+For this run, complete/full is `2.881588 / 3.095512 = 0.9309`; the reciprocal full/complete is `1.0742`. These are ratios of separate medians, not paired speedup estimates. H+C is likewise a sum of independently timed component medians and is not the complete path time.
+
+A second, longer 1,048,576-frame run is preserved in [`raw-timing-mono-long.txt`](raw-timing-mono-long.txt). Its full-rate and complete-path medians were 51.149683 ms and 36.236817 ms: complete/full `0.7084`, reciprocal full/complete `1.4115`. The short and long ratios differ materially, and neither run used an AB/BA paired design. These data only show that this microbenchmark can look favorable at some sizes; they do not establish a repeatable performance gain or end-to-end benefit. The original 3.2 ms H+C feasibility threshold was for the short input, while the long-run H+C component-median sum is 37.044 ms.
 
 ## Wet-response failure
 
@@ -32,4 +34,4 @@ The stopband and group-delay checks pass, while the total wet level, spectral sh
 
 ## Reproduction and limits
 
-Run `./run.sh` from this directory. It applies `g-hook.patch` only to the clean measurement worktree at `571bc72e72b756f25333b3e31fb3046161c27632`, builds the two temporary probes, writes the raw measurements, and restores the worktree on exit. The tested source remains outside the main checkout. This is a one-configuration early-stop screen, not a general conclusion about every IIR halfband design.
+Set `FLUIDSYNTH_G_WORKTREE` to a clean worktree at `571bc72e72b756f25333b3e31fb3046161c27632`, then run `./run.sh`. The script applies `g-hook.patch` only to that worktree, builds the two temporary probes, writes `raw-timing-final.txt` and the other raw outputs, runs [`summarize.py`](summarize.py), and restores the worktree on exit. It requires no external SF2 or MIDI assets. [`summary.json`](summary.json) reports the short and long saved timing sets and both ratio directions. This is a one-configuration early-stop screen, not a general conclusion about every IIR halfband design.
