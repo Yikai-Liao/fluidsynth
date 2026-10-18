@@ -105,26 +105,20 @@ static inline fluid_real_t kaiser_signalsmith(fluid_real_t i_shifted)
 #endif // USE_KAISER_WINDOW == 2
 
 /**
- * Normalized windowed-sinc interpolation kernel of order SINC_ORDER.
+ * Compute normalized windowed-sinc coefficients of order SINC_ORDER.
  *
- * The caller fills an array s[] of SINC_ORDER samples where:
- *   s[j] == waveform[ dsp_phase_index + (j - half) ]
- *   half == SINC_ORDER / 2
- *
- * @param s  Input sample array of length SINC_ORDER.
- * @param x  Fractional phase in [0, 1].  This is the raw fractional part of
+ * @param x  Fractional phase in [0, 1]. This is the raw fractional part of
  *           dsp_phase *after* the +0.5-sample advance applied by
- *           fluid_rvoice_dsp_interpolate_sinc_local().  The true playback
- *           position within s[] is therefore:
+ *           fluid_rvoice_dsp_interpolate_sinc_local(). The true playback
+ *           center relative to the tap array is therefore:
  *
  *               center = half + (x - 0.5)  =  half - 0.5 + x
  *
- *           When x == 0.5 the center falls exactly on s[half] (for odd orders only), so
- *           fluid_interp_sinc_kernel returns s[half] unmodified (sinc(0) = 1,
- *           sinc(n*pi) = 0 for all non-zero integers n).
+ *           When x == 0.5 the center falls exactly on the center sample for odd orders.
  */
 template<int SINC_ORDER>
-static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_t, SINC_ORDER> &s, fluid_real_t x)
+static inline std::array<fluid_real_t, SINC_ORDER>
+fluid_interp_sinc_coefficients(fluid_real_t x)
 {
     static_assert(SINC_ORDER >= 1 && SINC_ORDER != 2, "SINC_ORDER must be at least 1 and not equal to 2");
 
@@ -166,17 +160,78 @@ static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_
         }
 
         coeffs[i] = v;
+        sum += v;
     }
 
+    for(int i = 0; i < SINC_ORDER; i++)
+    {
+        coeffs[i] /= sum;
+    }
+
+    return coeffs;
+}
+
+constexpr unsigned int FLUID_SINC_PHASE_TABLE_BITS = 12;
+constexpr unsigned int FLUID_SINC_PHASE_TABLE_SIZE = 1u << FLUID_SINC_PHASE_TABLE_BITS;
+
+template<int SINC_ORDER>
+using fluid_interp_sinc_coeff_table_t =
+    std::array<std::array<fluid_real_t, SINC_ORDER>, FLUID_SINC_PHASE_TABLE_SIZE + 1>;
+
+/* Build each order's table only when that interpolation mode is selected. */
+template<int SINC_ORDER>
+static inline const fluid_interp_sinc_coeff_table_t<SINC_ORDER> &
+fluid_interp_sinc_coeff_table()
+{
+    static fluid_interp_sinc_coeff_table_t<SINC_ORDER> table;
+    static const bool initialized = []
+    {
+        for(unsigned int row = 0; row <= FLUID_SINC_PHASE_TABLE_SIZE; row++)
+        {
+            const fluid_real_t x = static_cast<fluid_real_t>(row) / FLUID_SINC_PHASE_TABLE_SIZE;
+            table[row] = fluid_interp_sinc_coefficients<SINC_ORDER>(x);
+        }
+
+        return true;
+    }();
+    (void)initialized;
+
+    return table;
+}
+
+/**
+ * Apply linearly interpolated coefficients for a 32-bit fractional phase.
+ * The table rows are normalized before interpolation, so the per-sample path
+ * needs only coefficient interpolation and the sample dot product.
+ */
+template<int SINC_ORDER>
+static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_t, SINC_ORDER> &s,
+                                                    uint32_t fractional_phase,
+                                                    const fluid_interp_sinc_coeff_table_t<SINC_ORDER> &table)
+{
+    constexpr unsigned int phase_bits = 32 - FLUID_SINC_PHASE_TABLE_BITS;
+    constexpr uint32_t phase_mask = (1u << phase_bits) - 1u;
+
+    const unsigned int row = fractional_phase >> phase_bits;
+    const fluid_real_t fraction = static_cast<fluid_real_t>(fractional_phase & phase_mask)
+                                  * static_cast<fluid_real_t>(1.0 / (1u << phase_bits));
+    const auto &coeffs0 = table[row];
+    const auto &coeffs1 = table[row + 1];
     fluid_real_t result = 0.0f;
 
     for(int i = 0; i < SINC_ORDER; i++)
     {
-        result += coeffs[i] * s[i];
-        sum += coeffs[i];
+        const fluid_real_t coeff = coeffs0[i] + (coeffs1[i] - coeffs0[i]) * fraction;
+        result += coeff * s[i];
     }
 
-    /* Normalize so coefficients always sum to 1.0, preventing amplitude
-     * modulation artifacts (harmonic distortion) as fractional phase varies. */
-    return result / sum;
+    return result;
+}
+
+template<int SINC_ORDER>
+static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_t, SINC_ORDER> &s,
+                                                    uint32_t fractional_phase)
+{
+    return fluid_interp_sinc_kernel<SINC_ORDER>(s, fractional_phase,
+            fluid_interp_sinc_coeff_table<SINC_ORDER>());
 }
