@@ -57,8 +57,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
-      with:
-        submodules: true
+
+    - name: Checkout build dependencies
+      # Skip test/manual; this workflow does not run check_rendering or check_manual.
+      shell: pwsh
+      run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
 
     - name: Setup dependencies
       shell: cmd
@@ -208,8 +211,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
-      with:
-        submodules: true
+
+    - name: Checkout build dependencies
+      # Skip test/manual; this workflow does not run check_rendering or check_manual.
+      shell: pwsh
+      run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
         
     - name: Setup dependencies
       shell: cmd
@@ -284,14 +290,20 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
-      with:
-        submodules: recursive
+
+    - name: '${{ matrix.icon }} Checkout build dependencies'
+      # Skip test/manual; this workflow does not run check_rendering or check_manual.
+      shell: pwsh
+      run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
 
     - name: '${{ matrix.icon }} Setup MSYS2'
       uses: msys2/setup-msys2@v2
       with:
         release: false
         msystem: ${{matrix.sys}}
+        cache: true
+        # Keep this legacy MSVCRT compatibility configuration in the matrix.
+        suppress-deprecation-warnings: msystem-mingw64
         install: >-
           make
           libreadline
