@@ -989,12 +989,29 @@ static void test_L_order()
         return (fluid_real_t)center;
     };
 
+    const auto &sinc_table = fluid_interp_sinc_table<N>();
+    auto interpolate = [&](const std::array<fluid_real_t, N> &samples, uint32_t phase)
+    {
+        return fluid_interp_sinc_kernel<N>(samples, phase, sinc_table);
+    };
+
+    auto phase_from_x = [](fluid_real_t x)
+    {
+        /* Fractional phase covers [0, 1), so use its closest value to 1. */
+        if(x >= (fluid_real_t)1.0)
+        {
+            return std::numeric_limits<uint32_t>::max();
+        }
+
+        return static_cast<uint32_t>(x * FLUID_FRACT_MAX);
+    };
+
     /* L1: unit impulse at s[half], x=0.5 must give 1.0 */
     {
         std::array<fluid_real_t, N> s;
         s.fill(0.0f);
         s[half] = 1.0f;
-        fluid_real_t result = fluid_interp_sinc_kernel<N>(s, get_center());
+        fluid_real_t result = interpolate(s, phase_from_x(get_center()));
         fluid_real_t diff = std::fabs(result - 1.0f);
 
         if(diff > (fluid_real_t)1e-5)
@@ -1013,7 +1030,7 @@ static void test_L_order()
         std::array<fluid_real_t, N> s;
         s.fill(0.0f);
         s[half] = 1.0f;
-        fluid_real_t result = fluid_interp_sinc_kernel<N>(s, 0.0f);
+        fluid_real_t result = interpolate(s, phase_from_x(0.0f));
 
         if(result >= 1.0f - (fluid_real_t)1e-5)
         {
@@ -1028,19 +1045,20 @@ static void test_L_order()
 
     /* L3: constant (DC) input must reproduce the constant for all x */
     {
-        const fluid_real_t DC = 12345.0f;
+        const fluid_real_t DC = 1.0f;
         std::array<fluid_real_t, N> s;
         s.fill(DC);
-        const float x_vals[] = { 0.0f, 0.1f, 0.25f, 0.5f, 0.75f, 0.9f, 0.999f };
-
-        for(float xv : x_vals)
+        const fluid_real_t x_vals[] = {0.0, 0.5 / FLUID_SINC_PHASE_TABLE_SIZE,
+                                      0.1, 0.25, 0.5, 0.75, 0.9,
+                                      1.0 - 0.5 / FLUID_SINC_PHASE_TABLE_SIZE, 1.0};
+        for(fluid_real_t xv : x_vals)
         {
-            fluid_real_t result = fluid_interp_sinc_kernel<N>(s, (fluid_real_t)xv);
+            fluid_real_t result = interpolate(s, phase_from_x(xv));
             fluid_real_t diff = std::fabs(result - DC);
 
-            if(diff > (fluid_real_t)1e-2 * DC)
+            if(diff > (fluid_real_t)1e-6 * DC)
             {
-                fprintf(stderr, "FAIL L3 (order=%d): DC x=%.3f -> %.1f (expected %.1f, diff=%.2e)\n",
+                fprintf(stderr, "FAIL L3 (order=%d): DC x=%.6f -> %.1f (expected %.1f, diff=%.2e)\n",
                         N, (double)xv, (double)result, (double)DC, (double)diff);
                 TEST_ASSERT(0);
             }
@@ -1056,7 +1074,7 @@ static void test_L_order()
         s.fill(0.0f);
         s[half] = 1.0f;
 
-        const fluid_real_t peak = fluid_interp_sinc_kernel<N>(s, get_center());
+        const fluid_real_t peak = interpolate(s, phase_from_x(get_center()));
         bool found_higher = false;
 
         for(int step = 0; step <= 100; step++)
@@ -1068,7 +1086,7 @@ static void test_L_order()
                 xv = 0.999f;
             }
 
-            fluid_real_t v = fluid_interp_sinc_kernel<N>(s, (fluid_real_t)xv);
+            fluid_real_t v = interpolate(s, phase_from_x((fluid_real_t)xv));
 
             if(v > peak + (fluid_real_t)1e-5)
             {
@@ -1081,6 +1099,56 @@ static void test_L_order()
 
         TEST_ASSERT(!found_higher);
         printf("    L4 (order=%d) peak at x=0.5: PASS\n", N);
+    }
+
+    /* Compute direct Hann-windowed coefficients in long double independently
+     * of the production generator. Their L1 difference bounds the error for
+     * unit samples within every table interval. */
+    if(N == 11 || N == 17 || N == 25)
+    {
+        for(int row = 0; row < FLUID_SINC_PHASE_TABLE_SIZE; row++)
+        {
+            for(fluid_real_t offset : {0.25, 0.5, 0.75})
+            {
+                const fluid_real_t x = (row + offset) / FLUID_SINC_PHASE_TABLE_SIZE;
+                std::array<long double, N> reference;
+                long double norm = 0;
+                for(int tap = 0; tap < N; tap++)
+                {
+                    const long double arg = std::acos(-1.0L) * (tap - (half - 0.5L + x));
+                    reference[tap] = arg == 0 ? 1 : std::sin(arg) / arg
+                                     * (1 + std::cos(2 * arg / N)) / 2;
+                    norm += reference[tap];
+                }
+                long double error = 0;
+                for(int tap = 0; tap < N; tap++)
+                {
+                    std::array<fluid_real_t, N> impulse = {};
+                    impulse[tap] = 1;
+                    error += std::fabs(interpolate(impulse, phase_from_x(x)) - reference[tap] / norm);
+                }
+                TEST_ASSERT(error < 2e-6L);
+            }
+        }
+    }
+
+    /* Integer advancement and fractional wrap must describe the same position. */
+    if(N >= 11)
+    {
+        for(double frequency : {0.10, 0.49})
+        {
+            std::array<fluid_real_t, N> before, after;
+            for(int i = 0; i < N; i++)
+            {
+                before[i] = std::sin(2.0 * FLUID_M_PI * frequency * (i - half));
+                after[i] = std::sin(2.0 * FLUID_M_PI * frequency * (i - half + 1));
+            }
+
+            const fluid_real_t last = interpolate(
+                                         before, std::numeric_limits<uint32_t>::max());
+            const fluid_real_t first = interpolate(after, 0u);
+            TEST_ASSERT(std::fabs(last - first) <= (fluid_real_t)1e-5);
+        }
     }
 }
 
@@ -1098,6 +1166,7 @@ static void test_L_sinc_kernel_centering(void)
     test_L_order<15>();
     test_L_order<17>();
     test_L_order<19>();
+    test_L_order<25>();
 
     printf("  Even orders:\n");
     /* N=2 is omitted: with only 2 taps the windowed-sinc degenerates into a

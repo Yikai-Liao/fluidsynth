@@ -7124,6 +7124,10 @@ fluid_synth_set_interp_method(fluid_synth_t *synth, int chan, int interp_method)
         FLUID_API_RETURN(FLUID_FAILED);
     }
 
+    /* Build the selected sinc table before new voices can use it in
+     * fluid_rvoice_dsp_interpolate_sinc_local(). */
+    fluid_rvoice_dsp_prepare_sinc_table(interp_method);
+
     for(i = 0; i < synth->midi_channels; i++)
     {
         if(chan < 0 || fluid_channel_get_num(synth->channel[i]) == chan)
