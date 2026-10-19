@@ -1,0 +1,154 @@
+name: Compact Linux cache validation
+env:
+  BUILD_TYPE: RelWithDebInfo
+  INSTALL_LOCATION: ${{github.workspace}}/fluidsynth_install
+defaults:
+  run:
+    shell: bash
+jobs:
+  matrix:
+    runs-on: ubuntu-22.04
+    outputs:
+      cases: ${{ steps.matrix.outputs.cases }}
+    steps:
+    - uses: actions/checkout@v7
+    - name: Select build configurations
+      id: matrix
+      env:
+        EXPERIMENT_SCOPE: ${{ inputs.scope || 'screen' }}
+      run: |
+        python3 - <<'PY_MATRIX'
+        import json, os
+        cases = json.load(open('.github/ci/linux-dependency-matrix.json'))
+        if os.environ['EXPERIMENT_SCOPE'] == 'screen':
+            cases = [case for case in cases if case['id'] in ('profiling', 'clang-static')]
+        cases = [dict(id=c['id'], CC=c['cc'], CXX=c['cxx'], CMAKE_FLAGS=c['flags']) for c in cases]
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write('cases=' + json.dumps(cases) + '\n')
+        PY_MATRIX
+  native:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.cases) }}
+    steps:
+    - uses: actions/checkout@v7
+    - name: Checkout build dependencies
+      run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+    - name: Identify dependency cache
+      id: dependency-key
+      run: |
+        echo "key=linux-apt-${ImageVersion}-$(dpkg --print-architecture)-$(date -u +%G%V)-${{ hashFiles('.github/ci/linux-dependencies.sh') }}" >> "$GITHUB_OUTPUT"
+        echo "path=$RUNNER_TEMP/fluidsynth-apt" >> "$GITHUB_OUTPUT"
+        mkdir -p ci-evidence
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' > ci-evidence/packages-before.txt
+    - name: Restore dependencies
+      id: dependency-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ steps.dependency-key.outputs.path }}
+        key: ${{ steps.dependency-key.outputs.key }}
+    - name: Install dependencies
+      id: dependencies
+      run: bash .github/ci/linux-dependencies.sh "${{ steps.dependency-key.outputs.path }}"
+    - name: Configure CMake
+      run: |
+        export CC=${{ matrix.CC }}
+        export CXX=${{ matrix.CXX }}
+        cmake -S . \
+          -B build \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DCMAKE_VERBOSE_MAKEFILE=1 \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=1 \
+          -Werror=dev \
+          -DCMAKE_INSTALL_PREFIX=$INSTALL_LOCATION \
+          -Denable-portaudio=1 \
+          -Denable-ladspa=1 \
+          -DNO_GUI=1 \
+          ${{ matrix.CMAKE_FLAGS }}
+    - name: Build
+      run: cmake --build build
+    - name: Test
+      run: cmake --build build --target check
+    - name: Demo
+      run: cmake --build build --target demo
+    - name: Install
+      run: cmake --install build && ls -la $INSTALL_LOCATION
+    - name: Consume from pkg-config
+      if: ${{ contains(matrix.CMAKE_FLAGS, 'BUILD_SHARED_LIBS=0') }}
+      run: |
+        set -e
+        cat << EOF > static-link-test.c
+        #include <fluidsynth.h>
+        int main() { fluid_synth_process(0,0,0,0,0,0); return 0; }
+        EOF
+        export PKG_CONFIG_PATH=$INSTALL_LOCATION/lib/pkgconfig
+        set -x
+        g++ -fPIE -o static-link-test static-link-test.c $(pkg-config --cflags --static fluidsynth) $(pkg-config --libs --static fluidsynth)
+        ./static-link-test
+        echo $?
+    - name: Consume from build
+      run: |
+        set -e
+        export CC=${{ matrix.CC }}
+        export CXX=${{ matrix.CXX }}
+        cmake -S test/cmake \
+          -B consume-build \
+          -G Ninja \
+          -DFluidSynth_DIR="${{github.workspace}}/build" \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        cmake --build consume-build
+    - name: Consume from install
+      run: |
+        set -e
+        export CC=${{ matrix.CC }}
+        export CXX=${{ matrix.CXX }}
+        cmake -S test/cmake -B consume-install \
+          -G Ninja \
+          -DFluidSynth_DIR="$INSTALL_LOCATION/lib/cmake/fluidsynth" \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        cmake --build consume-install
+    - name: Record build environment
+      if: always()
+      run: |
+        mkdir -p ci-evidence
+        printf '%s\n' "$ImageOS" "$ImageVersion" > ci-evidence/runner-image.txt
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' > ci-evidence/packages.txt
+        cmake --version > ci-evidence/cmake-version.txt
+        gcc --version > ci-evidence/gcc-version.txt
+        clang-15 --version > ci-evidence/clang-version.txt
+        ctest --test-dir build -N > ci-evidence/test-inventory.txt 2>&1 || true
+        find build -name config.h -exec cp {} ci-evidence/config.h \;
+        printf 'cache_hit=%s\n' '${{ steps.dependency-cache.outputs.cache-hit }}' > ci-evidence/cache.txt
+    - name: Upload build evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: evidence-cached-${{ matrix.id }}
+        path: ci-evidence/
+        retention-days: 1
+    - name: Save dependencies
+      if: matrix.CMAKE_FLAGS == '-Denable-profiling=1' && steps.dependency-cache.outputs.cache-hit != 'true' && steps.dependencies.outputs.cacheable == 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ steps.dependency-key.outputs.path }}
+        key: ${{ steps.dependency-key.outputs.key }}
+    needs: matrix
+    name: cached / ${{ matrix.id }}
+'on':
+  push:
+    branches:
+    - ci/linux-cache-pr-validation-20261019
+  workflow_dispatch:
+    inputs:
+      scope:
+        type: choice
+        description: Validate two configurations or the full native matrix
+        options:
+        - screen
+        - full
+        default: screen
+permissions:
+  contents: read
