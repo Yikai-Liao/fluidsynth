@@ -279,9 +279,9 @@ jobs:
         fail-fast: false
         matrix:
           include:
-            - { icon: '⬛', sys: mingw32, osal: cpp11, compiler_packages: 'gcc:p libgomp:p' }
-            - { icon: '🟦', sys: mingw64, osal: cpp11, compiler_packages: 'gcc:p libgomp:p' }
-            - { icon: '🟨', sys: ucrt64, osal: cpp11, compiler_packages: 'gcc:p libgomp:p' }
+            - { icon: '⬛', sys: mingw32, osal: cpp11, compiler_packages: 'gcc:p libgomp:p libreadline:p' }
+            - { icon: '🟦', sys: mingw64, osal: cpp11, compiler_packages: 'gcc:p libgomp:p libreadline:p' }
+            - { icon: '🟨', sys: ucrt64, osal: cpp11, compiler_packages: 'gcc:p libgomp:p libreadline:p' }
             - { icon: '🟧', sys: clang64, osal: cpp11, compiler_packages: 'clang:p libc++:p libunwind:p llvm-openmp:p' }
     name: 🚧${{ matrix.icon }} ${{ matrix.sys }} ${{ matrix.osal }}
     defaults:
