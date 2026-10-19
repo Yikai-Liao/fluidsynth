@@ -142,27 +142,34 @@ jobs:
         path: ci-evidence/
         retention-days: 1
   container:
-    name: container / ${{ matrix.case.id }}
+    name: container-${{ matrix.environment.id }} / ${{ matrix.case.id }}
     needs: matrix
     runs-on: ubuntu-22.04
     container:
-      image: buildpack-deps:jammy
+      image: ${{ matrix.environment.image }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         case: ${{ fromJSON(needs.matrix.outputs.cases) }}
+        environment:
+        - id: jammy
+          image: buildpack-deps:jammy
+        - id: bookworm
+          image: buildpack-deps:bookworm
     steps:
     - uses: actions/checkout@v7
       with:
         submodules: recursive
+    - name: Trust checked-out repository
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
     - name: Prepare container tools
       run: |
-        git config --global --add safe.directory "$GITHUB_WORKSPACE"
         curl -fsSL https://github.com/Kitware/CMake/releases/download/v3.31.6/cmake-3.31.6-linux-x86_64.tar.gz -o "$RUNNER_TEMP/cmake.tar.gz"
         printf '%s  %s\n' 5a1133ff103c71eb5120e2cc3de922733e7d8a26a98ae716397e8676adb367bf "$RUNNER_TEMP/cmake.tar.gz" | sha256sum -c -
         tar -xzf "$RUNNER_TEMP/cmake.tar.gz" -C /opt
         printf '%s\n' /opt/cmake-3.31.6-linux-x86_64/bin >> "$GITHUB_PATH"
+      if: matrix.environment.id == 'jammy'
     - name: Install Dependencies
       run: bash .github/ci/install-linux-dependencies.sh container
     - name: Configure CMake
@@ -242,7 +249,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v7
       with:
-        name: evidence-container-${{ matrix.case.id }}
+        name: evidence-container-${{ matrix.environment.id }}-${{ matrix.case.id }}
         path: ci-evidence/
         retention-days: 1
   build-ibm-long-double:
