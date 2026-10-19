@@ -13,6 +13,14 @@ if [[ $(id -u) != 0 ]]; then
 fi
 mapfile -t packages < "$(dirname "$0")/linux-dependencies.txt"
 
+if [[ $mode == container ]]; then
+  source /etc/os-release
+  if [[ $ID == debian ]]; then
+    # Install the libraries named by Debian libsndfile's static link flags.
+    packages+=(libmp3lame-dev libmpg123-dev)
+  fi
+fi
+
 if [[ $mode == original ]]; then
   "${privilege[@]}" add-apt-repository -y ppa:ubuntu-toolchain-r/test
 fi

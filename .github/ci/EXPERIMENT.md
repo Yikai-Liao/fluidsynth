@@ -15,3 +15,5 @@ Keep the repository default at 10 GB. Plan aggregate ceilings, including retaine
 Share dependencies across feature variants. Key only on relevant OS/architecture/toolchain and dependency versions; do not key on every source commit. Bound retained generations, provide periodic dependency refresh, and skip saves above an entry budget. Do not cache preinstalled SDK/NDK or publish build artifacts as dependency caches.
 
 The Jammy container receives the official CMake 3.31.6 binary to match the hosted runner (the distro CMake 3.22 is below the Signalsmith submodule requirement). Bookworm uses its distro CMake 3.25. It retains Clang 15 but changes the default GCC/libc/dependency versions, so compare coverage separately from package equivalence.
+
+Debian libsndfile 1.2 exposes MP3 dependencies in its static pkg-config link flags. Install libmp3lame-dev and libmpg123-dev for Debian containers so the existing static-consumer check remains intact. Push runs now use the full matrix; manual dispatch can still select the two-configuration screen.

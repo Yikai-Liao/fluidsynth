@@ -31,7 +31,7 @@ jobs:
     - name: Select build configurations
       id: matrix
       env:
-        EXPERIMENT_SCOPE: ${{ inputs.scope || 'screen' }}
+        EXPERIMENT_SCOPE: ${{ inputs.scope || 'full' }}
       run: |
         python3 - <<'PY_MATRIX'
         import json, os
