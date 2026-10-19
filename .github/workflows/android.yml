@@ -1,0 +1,301 @@
+name: FluidSynth Android
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  OBOE_VERSION: '1.10.0'
+  SNDFILE_VERSION: '1.2.2'
+  VORBIS_VERSION: '1.3.7'
+  OGG_VERSION: '1.3.6'
+  OPUS_VERSION: '1.5.2'
+  FLAC_VERSION: '1.4.3'
+  ANDROID_API: '24'
+  DEV: ${{ github.workspace }}/android-build-root
+  PREFIX: ${{ github.workspace }}/android-build-root/opt/android
+  NDK: /usr/local/lib/android/sdk/ndk/27.3.13750724
+  NDK_TOOLCHAIN: /usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64
+
+jobs:
+  android:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm
+            android_arch: armv7a
+            abi_cmake: armeabi-v7a
+            target_abi: eabi
+            abi_meson: arm
+            autotools_target: arm-linux-androideabi
+          - arch: aarch64
+            android_arch: aarch64
+            abi_cmake: arm64-v8a
+            target_abi: ''
+            abi_meson: aarch64
+            autotools_target: aarch64-none-linux-android
+          - arch: i686
+            android_arch: i686
+            abi_cmake: x86
+            target_abi: ''
+            abi_meson: x86
+            autotools_target: i686-pc-linux-android
+          - arch: x86_64
+            android_arch: x86_64
+            abi_cmake: x86_64
+            target_abi: ''
+            abi_meson: x86_64
+            autotools_target: x86_64-pc-linux-android
+    env:
+      ARCH: ${{ matrix.arch }}
+      ANDROID_ARCH: ${{ matrix.android_arch }}
+      ANDROID_ABI_CMAKE: ${{ matrix.abi_cmake }}
+      ANDROID_TARGET_ABI: ${{ matrix.target_abi }}
+      ANDROID_ABI_MESON: ${{ matrix.abi_meson }}
+      AUTOTOOLS_TARGET: ${{ matrix.autotools_target }}
+    name: Android ${{ matrix.abi_cmake }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Verify runner toolchain
+        run: |
+          set -euo pipefail
+          for tool in cmake make curl tar; do
+            command -v "$tool"
+          done
+          test -f "$NDK/build/cmake/android.toolchain.cmake"
+          printf 'runner_arch=%s\ncores=%s\n' "$(uname -m)" "$(nproc)"
+          cmake --version | head -1
+          "$NDK_TOOLCHAIN/bin/clang" --version | head -1
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
+
+      - name: Checkout build dependencies
+        shell: bash
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+
+      - name: Prepare build root
+        run: mkdir -p "${DEV}"
+
+      - name: Download dependencies
+        working-directory: ${{ env.DEV }}
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o "oboe-${OBOE_VERSION}.tar.gz" "https://github.com/google/oboe/archive/${OBOE_VERSION}.tar.gz"
+          tar zxf "oboe-${OBOE_VERSION}.tar.gz"
+          curl -fL --retry 3 -o "libsndfile-${SNDFILE_VERSION}.tar.xz" "https://github.com/libsndfile/libsndfile/releases/download/${SNDFILE_VERSION}/libsndfile-${SNDFILE_VERSION}.tar.xz"
+          tar xf "libsndfile-${SNDFILE_VERSION}.tar.xz"
+          curl -fL --retry 3 -o "libvorbis-${VORBIS_VERSION}.tar.gz" "https://github.com/xiph/vorbis/releases/download/v${VORBIS_VERSION}/libvorbis-${VORBIS_VERSION}.tar.gz"
+          tar zxf "libvorbis-${VORBIS_VERSION}.tar.gz"
+          curl -fL --retry 3 -o "libogg-${OGG_VERSION}.tar.gz" "https://github.com/xiph/ogg/releases/download/v${OGG_VERSION}/libogg-${OGG_VERSION}.tar.gz"
+          tar zxf "libogg-${OGG_VERSION}.tar.gz"
+          curl -fL --retry 3 -o "flac-${FLAC_VERSION}.tar.gz" "https://github.com/xiph/flac/archive/refs/tags/${FLAC_VERSION}.tar.gz"
+          tar xf "flac-${FLAC_VERSION}.tar.gz"
+          curl -fL --retry 3 -o "opus-${OPUS_VERSION}.tar.gz" "https://github.com/xiph/opus/archive/refs/tags/v${OPUS_VERSION}.tar.gz"
+          tar xf "opus-${OPUS_VERSION}.tar.gz"
+
+      - name: Configure Android environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          android_target="${ARCH}-linux-android${ANDROID_TARGET_ABI}"
+          android_target_api="${ANDROID_ARCH}-linux-android${ANDROID_TARGET_ABI}${ANDROID_API}"
+          libpath1="${NDK_TOOLCHAIN}/sysroot/usr/lib"
+          libpath2="${NDK_TOOLCHAIN}/sysroot/usr/lib/${ARCH}-linux-android${ANDROID_TARGET_ABI}/${ANDROID_API}"
+          libpath3="${NDK_TOOLCHAIN}/sysroot/usr/lib/${ARCH}-linux-android${ANDROID_TARGET_ABI}"
+          cflags="-fPIE -fPIC -I${PREFIX}/include --sysroot=${NDK_TOOLCHAIN}/sysroot -I${NDK_TOOLCHAIN}/sysroot/usr/include -Werror=implicit-function-declaration"
+          ldflags="-pie -Wl,-z,max-page-size=16384 -Wl,-rpath-link=${libpath1} -L${libpath1} -Wl,-rpath-link=${libpath2} -L${libpath2} -Wl,-rpath-link=${libpath3} -L${libpath3} -Wl,-rpath-link=${PREFIX}/lib -L${PREFIX}/lib"
+          {
+            printf 'ANDROID_TARGET=%s\n' "$android_target"
+            printf 'ANDROID_TARGET_API=%s\n' "$android_target_api"
+            printf 'CFLAGS=%s\nCXXFLAGS=%s\nCPPFLAGS=%s\n' "$cflags" "$cflags" "$cflags"
+            printf 'LDFLAGS=%s\n' "$ldflags"
+            printf 'AR=llvm-ar\nAS=%s-clang\nCC=%s-clang\nCXX=%s-clang++\nLD=ld.lld\nSTRIP=llvm-strip\nRANLIB=llvm-ranlib\n' "$android_target_api" "$android_target_api" "$android_target_api"
+            printf 'PKG_CONFIG_PATH=%s/lib/pkgconfig\nPKG_CONFIG_LIBDIR=%s/lib/pkgconfig\n' "$PREFIX" "$PREFIX"
+          } >> "$GITHUB_ENV"
+          printf '%s\n' "$PREFIX/bin" "$PREFIX/lib" "$PREFIX/include" "$NDK_TOOLCHAIN/bin" >> "$GITHUB_PATH"
+
+      - name: Build Android dependencies
+        working-directory: ${{ env.DEV }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jobs=$(( $(nproc) + 1 ))
+          build_cmake() {
+            local source_dir="$1"
+            shift
+            pushd "$source_dir"
+            mkdir -p "build_${ANDROID_ABI_CMAKE}"
+            pushd "build_${ANDROID_ABI_CMAKE}"
+            cmake -G 'Unix Makefiles' \
+              -DCMAKE_MAKE_PROGRAM=make \
+              -DCMAKE_TOOLCHAIN_FILE="${NDK}/build/cmake/android.toolchain.cmake" \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DANDROID_NATIVE_API_LEVEL="${ANDROID_API}" \
+              -DANDROID_ABI="${ANDROID_ABI_CMAKE}" \
+              -DANDROID_TOOLCHAIN="${CC}" \
+              -DANDROID_NDK="${NDK}" \
+              -DANDROID_COMPILER_FLAGS="${CFLAGS// /;}" \
+              -DANDROID_LINKER_FLAGS="${LDFLAGS// /;}" \
+              -DANDROID_STL=c++_shared \
+              -DCMAKE_REQUIRED_FLAGS="${CFLAGS}" \
+              -DCMAKE_REQUIRED_LINK_OPTIONS="${LDFLAGS// /;}" \
+              -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+              -DCMAKE_STAGING_PREFIX="${PREFIX}" \
+              -DCMAKE_VERBOSE_MAKEFILE=1 \
+              -DBUILD_SHARED_LIBS=1 \
+              -DLIB_SUFFIX= \
+              "$@" ..
+            make -j"${jobs}"
+            if [[ "$source_dir" == 'oboe-1.10.0' ]]; then
+              cp liboboe.* "${PREFIX}/lib/"
+              cp -R ../include/oboe "${PREFIX}/include"
+            else
+              make install
+            fi
+            popd
+            popd
+          }
+
+          build_cmake "libogg-${OGG_VERSION}" -DINSTALL_DOCS=0
+          build_cmake "libvorbis-${VORBIS_VERSION}"
+          build_cmake "flac-${FLAC_VERSION}" -DCMAKE_C_STANDARD=99 -DCMAKE_C_STANDARD_REQUIRED=1 -DWITH_ASM=0 -DBUILD_CXXLIBS=0 -DBUILD_PROGRAMS=0 -DBUILD_EXAMPLES=0 -DBUILD_DOCS=0 -DINSTALL_MANPAGES=0
+          build_cmake "opus-${OPUS_VERSION}" -DBUILD_PROGRAMS=0 -DOPUS_MAY_HAVE_NEON=1 -DCMAKE_C_STANDARD=99 -DCMAKE_C_STANDARD_REQUIRED=1
+          build_cmake "libsndfile-${SNDFILE_VERSION}" -DBUILD_PROGRAMS=0 -DBUILD_EXAMPLES=0
+          build_cmake "oboe-${OBOE_VERSION}"
+
+      - name: Create oboe pkg-config file
+        working-directory: ${{ env.DEV }}
+        run: |
+          set -euo pipefail
+          cat > "${PKG_CONFIG_PATH}/oboe-1.0.pc" <<EOF
+          prefix=${PREFIX}
+          exec_prefix=\${prefix}
+          libdir=\${prefix}/lib
+          includedir=\${prefix}/include
+
+          Name: Oboe
+          Description: Oboe library
+          Version: ${OBOE_VERSION}
+          Libs: -L\${libdir} -loboe -landroid -llog
+          Cflags: -I\${includedir}
+          EOF
+          cat "${PKG_CONFIG_PATH}/oboe-1.0.pc"
+
+      - name: Configure and build FluidSynth
+        run: |
+          set -euo pipefail
+          cmake -S . -B "build_${ANDROID_ABI_CMAKE}" -G 'Unix Makefiles' \
+            -DCMAKE_MAKE_PROGRAM=make \
+            -DCMAKE_TOOLCHAIN_FILE="${NDK}/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DANDROID_NATIVE_API_LEVEL="${ANDROID_API}" \
+            -DANDROID_ABI="${ANDROID_ABI_CMAKE}" \
+            -DANDROID_TOOLCHAIN="${CC}" \
+            -DANDROID_NDK="${NDK}" \
+            -DANDROID_COMPILER_FLAGS="${CFLAGS// /;}" \
+            -DANDROID_LINKER_FLAGS="${LDFLAGS// /;}" \
+            -DANDROID_STL=c++_shared \
+            -DCMAKE_REQUIRED_FLAGS="${CFLAGS}" \
+            -DCMAKE_REQUIRED_LINK_OPTIONS="${LDFLAGS// /;}" \
+            -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+            -DCMAKE_STAGING_PREFIX="${PREFIX}" \
+            -DCMAKE_VERBOSE_MAKEFILE=1 \
+            -DBUILD_SHARED_LIBS=1 \
+            -DLIB_SUFFIX= \
+            -Denable-opensles=1 -Denable-floats=1 -Denable-oboe=1 -Denable-dbus=0 -Denable-oss=0 -Denable-openmp=0 .
+          make -C "build_${ANDROID_ABI_CMAKE}" -j"$(( $(nproc) + 1 ))" check
+
+      - name: Start emulator and run Android tests
+        if: matrix.abi_cmake == 'x86' || matrix.abi_cmake == 'x86_64'
+        shell: bash
+        run: |
+          set -e
+          sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          avdmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager"
+          if [[ ! -x "${ANDROID_HOME}/emulator/emulator" ]]; then
+            "${sdkmanager}" --channel=3 emulator
+          fi
+          if [[ -e /dev/kvm ]]; then
+            sudo groupadd -f kvm
+            sudo usermod -aG kvm "$USER"
+            sudo chown root:kvm /dev/kvm
+            sudo chmod 660 /dev/kvm
+            sudo setfacl -m "u:${USER}:rw" /dev/kvm || true
+          else
+            echo '::warning::/dev/kvm does not exist; emulator acceleration may be unavailable.'
+          fi
+          yes | "${sdkmanager}" --licenses >/dev/null 2>&1
+          "${sdkmanager}" "system-images;android-${ANDROID_API};default;${ANDROID_ABI_CMAKE}" >/dev/null
+          "${avdmanager}" create avd -n android_emulator -k "system-images;android-${ANDROID_API};default;${ANDROID_ABI_CMAKE}" --force
+          mkdir -p "$RUNNER_TEMP"
+          nohup "${ANDROID_HOME}/emulator/emulator" -avd android_emulator -no-window -no-snapshot -no-audio -no-boot-anim -accel auto -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          emulator_pid=$!
+          trap 'kill -9 "$emulator_pid" 2>/dev/null || true' EXIT
+          if ! timeout 300 adb wait-for-device; then
+            echo '::error::Timed out waiting for the emulator to attach via adb.'
+            cat "$RUNNER_TEMP/emulator.log" || true
+            adb devices -l || true
+            kill -9 "$emulator_pid" 2>/dev/null || true
+            exit 1
+          fi
+          export PATH="${PATH}:${ANDROID_HOME}/platform-tools"
+          export BUILD_DIR="${GITHUB_WORKSPACE}/build_${ANDROID_ABI_CMAKE}"
+          export PREFIX NDK NDK_TOOLCHAIN ARCH ANDROID_ABI_CMAKE ANDROID_API
+          cd test
+          ./run-android-tests.sh
+
+      - name: Install FluidSynth
+        run: make -C "build_${ANDROID_ABI_CMAKE}" install
+
+      - name: Build Android asset loader
+        working-directory: doc/android/fluidsynth-assetloader
+        run: |
+          set -euo pipefail
+          cmake -S . -B "build_${ANDROID_ABI_CMAKE}" -G 'Unix Makefiles' \
+            -DCMAKE_MAKE_PROGRAM=make \
+            -DCMAKE_TOOLCHAIN_FILE="${NDK}/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DANDROID_NATIVE_API_LEVEL="${ANDROID_API}" \
+            -DANDROID_ABI="${ANDROID_ABI_CMAKE}" \
+            -DANDROID_TOOLCHAIN="${CC}" \
+            -DANDROID_NDK="${NDK}" \
+            -DANDROID_COMPILER_FLAGS="${CFLAGS// /;}" \
+            -DANDROID_LINKER_FLAGS="${LDFLAGS// /;}" \
+            -DANDROID_STL=c++_shared \
+            -DCMAKE_REQUIRED_FLAGS="${CFLAGS}" \
+            -DCMAKE_REQUIRED_LINK_OPTIONS="${LDFLAGS// /;}" \
+            -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+            -DCMAKE_STAGING_PREFIX="${PREFIX}" \
+            -DCMAKE_VERBOSE_MAKEFILE=1 \
+            -DBUILD_SHARED_LIBS=1 \
+            -DLIB_SUFFIX= .
+          make -C "build_${ANDROID_ABI_CMAKE}" -j"$(( $(nproc) + 1 ))"
+          cp build_${ANDROID_ABI_CMAKE}/*.so "${PREFIX}/lib/"
+
+      - name: Verify and collect Android artifacts
+        run: |
+          set -euo pipefail
+          for library in libFLAC.so libfluidsynth-assetloader.so libfluidsynth.so liboboe.so libogg.so libopus.so libsndfile.so libvorbis.so libvorbisenc.so libvorbisfile.so; do
+            test -f "${PREFIX}/lib/${library}"
+          done
+          mkdir -p "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}" "${RUNNER_TEMP}/android-artifacts/include"
+          cp -LR "${PREFIX}/lib/"* "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/"
+          rm -rf "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/"*.dll "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/"*.alias "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/gettext" "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/libtextstyle.*" "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/"*.a "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/"*.la
+          rm -f "${RUNNER_TEMP}/android-artifacts/lib/${ANDROID_ABI_CMAKE}/"*.so.*
+          cp -a "${PREFIX}/include/fluidsynth"* "${RUNNER_TEMP}/android-artifacts/include/"
+          chmod +x contrib/check_elf_alignment.sh
+          contrib/check_elf_alignment.sh "${PREFIX}/lib"
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: fluidsynth-android24-${{ matrix.abi_cmake }}
+          path: ${{ runner.temp }}/android-artifacts
+          retention-days: 14
