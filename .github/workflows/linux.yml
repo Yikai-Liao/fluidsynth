@@ -106,7 +106,7 @@ jobs:
         cmake -S test/cmake \
           -B consume-build \
           -G Ninja \
-          -DFluidSynth_DIR="${{github.workspace}}/build" \
+          -DFluidSynth_DIR="$GITHUB_WORKSPACE/build" \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         cmake --build consume-build
     - name: Consume from install
@@ -217,7 +217,7 @@ jobs:
         cmake -S test/cmake \
           -B consume-build \
           -G Ninja \
-          -DFluidSynth_DIR="${{github.workspace}}/build" \
+          -DFluidSynth_DIR="$GITHUB_WORKSPACE/build" \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE
         cmake --build consume-build
     - name: Consume from install
