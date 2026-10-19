@@ -1,8 +1,5 @@
 name: Linux setup cleanup experiment
 'on':
-  push:
-    branches:
-    - ci/linux-lean-20261019
   workflow_dispatch:
     inputs:
       scope:
@@ -11,6 +8,7 @@ name: Linux setup cleanup experiment
         options:
         - screen
         - full
+        - powerpc
         default: screen
 permissions:
   contents: read
@@ -149,6 +147,7 @@ jobs:
         name: evidence-${{ matrix.mode }}-${{ matrix.case.id }}
         path: ci-evidence/
         retention-days: 1
+    if: ${{ inputs.scope != 'powerpc' }}
   build-ibm-long-double:
     runs-on: ubuntu-latest
     container:
@@ -172,7 +171,7 @@ jobs:
           ninja-build
     - uses: actions/checkout@v7
     - name: Checkout build dependencies
-      run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      run: git -c safe.directory="$GITHUB_WORKSPACE" -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
     - name: Configure CMake
       run: |
         export CFLAGS="$CFLAGS -mabi=ibmlongdouble -Wno-psabi"
@@ -193,4 +192,4 @@ jobs:
           -DNO_GUI=1
     - name: Build
       run: cmake --build build
-    if: ${{ inputs.scope == 'full' }}
+    if: ${{ inputs.scope == 'full' || inputs.scope == 'powerpc' }}
