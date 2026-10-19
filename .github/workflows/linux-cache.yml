@@ -64,6 +64,8 @@ jobs:
           }}
       run: |
         printf 'key=fluidsynth-ci-20261019-apt-v1-%s-%s-%s-%s-%s\n' "$ImageOS" "$ImageVersion" "$(dpkg --print-architecture)" "$(date -u +%G%V)" "$RECIPE_HASH" >> "$GITHUB_OUTPUT"
+        printf 'APT_BUNDLE_DIR=%s/fluidsynth-linux-apt-bundle\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+        printf 'DEPENDENCY_TIMINGS=%s/dependency-timings.tsv\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
     - name: Restore dependency bundle
       if: matrix.mode == 'cached'
       id: cache
@@ -166,6 +168,3 @@ jobs:
         name: evidence-${{ matrix.mode }}-${{ matrix.case.id }}
         path: ci-evidence/
         retention-days: 1
-    env:
-      APT_BUNDLE_DIR: ${{ runner.temp }}/fluidsynth-linux-apt-bundle
-      DEPENDENCY_TIMINGS: ${{ runner.temp }}/dependency-timings.tsv
