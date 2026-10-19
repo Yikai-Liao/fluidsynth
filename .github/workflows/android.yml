@@ -243,12 +243,9 @@ jobs:
           emulator-boot-timeout: 300
           emulator-options: -no-window -no-snapshot -no-audio -no-boot-anim -accel auto -gpu swiftshader_indirect
           disable-animations: false
-          script: |
-            export PATH="${PATH}:${ANDROID_HOME}/platform-tools"
-            export BUILD_DIR="${GITHUB_WORKSPACE}/build_${ANDROID_ABI_CMAKE}"
-            export PREFIX NDK NDK_TOOLCHAIN ARCH ANDROID_ABI_CMAKE ANDROID_API
-            cd test
-            ./run-android-tests.sh
+          script: cd test && ./run-android-tests.sh
+        env:
+          BUILD_DIR: ${{ github.workspace }}/build_${{ matrix.abi_cmake }}
 
       - name: Install FluidSynth
         run: make -C "build_${ANDROID_ABI_CMAKE}" install
