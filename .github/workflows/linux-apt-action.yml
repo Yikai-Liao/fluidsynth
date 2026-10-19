@@ -64,10 +64,13 @@ jobs:
         mkdir -p ci-evidence
         dpkg-query -W -f='${binary:Package}\t${Version}\n' > ci-evidence/packages-before.txt
         printf 'DEPENDENCY_TIMINGS=%s/dependency-timings.tsv\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-        printf 'APT_CACHE_VERSION=fluidsynth-ubuntu22-%s-%s\n' "$ImageVersion" "$(date -u +%G%V)" >> "$GITHUB_ENV"
+        printf 'APT_CACHE_VERSION=fluidsynth-ubuntu22-indexed-%s-%s\n' "$ImageVersion" "$(date -u +%G%V)" >> "$GITHUB_ENV"
     - name: Install Dependencies
       if: ${{ matrix.mode == 'original' }}
       run: bash .github/ci/install-linux-apt-experiment.sh runner-tools
+    - name: Update indexes for cached dependencies
+      if: ${{ matrix.mode == 'action' }}
+      run: sudo apt-get update -y
     - name: Install cached dependencies
       if: ${{ matrix.mode == 'action' }}
       id: apt
