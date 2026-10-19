@@ -238,7 +238,7 @@ jobs:
             "${sdkmanager}" --channel=3 emulator
           fi
           "${sdkmanager}" "system-images;android-${ANDROID_API};default;${ANDROID_ABI_CMAKE}" >/dev/null
-          "${avdmanager}" create avd -n android_emulator -k "system-images;android-${ANDROID_API};default;${ANDROID_ABI_CMAKE}" --force
+          printf 'no\n' | "${avdmanager}" create avd -n android_emulator -k "system-images;android-${ANDROID_API};default;${ANDROID_ABI_CMAKE}" --force
           mkdir -p "$RUNNER_TEMP"
           nohup "${ANDROID_HOME}/emulator/emulator" -avd android_emulator -no-window -no-snapshot -no-audio -no-boot-anim -accel auto -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
           emulator_pid=$!
