@@ -222,9 +222,6 @@ jobs:
           set -e
           sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           avdmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager"
-          if [[ ! -x "${ANDROID_HOME}/emulator/emulator" ]]; then
-            "${sdkmanager}" --channel=3 emulator
-          fi
           if [[ -e /dev/kvm ]]; then
             sudo groupadd -f kvm
             sudo usermod -aG kvm "$USER"
@@ -234,7 +231,12 @@ jobs:
           else
             echo '::warning::/dev/kvm does not exist; emulator acceleration may be unavailable.'
           fi
+          set +o pipefail
           yes | "${sdkmanager}" --licenses >/dev/null 2>&1
+          set -o pipefail
+          if [[ ! -x "${ANDROID_HOME}/emulator/emulator" ]]; then
+            "${sdkmanager}" --channel=3 emulator
+          fi
           "${sdkmanager}" "system-images;android-${ANDROID_API};default;${ANDROID_ABI_CMAKE}" >/dev/null
           "${avdmanager}" create avd -n android_emulator -k "system-images;android-${ANDROID_API};default;${ANDROID_ABI_CMAKE}" --force
           mkdir -p "$RUNNER_TEMP"
