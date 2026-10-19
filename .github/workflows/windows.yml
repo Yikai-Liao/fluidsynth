@@ -279,10 +279,10 @@ jobs:
         fail-fast: false
         matrix:
           include:
-            - { icon: '⬛', sys: mingw32, osal: cpp11 }
-            - { icon: '🟦', sys: mingw64, osal: cpp11 }
-            - { icon: '🟨', sys: ucrt64, osal: cpp11 }
-            - { icon: '🟧', sys: clang64, osal: cpp11 }
+            - { icon: '⬛', sys: mingw32, osal: cpp11, compiler_packages: 'gcc:p libgomp:p' }
+            - { icon: '🟦', sys: mingw64, osal: cpp11, compiler_packages: 'gcc:p libgomp:p' }
+            - { icon: '🟨', sys: ucrt64, osal: cpp11, compiler_packages: 'gcc:p libgomp:p' }
+            - { icon: '🟧', sys: clang64, osal: cpp11, compiler_packages: 'clang:p libc++:p libunwind:p llvm-openmp:p' }
     name: 🚧${{ matrix.icon }} ${{ matrix.sys }} ${{ matrix.osal }}
     defaults:
       run:
@@ -310,10 +310,11 @@ jobs:
           make
           libreadline
         pacboy: >-
-          toolchain:p
+          ${{matrix.compiler_packages}}
           cmake:p
           ninja:p
           libsndfile:p
+          pkgconf:p
 
     - name: '${{ matrix.icon }} Configure CMake'
       run: cmake -B build -Dosal=${{matrix.osal}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_VERBOSE_MAKEFILE=1 -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_LOCATION}}
