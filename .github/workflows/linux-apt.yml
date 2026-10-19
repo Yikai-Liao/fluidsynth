@@ -9,6 +9,9 @@ name: Linux APT preparation experiment
         - screen
         - full
         default: screen
+  push:
+    branches:
+    - ci/linux-apt-20261019
 permissions:
   contents: read
 env:
