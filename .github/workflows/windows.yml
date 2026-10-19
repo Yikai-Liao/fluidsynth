@@ -302,8 +302,10 @@ jobs:
         release: false
         msystem: ${{matrix.sys}}
         cache: true
-        # Keep this legacy MSVCRT compatibility configuration in the matrix.
-        suppress-deprecation-warnings: msystem-mingw64
+        # Keep both legacy MSVCRT targets in the matrix.
+        suppress-deprecation-warnings: >-
+          msystem-mingw32
+          msystem-mingw64
         install: >-
           make
           libreadline
