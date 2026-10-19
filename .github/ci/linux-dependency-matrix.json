@@ -1,0 +1,80 @@
+[
+  {
+    "id": "profiling",
+    "flags": "-Denable-profiling=1",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "float-profiling",
+    "flags": "-Denable-floats=1 -Denable-profiling=1",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "float",
+    "flags": "-Denable-floats=1",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "trap-fpe",
+    "flags": "-Denable-trap-on-fpe=1",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "check-fpe",
+    "flags": "-Denable-fpe-check=1",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "no-ipv6",
+    "flags": "-Denable-ipv6=0",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "no-network",
+    "flags": "-Denable-network=0",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "no-aufile",
+    "flags": "-Denable-aufile=0",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "static",
+    "flags": "-DBUILD_SHARED_LIBS=0",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "debug-gold",
+    "flags": "-Denable-debug=1 -DCMAKE_C_FLAGS_DEBUG=-fuse-ld=gold",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "cpp11",
+    "flags": "-Dosal=cpp11 -Denable-ladspa=0",
+    "cc": "",
+    "cxx": ""
+  },
+  {
+    "id": "clang",
+    "flags": "",
+    "cc": "clang-15",
+    "cxx": "clang++-15"
+  },
+  {
+    "id": "clang-static",
+    "flags": "-DBUILD_SHARED_LIBS=0",
+    "cc": "clang-15",
+    "cxx": "clang++-15"
+  }
+]

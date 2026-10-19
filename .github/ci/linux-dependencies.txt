@@ -1,0 +1,16 @@
+clang-15
+clang-tidy
+cmake
+cmake-data
+ladspa-sdk
+libasound2-dev
+libdbus-1-dev
+libjack-dev
+libpulse-dev
+libreadline-dev
+libsdl2-dev
+libsndfile-dev
+libsystemd-dev
+ninja-build
+libomp-dev
+portaudio19-dev

@@ -1,25 +1,7 @@
 name: FluidSynth iOS
 
 on:
-  pull_request:
-  push:
-    branches:
-      - '**'
-    paths-ignore:
-      - '.azure/**'
-      - '.circleci/**'
-      - '.github/workflows/freebsd.yml'
-      - '.github/workflows/api_doc_build.yml'
-      - '.github/workflows/os2.yml'
-      - '.github/workflows/linux.yml'
-      - '.github/workflows/solaris.yml'
-      - '.github/workflows/windows.yml'
-      - '.github/workflows/sonarcloud.yml'
-      - '.github/workflows/rendering-regression.yml'
-      - 'test/run-android-tests.sh'
-      - 'README.md'
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)

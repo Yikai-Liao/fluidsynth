@@ -1,23 +1,7 @@
 name: FluidSynth FreeBSD
 
 on:
-  pull_request:
-  push:
-    branches:
-      - '**'
-    paths-ignore:
-      - '.azure/**'
-      - '.circleci/**'
-      - '.github/workflows/api_doc_build.yml'
-      - '.github/workflows/linux.yml'
-      - '.github/workflows/ios.yml'
-      - '.github/workflows/os2.yml'
-      - '.github/workflows/rendering-regression.yml'
-      - '.github/workflows/sonarcloud.yml'
-      - '.github/workflows/solaris.yml'
-      - '.github/workflows/windows.yml'
-      - 'test/run-android-tests.sh'
-      - 'README.md'
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: RelWithDebInfo

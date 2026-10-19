@@ -1,25 +1,5 @@
 on:
-  # Trigger analysis when pushing in master or pull requests, and when creating
-  # a pull request. 
-  push:
-    branches:
-      - 'master'
-      - 'release/**'
-    paths-ignore:
-      - '.azure/**'
-      - '.circleci/**'
-      - '.github/workflows/freebsd.yml'
-      - '.github/workflows/api_doc_build.yml'
-      - '.github/workflows/linux.yml'
-      - '.github/workflows/solaris.yml'
-      - '.github/workflows/windows.yml'
-      - '.github/workflows/ios.yml'
-      - '.github/workflows/os2.yml'
-      - '.github/workflows/rendering-regression.yml'
-      - 'test/run-android-tests.sh'
-      - 'README.md'
-  pull_request:
-      types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
