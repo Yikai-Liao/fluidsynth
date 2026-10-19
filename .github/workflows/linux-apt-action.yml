@@ -1,0 +1,161 @@
+name: Linux third-party APT cache experiment
+'on':
+  push:
+    branches:
+    - ci/linux-apt-action-20261019
+  workflow_dispatch:
+    inputs:
+      scope:
+        type: choice
+        description: Screen two configurations or validate the full native matrix
+        options:
+        - screen
+        - full
+        default: screen
+permissions:
+  contents: read
+env:
+  BUILD_TYPE: RelWithDebInfo
+  INSTALL_LOCATION: ${{ github.workspace }}/fluidsynth_install
+  DEBIAN_FRONTEND: noninteractive
+defaults:
+  run:
+    shell: bash
+jobs:
+  matrix:
+    runs-on: ubuntu-22.04
+    outputs:
+      cases: ${{ steps.matrix.outputs.cases }}
+    steps:
+    - uses: actions/checkout@v7
+    - name: Select build configurations
+      id: matrix
+      env:
+        EXPERIMENT_SCOPE: ${{ inputs.scope || 'screen' }}
+      run: |
+        python3 - <<'PY_MATRIX'
+        import json, os
+        cases = json.load(open('.github/ci/linux-dependency-matrix.json'))
+        if os.environ['EXPERIMENT_SCOPE'] == 'screen':
+            cases = [case for case in cases if case['id'] in ('profiling', 'clang-static')]
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write('cases=' + json.dumps(cases) + '\n')
+        PY_MATRIX
+  native:
+    name: ${{ matrix.mode }} / ${{ matrix.case.id }}
+    needs: matrix
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mode:
+        - original
+        - action
+        case: ${{ fromJSON(needs.matrix.outputs.cases) }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        submodules: false
+    - name: Checkout build dependencies
+      run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+    - name: Record initial environment
+      run: |
+        mkdir -p ci-evidence
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' > ci-evidence/packages-before.txt
+        printf 'DEPENDENCY_TIMINGS=%s/dependency-timings.tsv\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+        printf 'APT_CACHE_VERSION=fluidsynth-ubuntu22-%s-%s\n' "$ImageVersion" "$(date -u +%G%V)" >> "$GITHUB_ENV"
+    - name: Install Dependencies
+      if: ${{ matrix.mode == 'original' }}
+      run: bash .github/ci/install-linux-apt-experiment.sh runner-tools
+    - name: Install cached dependencies
+      if: ${{ matrix.mode == 'action' }}
+      id: apt
+      uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9
+      with:
+        packages: clang-15 ladspa-sdk libasound2-dev libdbus-1-dev libjack-dev libpulse-dev libreadline-dev libsndfile-dev libsystemd-dev libomp-dev portaudio19-dev
+        version: ${{ env.APT_CACHE_VERSION }}
+    - name: Configure CMake
+      run: |
+        export CC=${{ matrix.case.cc }}
+        export CXX=${{ matrix.case.cxx }}
+        cmake -S . \
+          -B build \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DCMAKE_VERBOSE_MAKEFILE=1 \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=1 \
+          -Werror=dev \
+          -DCMAKE_INSTALL_PREFIX=$INSTALL_LOCATION \
+          -Denable-portaudio=1 \
+          -Denable-ladspa=1 \
+          -DNO_GUI=1 \
+          ${{ matrix.case.flags }}
+    - name: Build
+      run: cmake --build build
+    - name: Test
+      run: cmake --build build --target check
+    - name: Demo
+      run: cmake --build build --target demo
+    - name: Install
+      run: cmake --install build && ls -la $INSTALL_LOCATION
+    - name: Consume from pkg-config
+      if: ${{ contains(matrix.case.flags, 'BUILD_SHARED_LIBS=0') }}
+      run: |
+        set -e
+        cat << EOF > static-link-test.c
+        #include <fluidsynth.h>
+        int main() { fluid_synth_process(0,0,0,0,0,0); return 0; }
+        EOF
+        export PKG_CONFIG_PATH=$INSTALL_LOCATION/lib/pkgconfig
+        set -x
+        g++ -fPIE -o static-link-test static-link-test.c $(pkg-config --cflags --static fluidsynth) $(pkg-config --libs --static fluidsynth)
+        ./static-link-test
+        echo $?
+    - name: Consume from build
+      run: |
+        set -e
+        export CC=${{ matrix.case.cc }}
+        export CXX=${{ matrix.case.cxx }}
+        cmake -S test/cmake \
+          -B consume-build \
+          -G Ninja \
+          -DFluidSynth_DIR="$GITHUB_WORKSPACE/build" \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        cmake --build consume-build
+    - name: Consume from install
+      run: |
+        set -e
+        export CC=${{ matrix.case.cc }}
+        export CXX=${{ matrix.case.cxx }}
+        cmake -S test/cmake -B consume-install \
+          -G Ninja \
+          -DFluidSynth_DIR="$INSTALL_LOCATION/lib/cmake/fluidsynth" \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        cmake --build consume-install
+    - name: Record build environment
+      if: always()
+      run: |
+        mkdir -p ci-evidence
+        printf '%s\n' "$ImageOS" "$ImageVersion" > ci-evidence/runner-image.txt
+        uname -a > ci-evidence/uname.txt
+        git rev-parse HEAD > ci-evidence/revision.txt
+        git submodule status --recursive > ci-evidence/submodules.txt
+        dpkg-query -W -f='${binary:Package}\t${Version}\n' > ci-evidence/packages.txt
+        cmake --version > ci-evidence/cmake-version.txt
+        gcc --version > ci-evidence/gcc-version.txt
+        clang-15 --version > ci-evidence/clang-version.txt
+        cmake -LA -N build > ci-evidence/cmake-cache.txt 2>&1 || true
+        ctest --test-dir build -N > ci-evidence/test-inventory.txt 2>&1 || true
+        find build -name config.h -exec cp {} ci-evidence/config.h \;
+        if [[ -f "$DEPENDENCY_TIMINGS" ]]; then cp "$DEPENDENCY_TIMINGS" ci-evidence/setup-timings.tsv; fi
+        printf 'cache_hit=%s\n' '${{ steps.apt.outputs.cache-hit }}' > ci-evidence/action-cache.txt
+        printf '%s\n' '${{ steps.apt.outputs.package-version-list }}' > ci-evidence/action-main-packages.txt
+        printf '%s\n' '${{ steps.apt.outputs.all-package-version-list }}' > ci-evidence/action-all-packages.txt
+    - name: Upload build evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: evidence-${{ matrix.mode }}-${{ matrix.case.id }}
+        path: ci-evidence/
+        retention-days: 1
