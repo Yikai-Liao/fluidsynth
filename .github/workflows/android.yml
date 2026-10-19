@@ -2,6 +2,9 @@ name: FluidSynth Android
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - ci/azure-migration-20261019
 
 permissions:
   contents: read
