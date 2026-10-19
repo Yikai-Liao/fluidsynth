@@ -41,4 +41,9 @@ case "$mode" in
     ;;
 esac
 run_stage apt-update sudo apt-get update -y
-run_stage apt-install sudo apt-get -yq --no-install-suggests --no-install-recommends install "${packages[@]}"
+apt_options=()
+if [[ -n ${APT_BUNDLE_DIR:-} ]]; then
+  mkdir -p "$APT_BUNDLE_DIR/archives/partial"
+  apt_options=(-o "Dir::Cache::archives=$APT_BUNDLE_DIR/archives" -o APT::Keep-Downloaded-Packages=true)
+fi
+run_stage apt-install sudo apt-get "${apt_options[@]}" -yq --no-install-suggests --no-install-recommends install "${packages[@]}"
