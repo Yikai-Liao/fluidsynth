@@ -1,8 +1,5 @@
 name: Linux third-party APT cache experiment
 'on':
-  push:
-    branches:
-    - ci/linux-apt-action-20261019
   workflow_dispatch:
     inputs:
       scope:
