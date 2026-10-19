@@ -17,3 +17,9 @@ Share dependencies across feature variants. Key only on relevant OS/architecture
 The Jammy container receives the official CMake 3.31.6 binary to match the hosted runner (the distro CMake 3.22 is below the Signalsmith submodule requirement). Bookworm uses its distro CMake 3.25. It retains Clang 15 but changes the default GCC/libc/dependency versions, so compare coverage separately from package equivalence.
 
 Debian libsndfile 1.2 exposes MP3 dependencies in its static pkg-config link flags. Install libmp3lame-dev and libmpg123-dev for Debian containers so the existing static-consumer check remains intact. Push runs now use the full matrix; manual dispatch can still select the two-configuration screen.
+
+## APT cache experiment
+
+linux-cache.yml compares the original setup against a dependency-only .deb bundle. The cold run downloads the same packages through the original installer and saves one shared cache. Warm runs restore that bundle, verify its runner identity and checksums, unpack/configure the packages offline, and compare the full installed-package manifest with the producer. All build/test/consumer checks remain unchanged.
+
+The key includes runner image version, architecture, dependency recipe hash, and ISO week for periodic refresh. There is no prefix fallback. Only the profiling cell writes the shared entry, and entries above 450 MiB are not saved. This fork experiment uses one namespace and measures its actual size before any further rollout. No system directories or build outputs are cached.

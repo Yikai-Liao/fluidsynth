@@ -2,7 +2,7 @@ name: Linux dependency environment experiment
 'on':
   push:
     branches:
-    - ci/dependency-reuse-20261019
+    - ci/container-environment-*
   workflow_dispatch:
     inputs:
       scope:

@@ -21,8 +21,21 @@ if [[ $mode == container ]]; then
   fi
 fi
 
-if [[ $mode == original ]]; then
-  "${privilege[@]}" add-apt-repository -y ppa:ubuntu-toolchain-r/test
+run_stage() {
+  local phase=$1 started=$SECONDS
+  shift
+  "$@"
+  printf '%s\t%s\n' "$phase" "$((SECONDS - started))" >> "${DEPENDENCY_TIMINGS:-/dev/null}"
+}
+
+apt_options=()
+if [[ -n ${APT_BUNDLE_DIR:-} ]]; then
+  mkdir -p "$APT_BUNDLE_DIR/archives/partial"
+  apt_options=(-o "Dir::Cache::archives=$APT_BUNDLE_DIR/archives" -o APT::Keep-Downloaded-Packages=true)
 fi
-"${privilege[@]}" apt-get update -y
-"${privilege[@]}" apt-get -yq --no-install-suggests --no-install-recommends install "${packages[@]}"
+
+if [[ $mode == original ]]; then
+  run_stage repository "${privilege[@]}" add-apt-repository -y ppa:ubuntu-toolchain-r/test
+fi
+run_stage apt-update "${privilege[@]}" apt-get update -y
+run_stage apt-install "${privilege[@]}" apt-get "${apt_options[@]}" -yq --no-install-suggests --no-install-recommends install "${packages[@]}"
