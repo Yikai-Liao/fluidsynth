@@ -1,0 +1,151 @@
+name: FluidSynth macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean_dependencies:
+        description: Install dependencies without restoring or saving caches
+        type: boolean
+        default: false
+  push:
+    branches: ['ci/macos-native-*']
+    paths: ['.github/workflows/macos.yml', 'contrib/macos/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: '1'
+
+jobs:
+  ports:
+    name: MacPorts universal (${{ matrix.image }})
+    runs-on: ${{ matrix.image }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [macos-15-intel, macos-26-intel]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout build dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Prepare cache directory and identify the compiler image
+        id: host
+        run: |
+          sudo install -d -o "$(id -u)" -g "$(id -g)" /opt/local
+          echo "image=$ImageVersion" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v5
+        id: dependencies
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: |
+            /opt/local/include
+            /opt/local/lib
+            /opt/local/share
+          key: macports-universal-v2-${{ matrix.image }}-${{ runner.arch }}-${{ steps.host.outputs.image }}-${{ hashFiles('contrib/macos/macports.lock', 'contrib/macos/dependencies.sh') }}
+      - name: Install universal dependencies
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        run: |
+          bash contrib/macos/dependencies.sh ports
+          sudo chown -R "$(id -u):$(id -g)" /opt/local
+      - uses: actions/cache/save@v5
+        if: ${{ !inputs.clean_dependencies && steps.dependencies.outputs.cache-hit != 'true' }}
+        with:
+          path: |
+            /opt/local/include
+            /opt/local/lib
+            /opt/local/share
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+      - name: Cache CMake FetchContent dependencies
+        uses: actions/cache@v5
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: ${{ runner.temp }}/macos/build/_deps
+          key: macos-fetchcontent-v1-${{ matrix.image }}-${{ runner.arch }}-ports-${{ steps.host.outputs.image }}-${{ hashFiles('signalsmith-audio-basics/CMakeLists.txt') }}
+      - name: Build, test, install and validate consumers
+        run: bash contrib/macos/build.sh ports-universal "$RUNNER_TEMP/macos" | tee "$RUNNER_TEMP/macos-validation.log"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fluidsynth-macos-universal-${{ matrix.image }}
+          path: ${{ runner.temp }}/macos/package
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: macos-ports-logs-${{ matrix.image }}
+          path: |
+            ${{ runner.temp }}/macos-validation.log
+            ${{ runner.temp }}/macos/build/Testing/Temporary
+            /opt/local/var/macports/logs
+          retention-days: 7
+
+  brew:
+    name: Homebrew ${{ matrix.profile }} (${{ matrix.image }})
+    runs-on: ${{ matrix.image }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {image: macos-26-intel, profile: unix-shared}
+          - {image: macos-26-intel, profile: unix-static}
+          - {image: macos-26-intel, profile: unix-static-readline}
+          - {image: macos-15-intel, profile: unix-shared}
+          - {image: macos-15-intel, profile: unix-static}
+          - {image: macos-26-intel, profile: framework}
+          - {image: macos-15-intel, profile: framework}
+          - {image: macos-15-intel, profile: framework-10.14}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout build dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Locate Homebrew's download cache
+        id: brew
+        run: |
+          echo "cache=$(brew --cache)" >> "$GITHUB_OUTPUT"
+          echo "image=$ImageVersion" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v5
+        id: dependencies
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: ${{ steps.brew.outputs.cache }}/downloads
+          key: brew-downloads-v1-${{ matrix.image }}-${{ runner.arch }}-${{ steps.brew.outputs.image }}-${{ hashFiles('contrib/macos/Brewfile') }}
+      - name: Install dependencies
+        run: bash contrib/macos/dependencies.sh brew
+      - uses: actions/cache/save@v5
+        if: ${{ !inputs.clean_dependencies && steps.dependencies.outputs.cache-hit != 'true' }}
+        with:
+          path: ${{ steps.brew.outputs.cache }}/downloads
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+      - name: Cache CMake FetchContent dependencies
+        uses: actions/cache@v5
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: ${{ runner.temp }}/macos/build/_deps
+          key: macos-fetchcontent-v1-${{ matrix.image }}-${{ runner.arch }}-${{ matrix.profile }}-${{ steps.brew.outputs.image }}-${{ hashFiles('signalsmith-audio-basics/CMakeLists.txt') }}
+      - name: Build, test, install and validate consumers or Xcode
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: bash contrib/macos/build.sh "$PROFILE" "$RUNNER_TEMP/macos" | tee "$RUNNER_TEMP/macos-validation.log"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fluidsynth-macos-${{ matrix.image }}-${{ matrix.profile }}
+          path: ${{ runner.temp }}/macos/package
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: macos-brew-logs-${{ matrix.image }}-${{ matrix.profile }}
+          path: |
+            ${{ runner.temp }}/macos-validation.log
+            ${{ runner.temp }}/macos/build/Testing/Temporary
+          retention-days: 7

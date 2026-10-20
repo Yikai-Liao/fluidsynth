@@ -1,0 +1,8 @@
+brew "libsndfile"
+brew "pkgconf"
+brew "jack"
+brew "pulseaudio"
+brew "portaudio"
+brew "sdl3"
+brew "libomp"
+brew "readline"
