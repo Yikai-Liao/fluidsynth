@@ -21,6 +21,7 @@
 #include "fluid_sys.h"
 #include "fluid_synth.h"
 #include "fluid_settings.h"
+#include <limits.h>
 
 
 static int fluid_midi_event_length(unsigned char event);
@@ -150,7 +151,9 @@ new_fluid_midi_file(const char *buffer, size_t length)
 
     if(fluid_midi_file_read_mthd(mf) != FLUID_OK)
     {
-        FLUID_FREE(mf);
+        FLUID_FREE(mf->sysex_data);
+    delete_fluid_midi_parser(mf->escape_parser);
+    FLUID_FREE(mf);
         return NULL;
     }
 
@@ -490,6 +493,12 @@ fluid_midi_file_read_track(fluid_midi_file *mf, fluid_player_t *player, int num)
 
     id[4] = '\0';
     mf->dtime = 0;
+    mf->sysex_open = 0;
+    mf->sysex_size = 0;
+    if(mf->escape_parser != NULL)
+    {
+        mf->escape_parser->status = 0;
+    }
 
     while(!found_track)
     {
@@ -614,6 +623,110 @@ fluid_midi_file_read_varlen(fluid_midi_file *mf)
     return FLUID_OK;
 }
 
+/* Decode SMF F0/F7 packets at their packet tick. Keep incomplete SysEx data
+ * across packets and deliver the complete message when its EOX arrives. */
+static int fluid_midi_file_read_sysex(fluid_midi_file *mf, fluid_track_t *track, int status)
+{
+    int i, size;
+    if(fluid_midi_file_read_varlen(mf) != FLUID_OK)
+    {
+        return FLUID_FAILED;
+    }
+    size = mf->varlen;
+    if(size > mf->tracklen - mf->trackpos || size > mf->buf_len - mf->buf_pos)
+    {
+        return FLUID_FAILED;
+    }
+    if(mf->escape_parser == NULL)
+    {
+        mf->escape_parser = new_fluid_midi_parser();
+        if(mf->escape_parser == NULL)
+        {
+            return FLUID_FAILED;
+        }
+    }
+    if(status == MIDI_SYSEX)
+    {
+        mf->sysex_open = 1;
+        mf->sysex_size = 0;
+        mf->escape_parser->status = 0;
+    }
+    for(i = 0; i < size; i++)
+    {
+        int byte = fluid_midi_file_getc(mf);
+        fluid_midi_event_t *event = NULL;
+        if(byte < 0)
+        {
+            return FLUID_FAILED;
+        }
+        if(byte == MIDI_SYSEX)
+        {
+            mf->sysex_open = 1;
+            mf->sysex_size = 0;
+            mf->escape_parser->status = 0;
+            continue;
+        }
+        if(mf->sysex_open && byte < 0x80)
+        {
+            if(mf->sysex_size == mf->sysex_capacity)
+            {
+                int capacity = mf->sysex_capacity == 0 ? 256 :
+                               (mf->sysex_capacity <= INT_MAX / 2 ? mf->sysex_capacity * 2 : INT_MAX);
+                unsigned char *buffer;
+                if(mf->sysex_size == INT_MAX)
+                {
+                    return FLUID_FAILED;
+                }
+                buffer = FLUID_REALLOC(mf->sysex_data, capacity);
+                if(buffer == NULL)
+                {
+                    return FLUID_FAILED;
+                }
+                mf->sysex_data = buffer;
+                mf->sysex_capacity = capacity;
+            }
+            mf->sysex_data[mf->sysex_size++] = byte;
+            continue;
+        }
+        if(mf->sysex_open && byte == MIDI_EOX)
+        {
+            event = new_fluid_midi_event();
+            if(event == NULL)
+            {
+                return FLUID_FAILED;
+            }
+            fluid_midi_event_set_sysex(event, mf->sysex_data, mf->sysex_size, TRUE);
+            mf->sysex_data = NULL;
+            mf->sysex_capacity = mf->sysex_size = mf->sysex_open = 0;
+        }
+        else
+        {
+            fluid_midi_event_t *parsed;
+            if(byte < 0xF8 || byte == MIDI_SYSTEM_RESET)
+            {
+                mf->sysex_open = mf->sysex_size = 0;
+            }
+            parsed = fluid_midi_parser_parse(mf->escape_parser, byte);
+            if(parsed != NULL)
+            {
+                event = new_fluid_midi_event();
+                if(event == NULL)
+                {
+                    return FLUID_FAILED;
+                }
+                *event = *parsed;
+            }
+        }
+        if(event != NULL)
+        {
+            event->dtime = mf->dtime;
+            fluid_track_add_event(track, event);
+            mf->dtime = 0;
+        }
+    }
+    return FLUID_OK;
+}
+
 /*
  * fluid_midi_file_read_event
  */
@@ -631,7 +744,6 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
     int channel = 0;
     int param1 = 0;
     int param2 = 0;
-    int size;
 
     /* read the delta-time of the event */
     if(fluid_midi_file_read_varlen(mf) != FLUID_OK)
@@ -665,60 +777,9 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
     }
 
     /* check what message we have */
-    if(status == MIDI_SYSEX)    /* system exclusive */
+    if(status == MIDI_SYSEX || status == MIDI_EOX)
     {
-        /* read the length of the message */
-        if(fluid_midi_file_read_varlen(mf) != FLUID_OK)
-        {
-            FLUID_LOG(FLUID_DBG, "Failed to read length of SYSEX msg (track=%d)", track->num);
-            return FLUID_FAILED;
-        }
-
-        if(mf->varlen)
-        {
-            FLUID_LOG(FLUID_DBG, "%s: %d: alloc metadata, len = %d", __FILE__,
-                      __LINE__, mf->varlen);
-            metadata = FLUID_MALLOC(mf->varlen + 1);
-
-            if(metadata == NULL)
-            {
-                FLUID_LOG(FLUID_PANIC, "Out of memory");
-                return FLUID_FAILED;
-            }
-
-            /* read the data of the message */
-            if(fluid_midi_file_read(mf, metadata, mf->varlen) != FLUID_OK)
-            {
-                FLUID_LOG(FLUID_DBG, "Failed to read data of SYSEX msg (track=%d)", track->num);
-                FLUID_FREE(metadata);
-                return FLUID_FAILED;
-            }
-
-            evt = new_fluid_midi_event();
-
-            if(evt == NULL)
-            {
-                FLUID_LOG(FLUID_ERR, "Out of memory");
-                FLUID_FREE(metadata);
-                return FLUID_FAILED;
-            }
-
-            evt->dtime = mf->dtime;
-            size = mf->varlen;
-
-            if(metadata[mf->varlen - 1] == MIDI_EOX)
-            {
-                size--;
-            }
-
-            /* Add SYSEX event and indicate that its dynamically allocated and should be freed with event */
-            fluid_midi_event_set_sysex(evt, metadata, size, TRUE);
-            fluid_track_add_event(track, evt);
-            mf->dtime = 0;
-        }
-
-        return FLUID_OK;
-
+        return fluid_midi_file_read_sysex(mf, track, status);
     }
     else if(status == MIDI_META_EVENT)      /* meta events */
     {

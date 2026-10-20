@@ -364,6 +364,10 @@ typedef struct
     int eot;
     int varlen;
     int dtime;
+    unsigned char *sysex_data;
+    int sysex_size, sysex_capacity;
+    int sysex_open;
+    fluid_midi_parser_t *escape_parser;
 } fluid_midi_file;
 
 
