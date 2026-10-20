@@ -8771,7 +8771,7 @@ fluid_synth_check_next_basic_channel(fluid_synth_t *synth, int basicchan, int mo
         real_val = n_chan - basicchan;
     }
     /* checks if val range is above MIDI channel count */
-    else if(basicchan + val > n_chan)
+    else if(val > n_chan - basicchan)
     {
         return FLUID_FAILED;
     }
@@ -8832,14 +8832,8 @@ int fluid_synth_set_basic_channel(fluid_synth_t *synth, int chan, int mode, int 
     /* check parameters */
     fluid_return_val_if_fail(mode >= 0, FLUID_FAILED);
     fluid_return_val_if_fail(mode < FLUID_CHANNEL_MODE_LAST, FLUID_FAILED);
-    fluid_return_val_if_fail(val >= 0, FLUID_FAILED);
+    fluid_return_val_if_fail(val >= 0 || mode == FLUID_CHANNEL_MODE_OMNIOFF_POLY, FLUID_FAILED);
     FLUID_API_ENTRY_CHAN(FLUID_FAILED);
-
-    /**/
-    if(val > 0 && chan + val > synth->midi_channels)
-    {
-        FLUID_API_RETURN(FLUID_FAILED);
-    }
 
     /* Checks if there is an overlap with the next basic channel */
     val = fluid_synth_check_next_basic_channel(synth, chan, mode, val);

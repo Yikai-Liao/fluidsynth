@@ -1,5 +1,6 @@
 
 #include "test.h"
+#include <limits.h>
 #include "fluidsynth.h"
 #include "fluidsynth_priv.h"
 #include "fluid_synth.h"
@@ -108,7 +109,31 @@ static void test_portamento_fromkey(fluid_synth_t* synth, int chan)
     TEST_ASSERT(!fluid_channel_is_valid_note(ptc));
 }
 
-// this test should make sure that sample rate changed are handled correctly
+static void test_basic_channel_bounds(fluid_synth_t *synth)
+{
+    int mode, actual_mode, basic, count;
+    TEST_SUCCESS(fluid_synth_reset_basic_channel(synth, -1));
+    for(mode = 0; mode < FLUID_CHANNEL_MODE_LAST; mode++)
+    {
+        if(mode == FLUID_CHANNEL_MODE_OMNIOFF_POLY)
+        {
+            TEST_SUCCESS(fluid_synth_set_basic_channel(synth, 1, mode, INT_MAX));
+            TEST_SUCCESS(fluid_synth_get_basic_channel(synth, 1, &basic, &actual_mode, &count));
+            TEST_ASSERT(basic == 1 && actual_mode == mode && count == 1);
+            TEST_SUCCESS(fluid_synth_reset_basic_channel(synth, 1));
+            TEST_SUCCESS(fluid_synth_set_basic_channel(synth, 1, mode, -1));
+            TEST_SUCCESS(fluid_synth_reset_basic_channel(synth, 1));
+            continue;
+        }
+        TEST_ASSERT(fluid_synth_set_basic_channel(synth, 1, mode, -1) == FLUID_FAILED);
+        TEST_ASSERT(fluid_synth_set_basic_channel(synth, 1, mode, INT_MAX) == FLUID_FAILED);
+        TEST_ASSERT(fluid_synth_set_basic_channel(synth, 1, mode, 16) == FLUID_FAILED);
+        TEST_SUCCESS(fluid_synth_set_basic_channel(synth, 1, mode, 15));
+        TEST_SUCCESS(fluid_synth_reset_basic_channel(synth, 1));
+    }
+    TEST_SUCCESS(fluid_synth_system_reset(synth));
+}
+
 int main(void)
 {
     int chan;
@@ -139,6 +164,7 @@ int main(void)
         fluid_synth_system_reset(synth);
     }
     
+    test_basic_channel_bounds(synth);
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
 
