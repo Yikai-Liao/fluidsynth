@@ -51,22 +51,28 @@ extern "C" {
 
     void init_dither(void)
     {
-        float d, dp;
-        int c, i;
-
-        for(c = 0; c < DITHER_CHANNELS; c++)
+        /* Initialize the shared table once before conversion threads read it. */
+        static const bool initialized = []()
         {
-            dp = 0;
+            float d, dp;
+            int c, i;
 
-            for(i = 0; i < DITHER_SIZE - 1; i++)
+            for(c = 0; c < DITHER_CHANNELS; c++)
             {
-                d = rand() / (float)RAND_MAX - 0.5f;
-                rand_table[c][i] = d - dp;
-                dp = d;
-            }
+                dp = 0;
 
-            rand_table[c][DITHER_SIZE - 1] = 0 - dp;
-        }
+                for(i = 0; i < DITHER_SIZE - 1; i++)
+                {
+                    d = rand() / (float)RAND_MAX - 0.5f;
+                    rand_table[c][i] = d - dp;
+                    dp = d;
+                }
+
+                rand_table[c][DITHER_SIZE - 1] = 0 - dp;
+            }
+            return true;
+        }();
+        (void)initialized;
     }
 
 } /* extern "C" */
@@ -141,6 +147,7 @@ extern "C" int fluid_audio_planar_float_to_s16(int16_t *dst_interleaved,
         return FLUID_OK;
     }
 
+    init_dither();
     int di = 0;
 
     for(int f = 0; f < frames; ++f)
@@ -268,13 +275,7 @@ fluid_synth_dither_s16(int *dither_index, int len, const float *lin, const float
     int di = *dither_index;
     fluid_profile_ref_var(prof_ref);
 
-    static int dither_initialized = 0; // ensure dither table is initialized
-
-    if(!dither_initialized)
-    {
-        init_dither();
-        dither_initialized = 1;
-    }
+    init_dither();
 
     for(i = 0, j = loff, k = roff; i < len; i++, j += lincr, k += rincr)
     {
