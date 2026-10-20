@@ -311,21 +311,15 @@ struct _fluid_player_t
     unsigned int cur_msec;    /* the current time */
     int end_msec;             /* when >=0, playback is extended until this time (for, e.g., reverb) */
     char end_pedals_disabled; /* 1 once the pedals have been released after the last midi event, 0 otherwise */
-    /* sync mode: indicates the tempo mode the player is driven by (see fluid_player_set_tempo()):
-       1, the player is driven by internal tempo (miditempo). This is the default.
-       0, the player is driven by external tempo (exttempo)
-    */
-    int sync_mode;
-    /* miditempo: internal tempo coming from MIDI file tempo change events
-      (in micro seconds per quarter note)
-    */
-    int miditempo;     /* as indicated by MIDI SetTempo: n 24th of a usec per midi-clock. bravo! */
-    /* exttempo: external tempo set by fluid_player_set_tempo() (in micro seconds per quarter note) */
-    int exttempo;
-    /* multempo: tempo multiplier set by fluid_player_set_tempo() */
-    float multempo;
-    float deltatime;   /* milliseconds per midi tick. depends on current tempo mode (see sync_mode) */
-    unsigned int division;
+    /* Publish mode and value together: positive microseconds per beat, or negated
+     * positive-float bits for an internal multiplier. Preserve external integer precision. */
+    fluid_atomic_int_t tempo_request;
+    fluid_atomic_int_t miditempo;
+    float deltatime; /* Callback-owned milliseconds per tick. */
+    fluid_atomic_int_t division;
+    fluid_atomic_int_t tick_snapshot;
+    fluid_atomic_int_t total_ticks;
+    fluid_atomic_int_t resume_requested;
 
     handle_midi_event_func_t playback_callback; /* function fired on each midi event as it is played */
     void *playback_userdata; /* pointer to user-defined data passed to playback_callback function */
