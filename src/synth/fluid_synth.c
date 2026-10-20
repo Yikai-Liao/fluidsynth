@@ -154,9 +154,14 @@ static void fluid_synth_set_basic_channel_LOCAL(fluid_synth_t *synth, int basicc
  *                         GLOBAL
  */
 
-/* has the synth module been initialized? */
+enum
+{
+    FLUID_SYNTH_UNINITIALIZED,
+    FLUID_SYNTH_INITIALIZING,
+    FLUID_SYNTH_INITIALIZED
+};
 /* fluid_atomic_int_t may be anything, so init with {0} to catch most cases */
-static fluid_atomic_int_t fluid_synth_initialized = {0};
+static fluid_atomic_int_t fluid_synth_init_state = {FLUID_SYNTH_UNINITIALIZED};
 
 /* default modulators
  * SF2.01 page 52 ff:
@@ -725,9 +730,19 @@ new_fluid_synth(fluid_settings_t *settings)
 #endif
 
     /* initialize all the conversion tables and other stuff */
-    if(fluid_atomic_int_compare_and_exchange(&fluid_synth_initialized, 0, 1))
+    if(fluid_atomic_int_compare_and_exchange(&fluid_synth_init_state,
+                                           FLUID_SYNTH_UNINITIALIZED, FLUID_SYNTH_INITIALIZING))
     {
         fluid_synth_init();
+        fluid_atomic_int_set(&fluid_synth_init_state, FLUID_SYNTH_INITIALIZED);
+    }
+    else
+    {
+        /* Wait for fluid_synth_init() before copying the shared default modulators. */
+        while(fluid_atomic_int_get(&fluid_synth_init_state) != FLUID_SYNTH_INITIALIZED)
+        {
+            fluid_msleep(1);
+        }
     }
 
     /* allocate a new synthesizer object */
