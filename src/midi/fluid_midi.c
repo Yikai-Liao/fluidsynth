@@ -362,7 +362,12 @@ fluid_midi_file_read_mthd(fluid_midi_file *mf)
                   "Sorry, but MIDI Format %d is not supported by this player", mf->type);
         return FLUID_FAILED;
     }
-    mf->ntracks = (signed)((unsigned)(mthd[10]) << 8 | (unsigned) mthd[11]);
+    mf->ntracks = ((unsigned char)mthd[10] << 8) | (unsigned char)mthd[11];
+    if(mf->ntracks <= 0 || mf->ntracks > MAX_NUMBER_OF_TRACKS)
+    {
+        FLUID_LOG(FLUID_ERR, "Unsupported MIDI track count: %d", mf->ntracks);
+        return FLUID_FAILED;
+    }
 
     if((signed char)mthd[12] < 0)
     {
