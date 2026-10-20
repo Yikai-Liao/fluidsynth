@@ -320,6 +320,66 @@ fluid_rvoice_dsp_interpolate_linear_local(fluid_rvoice_t *rvoice, fluid_real_t *
     return (dsp_i);
 }
 
+/* Wrap each tap when the interpolation stencil spans more than one loop boundary.
+ * Keep samples preceding the loop on its first traversal to preserve the attack. */
+template<bool IS_24BIT, int ORDER>
+static int fluid_rvoice_dsp_interpolate_short_loop(fluid_rvoice_t *rvoice, fluid_real_t *dsp_buf)
+{
+    fluid_rvoice_dsp_t *voice = &rvoice->dsp;
+    fluid_phase_t phase = voice->phase, increment;
+    fluid_phase_set_float(increment, voice->phase_incr);
+    const unsigned int loop_len = voice->loopend - voice->loopstart;
+    for(int i = 0; i < FLUID_BUFSIZE; i++)
+    {
+        unsigned int index = fluid_phase_index(phase);
+        if(index >= static_cast<unsigned int>(voice->loopend))
+        {
+            fluid_phase_sub_int(phase, ((index - voice->loopstart) / loop_len) * loop_len);
+            voice->has_looped = 1;
+        }
+        fluid_phase_t center = phase;
+        if(ORDER != 4)
+        {
+            fluid_phase_incr(center, (fluid_phase_t)0x80000000);
+        }
+        std::array<fluid_real_t, ORDER> samples;
+        for(int j = 0; j < ORDER; j++)
+        {
+            int64_t tap = static_cast<int64_t>(fluid_phase_index(center)) + j - (ORDER == 4 ? 1 : ORDER / 2);
+            if(tap >= voice->loopend || (voice->has_looped && tap < voice->loopstart))
+            {
+                int64_t offset = (tap - voice->loopstart) % loop_len;
+                tap = voice->loopstart + (offset < 0 ? offset + loop_len : offset);
+            }
+            else if(tap < voice->start)
+            {
+                tap = voice->start;
+            }
+            samples[j] = fluid_rvoice_get_float_sample<IS_24BIT>(voice->sample->data, voice->sample->data24, tap);
+        }
+        if(ORDER == 4)
+        {
+            const fluid_real_t *coeffs = &interp_coeff[fluid_phase_fract_to_tablerow(center) * CUBIC_INTERP_ORDER];
+            dsp_buf[i] = coeffs[0] * samples[0] + coeffs[1] * samples[1]
+                       + coeffs[2] * samples[2] + coeffs[3] * samples[3];
+        }
+        else
+        {
+            const auto fraction = fluid_phase_fract(center) * (fluid_real_t)(1.0 / FLUID_FRACT_MAX);
+            dsp_buf[i] = fluid_interp_sinc_kernel<ORDER>(samples, fraction);
+        }
+        fluid_phase_incr(phase, increment);
+    }
+    unsigned int index = fluid_phase_index(phase);
+    if(index >= static_cast<unsigned int>(voice->loopend))
+    {
+        fluid_phase_sub_int(phase, ((index - voice->loopstart) / loop_len) * loop_len);
+        voice->has_looped = 1;
+    }
+    voice->phase = phase;
+    return FLUID_BUFSIZE;
+}
+
 /* 4th order (cubic) interpolation.
  * Returns number of samples processed (usually FLUID_BUFSIZE but could be
  * smaller if end of sample occurs).
@@ -329,6 +389,10 @@ static int
 fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_t *FLUID_RESTRICT dsp_buf)
 {
     fluid_rvoice_dsp_t *voice = &rvoice->dsp;
+    if(LOOPING && voice->loopend - voice->loopstart < 4)
+    {
+        return fluid_rvoice_dsp_interpolate_short_loop<IS_24BIT, 4>(rvoice, dsp_buf);
+    }
     fluid_phase_t dsp_phase = voice->phase;
     fluid_phase_t dsp_phase_incr;
     const short int *FLUID_RESTRICT dsp_data = voice->sample->data;
@@ -512,6 +576,10 @@ fluid_rvoice_dsp_interpolate_sinc_local(fluid_rvoice_t *rvoice, fluid_real_t *FL
     static_assert(SINC_ORDER >= 1, "SINC_ORDER must be at least 1");
 
     fluid_rvoice_dsp_t *voice = &rvoice->dsp;
+    if(LOOPING && voice->loopend - voice->loopstart < SINC_ORDER)
+    {
+        return fluid_rvoice_dsp_interpolate_short_loop<IS_24BIT, SINC_ORDER>(rvoice, dsp_buf);
+    }
     fluid_phase_t dsp_phase = voice->phase;
     fluid_phase_t dsp_phase_incr;
     const short int *FLUID_RESTRICT dsp_data = voice->sample->data;

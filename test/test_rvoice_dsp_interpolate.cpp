@@ -1328,11 +1328,68 @@ static void test_M_sine_wave_interpolation(void)
 
 /* ========================================================================= */
 
+static void test_short_loop_periodic_oracle()
+{
+    const fluid_interp modes[] = {FLUID_INTERP_4THORDER, FLUID_INTERP_MID,
+                                  FLUID_INTERP_HIGH, FLUID_INTERP_HIGHEST};
+    for(auto mode : modes)
+    for(int len = 2; len <= 25; len++)
+    for(int bits : {16, 24})
+    for(int looped : {0, 1})
+    for(double increment : {0.73, 3.75, 19.0})
+    {
+        /* Expand the loop into ordinary sample data so non-looping interpolation
+         * supplies the reference without using the loop boundary code. */
+        short data[2048], reference[2048];
+        char lsb[2048], reference_lsb[2048];
+        for(int i = 0; i < 2048; i++)
+        {
+            data[i] = (i * 997 % 30001) - 15000;
+            lsb[i] = static_cast<char>(i * 37);
+            int source = i < 8 && !looped ? i : 8 + ((i - 8) % len + len) % len;
+            reference[i] = (source * 997 % 30001) - 15000;
+            reference_lsb[i] = static_cast<char>(source * 37);
+        }
+        fluid_rvoice_t actual, expected;
+        fluid_sample_t sample, oracle_sample;
+        fluid_real_t out[FLUID_BUFSIZE], oracle[FLUID_BUFSIZE];
+        const double phase = looped ? 8.25 : 2.25;
+        setup_rvoice(&actual, &sample, data, bits == 24 ? lsb : nullptr,
+                     phase, increment, 2, 2047, 8, 8 + len, looped, mode);
+        TEST_ASSERT(fluid_rvoice_dsp_interpolate(&actual, out, 1) == FLUID_BUFSIZE);
+        fluid_phase_t shadow, step;
+        fluid_phase_set_float(shadow, phase);
+        fluid_phase_set_float(step, actual.dsp.phase_incr);
+        for(int i = 0; i < FLUID_BUFSIZE; i++)
+        {
+            fluid_phase_t position = shadow;
+            if(looped || fluid_phase_index(shadow) >= static_cast<unsigned int>(8 + len))
+            {
+                unsigned int index = fluid_phase_index(shadow);
+                fluid_phase_set_int(position, 8 + 16 * len + (index - 8) % len);
+                position |= fluid_phase_fract(shadow);
+            }
+            setup_rvoice(&expected, &oracle_sample, reference, bits == 24 ? reference_lsb : nullptr,
+                         0, increment, 2, 2047, 8, 2047, 0, mode);
+            expected.dsp.phase = position;
+            TEST_ASSERT(fluid_rvoice_dsp_interpolate(&expected, oracle, 0) == FLUID_BUFSIZE);
+            if(std::abs(out[i] - oracle[0]) > 0.005 * DSP_SCALE)
+            {
+                fprintf(stderr, "mode=%d len=%d bits=%d looped=%d increment=%g sample=%d actual=%g expected=%g\n",
+                        mode, len, bits, looped, increment, i, (double)out[i], (double)oracle[0]);
+                TEST_ASSERT(false);
+            }
+            fluid_phase_incr(shadow, step);
+        }
+    }
+}
+
 int main(void)
 {
     printf("FluidSynth DSP Interpolation Unit Tests\n");
     printf("========================================\n\n");
 
+    test_short_loop_periodic_oracle();
     test_A_integer_phase_passthrough();
     printf("\n");
 
