@@ -1556,87 +1556,75 @@ fluid_track_reset(fluid_track_t *track)
     return FLUID_OK;
 }
 
-/*
- * fluid_track_send_events
- */
+/* Dispatch the current event selected by fluid_player_send_events(). */
 static void
-fluid_track_send_events(fluid_track_t *track,
-                        fluid_synth_t *synth,
-                        fluid_player_t *player,
-                        unsigned int ticks,
-                        int seek_ticks
-                       )
+fluid_track_send_event(fluid_track_t *track, fluid_player_t *player, int seek_ticks)
 {
-    fluid_midi_event_t *event;
+    fluid_midi_event_t *event = track->cur;
     int seeking = seek_ticks >= 0;
+    track->ticks += event->dtime;
 
-    if(seeking)
+    /* Reconstruct controller state while skipping notes before the seek target. */
+    if(event->type != MIDI_EOT &&
+       !(seeking && track->ticks != (unsigned int)seek_ticks &&
+         (event->type == NOTE_ON || event->type == NOTE_OFF)))
     {
-        ticks = seek_ticks; /* update target ticks */
-
-        // the track ticks is beyond the current ticks,
-        // or if the track ticks is equal to the current ticks,
-        // we want to play all events from the beginning of that tick
-        if(track->ticks >= ticks)
+        if(player->playback_callback)
         {
-            fluid_track_reset(track);    /* reset track if seeking backwards */
+            int *chan_is_playing = &player->channel_isplaying[event->channel % MAX_NUMBER_OF_CHANNELS];
+            player->playback_callback(player->playback_userdata, event);
+            if(event->type == NOTE_ON && event->param2 != 0 && !*chan_is_playing)
+            {
+                *chan_is_playing = TRUE;
+            }
         }
     }
+    if(event->type == MIDI_SET_TEMPO)
+    {
+        fluid_atomic_int_set(&player->miditempo, event->param1);
+        fluid_player_update_tempo(player);
+    }
+    fluid_track_next_event(track);
+}
 
+/* Merge tracks by absolute event time. Track index breaks ties, preserving each
+ * track's event order both during playback and while reconstructing a seek. */
+static void fluid_player_send_events(fluid_player_t *player, unsigned int ticks, int seek_ticks, int rewind)
+{
+    int i;
+    if(seek_ticks >= 0)
+    {
+        ticks = seek_ticks;
+        for(i = 0; i < player->ntracks; i++)
+        {
+            if(rewind)
+            {
+                fluid_track_reset(player->track[i]);
+            }
+        }
+    }
     while(1)
     {
-
-        event = track->cur;
-
-        if(event == NULL)
+        fluid_track_t *next = NULL;
+        unsigned int earliest = UINT_MAX;
+        for(i = 0; i < player->ntracks; i++)
         {
-            return;
-        }
-
-        /*         printf("track=%02d\tticks=%05u\ttrack=%05u\tdtime=%05u\tnext=%05u\n", */
-        /*                track->num, */
-        /*                ticks, */
-        /*                track->ticks, */
-        /*                event->dtime, */
-        /*                track->ticks + event->dtime); */
-
-        if(track->ticks + event->dtime > ticks)
-        {
-            return;
-        }
-
-        track->ticks += event->dtime;
-
-        if(!player || event->type == MIDI_EOT)
-        {
-            /* don't send EOT events to the callback */
-        }
-        else if(seeking && track->ticks != ticks && (event->type == NOTE_ON || event->type == NOTE_OFF))
-        {
-            /* skip on/off messages */
-        }
-        else
-        {
-            if(player->playback_callback)
+            fluid_track_t *track = player->track[i];
+            if(track->cur != NULL)
             {
-                int *chan_is_playing = &player->channel_isplaying[event->channel % MAX_NUMBER_OF_CHANNELS];
-                player->playback_callback(player->playback_userdata, event);
-                if(event->type == NOTE_ON && event->param2 != 0 && !*chan_is_playing)
+                unsigned int time = track->ticks + track->cur->dtime;
+                if(time < earliest)
                 {
-                    *chan_is_playing = TRUE;
+                    earliest = time;
+                    next = track;
                 }
             }
         }
-
-        if(event->type == MIDI_SET_TEMPO && player != NULL)
+        if(next == NULL || earliest > ticks)
         {
-            /* memorize the tempo change value coming from the MIDI file */
-            fluid_atomic_int_set(&player->miditempo, event->param1);
-            fluid_player_update_tempo(player);
+            return;
         }
-
-        fluid_track_next_event(track);
-
+        fluid_track_send_event(next, player, seek_ticks);
     }
 }
 
@@ -2158,6 +2146,7 @@ fluid_player_callback(void *data, unsigned int msec)
     {
         float deltatime;
         int seek_ticks;
+        int previous_ticks;
 
         if(loadnextfile)
         {
@@ -2170,6 +2159,7 @@ fluid_player_callback(void *data, unsigned int msec)
             }
         }
 
+        previous_ticks = player->cur_ticks;
         if(msec < player->cur_msec)
         {
             // overflow of fluid_synth_get_ticks()
@@ -2200,9 +2190,9 @@ fluid_player_callback(void *data, unsigned int msec)
             }
         }
 
+        fluid_player_send_events(player, player->cur_ticks, seek_ticks, seek_ticks <= previous_ticks);
         for(i = 0; i < player->ntracks; i++)
         {
-            fluid_track_send_events(player->track[i], synth, player, player->cur_ticks, seek_ticks);
             if(!fluid_track_eot(player->track[i]))
             {
                 status = FLUID_PLAYER_PLAYING;
@@ -2215,7 +2205,7 @@ fluid_player_callback(void *data, unsigned int msec)
             player->cur_ticks = seek_ticks;
             player->begin_msec = msec;      /* only used to calculate the duration of playing */
             player->start_msec = msec;      /* should be the (synth)-time of the last tempo change */
-            fluid_atomic_int_set(&player->seek_ticks, -1); /* clear seek_ticks */
+            fluid_atomic_int_compare_and_exchange(&player->seek_ticks, seek_ticks, -1);
         }
         
         if(fluid_list_next(player->currentfile) == NULL && player->loop == 0)
