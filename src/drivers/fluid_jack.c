@@ -38,18 +38,7 @@
 #include <jack/midiport.h>
 
 
-typedef struct _fluid_jack_audio_driver_t fluid_jack_audio_driver_t;
-typedef struct _fluid_jack_midi_driver_t fluid_jack_midi_driver_t;
-
-
-/* Clients are shared for drivers using the same server. */
-typedef struct
-{
-    jack_client_t *client;
-    char *server;                 /* Jack server name used */
-    fluid_jack_audio_driver_t *audio_driver;
-    fluid_jack_midi_driver_t *midi_driver;
-} fluid_jack_client_t;
+#include "fluid_jack.h"
 
 /* Jack audio driver instance */
 struct _fluid_jack_audio_driver_t
@@ -84,7 +73,7 @@ struct _fluid_jack_midi_driver_t
 static fluid_jack_client_t *new_fluid_jack_client(fluid_settings_t *settings,
         int isaudio, void *driver);
 static int fluid_jack_client_register_ports(void *driver, int isaudio,
-        jack_client_t *client,
+        fluid_jack_client_t *client_ref,
         fluid_settings_t *settings);
 
 void fluid_jack_driver_shutdown(void *arg);
@@ -167,7 +156,7 @@ new_fluid_jack_client(fluid_settings_t *settings, int isaudio, void *driver)
         client_ref = last_client;
 
         /* Register ports */
-        if(fluid_jack_client_register_ports(driver, isaudio, client_ref->client, settings) == FLUID_OK)
+        if(fluid_jack_client_register_ports(driver, isaudio, client_ref, settings) == FLUID_OK)
         {
             last_client = NULL; /* No more pairing for this client */
 
@@ -243,6 +232,8 @@ new_fluid_jack_client(fluid_settings_t *settings, int isaudio, void *driver)
         goto error_recovery;
     }
 
+    fluid_atomic_int_set(&client_ref->sample_rate, jack_get_sample_rate(client_ref->client));
+    fluid_atomic_int_set(&client_ref->audio_sample_rate, 0);
     jack_set_port_registration_callback(client_ref->client, fluid_jack_port_registration, client_ref);
     jack_set_process_callback(client_ref->client, fluid_jack_driver_process, client_ref);
     jack_set_buffer_size_callback(client_ref->client, fluid_jack_driver_bufsize, client_ref);
@@ -250,7 +241,7 @@ new_fluid_jack_client(fluid_settings_t *settings, int isaudio, void *driver)
     jack_on_shutdown(client_ref->client, fluid_jack_driver_shutdown, client_ref);
 
     /* Register ports */
-    if(fluid_jack_client_register_ports(driver, isaudio, client_ref->client, settings) != FLUID_OK)
+    if(fluid_jack_client_register_ports(driver, isaudio, client_ref, settings) != FLUID_OK)
     {
         goto error_recovery;
     }
@@ -308,9 +299,10 @@ error_recovery:
 }
 
 static int
-fluid_jack_client_register_ports(void *driver, int isaudio, jack_client_t *client,
+fluid_jack_client_register_ports(void *driver, int isaudio, fluid_jack_client_t *client_ref,
                                  fluid_settings_t *settings)
 {
+    jack_client_t *client = client_ref->client;
     fluid_jack_audio_driver_t *dev;
     char name[64];
     int multi;
@@ -474,6 +466,7 @@ fluid_jack_client_register_ports(void *driver, int isaudio, jack_client_t *clien
 
     /* Adjust sample rate to match JACK's */
     jack_srate = jack_get_sample_rate(client);
+    fluid_atomic_int_set(&client_ref->audio_sample_rate, jack_srate);
     FLUID_LOG(FLUID_DBG, "Jack engine sample rate: %lu", jack_srate);
 
     fluid_settings_getnum(settings, "synth.sample-rate", &sample_rate);
@@ -734,6 +727,13 @@ fluid_jack_driver_process(jack_nframes_t nframes, void *arg)
         return FLUID_OK;
     }
 
+    /* Check the rate captured by fluid_jack_client_register_ports() even if JACK
+     * notified a change before new_fluid_jack_client() published the audio driver. */
+    if(fluid_atomic_int_get(&client->sample_rate) != fluid_atomic_int_get(&client->audio_sample_rate))
+    {
+        return FLUID_FAILED;
+    }
+
     if(audio_driver->callback == NULL && audio_driver->num_output_ports == 1 && audio_driver->num_fx_ports == 0)  /* i.e. audio.jack.multi=no */
     {
         left = (float *) jack_port_get_buffer(audio_driver->output_ports[0], nframes);
@@ -795,8 +795,13 @@ fluid_jack_driver_bufsize(jack_nframes_t nframes, void *arg)
 int
 fluid_jack_driver_srate(jack_nframes_t nframes, void *arg)
 {
-    /*   printf("the sample rate is now %lu/sec\n", nframes); */
-    /* FIXME: change the sample rate of the synthesizer! */
+    fluid_jack_client_t *client = arg;
+    fluid_atomic_int_set(&client->sample_rate, nframes);
+    if(fluid_atomic_pointer_get(&client->audio_driver) != NULL &&
+            nframes != (jack_nframes_t)fluid_atomic_int_get(&client->audio_sample_rate))
+    {
+        FLUID_LOG(FLUID_ERR, "JACK sample rate changed while audio was active; recreate the audio driver to resume playback");
+    }
     return 0;
 }
 
