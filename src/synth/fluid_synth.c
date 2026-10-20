@@ -2874,6 +2874,13 @@ fluid_synth_all_notes_off_LOCAL(fluid_synth_t *synth, int chan)
         }
     }
 
+    /* Clear held keys after their note-offs. fluid_synth_set_basic_channel_LOCAL()
+     * also calls here before changing the channel mode. */
+    for(i = (chan < 0 ? 0 : chan); i < (chan < 0 ? synth->midi_channels : chan + 1); i++)
+    {
+        fluid_channel_clear_monolist(synth->channel[i]);
+    }
+
     return FLUID_OK;
 }
 

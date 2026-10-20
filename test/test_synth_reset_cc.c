@@ -108,7 +108,41 @@ static void test_portamento_fromkey(fluid_synth_t* synth, int chan)
     TEST_ASSERT(!fluid_channel_is_valid_note(ptc));
 }
 
-// this test should make sure that sample rate changed are handled correctly
+static void test_all_notes_off_monolist(fluid_synth_t *synth)
+{
+    int scenario;
+    for(scenario = 0; scenario < 3; scenario++)
+    {
+        TEST_SUCCESS(fluid_synth_system_reset(synth));
+        if(scenario != 0)
+        {
+            TEST_SUCCESS(fluid_synth_reset_basic_channel(synth, -1));
+            TEST_SUCCESS(fluid_synth_set_basic_channel(synth, 0, FLUID_CHANNEL_MODE_OMNIOFF_MONO, 1));
+        }
+        TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+        TEST_SUCCESS(fluid_synth_noteon(synth, 0, 64, 100));
+        if(scenario == 0)
+        {
+            TEST_SUCCESS(fluid_synth_cc(synth, 0, POLY_OFF, 1));
+        }
+        else if(scenario == 1)
+        {
+            TEST_SUCCESS(fluid_synth_cc(synth, 0, ALL_NOTES_OFF, 0));
+        }
+        else
+        {
+            TEST_SUCCESS(fluid_synth_all_notes_off(synth, -1));
+        }
+        TEST_ASSERT(synth->channel[0]->n_notes == 0);
+        TEST_ASSERT(!(synth->channel[0]->mode & FLUID_CHANNEL_LEGATO_PLAYING));
+        TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+        TEST_SUCCESS(fluid_synth_noteon(synth, 0, 67, 100));
+        TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 67));
+        TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+        TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+    }
+}
+
 int main(void)
 {
     int chan;
@@ -139,6 +173,7 @@ int main(void)
         fluid_synth_system_reset(synth);
     }
     
+    test_all_notes_off_monolist(synth);
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
 
