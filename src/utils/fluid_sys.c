@@ -1109,8 +1109,10 @@ fluid_timer_join(fluid_timer_t *timer)
 
     if(timer->thread)
     {
+        fluid_thread_t *thread = timer->thread;
         auto_destroy = timer->auto_destroy;
-        fluid_thread_join(timer->thread);
+        fluid_thread_join(thread);
+        delete_fluid_thread(thread);
 
         if(!auto_destroy)
         {

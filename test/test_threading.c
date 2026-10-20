@@ -100,8 +100,28 @@ void test_atomic_inc(void)
     delete_fluid_cond_mutex(data.mutex);
 }
 
+static int timer_once(void *data, unsigned int msec)
+{
+    int *calls = data;
+    (void)msec;
+    ++*calls;
+    return 0;
+}
+
+static void test_timer_join(void)
+{
+    int calls = 0;
+    fluid_timer_t *timer = new_fluid_timer(1, timer_once, &calls, TRUE, FALSE, FALSE);
+    TEST_ASSERT(timer != NULL);
+    TEST_SUCCESS(fluid_timer_join(timer));
+    TEST_ASSERT(calls == 1);
+    TEST_SUCCESS(fluid_timer_join(timer));
+    delete_fluid_timer(timer);
+}
+
 int main(void)
 {
     test_atomic_inc();
+    test_timer_join();
     return EXIT_SUCCESS;
 }
