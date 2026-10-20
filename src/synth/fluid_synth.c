@@ -3794,6 +3794,7 @@ fluid_synth_set_sample_rate_LOCAL(fluid_synth_t *synth, float sample_rate)
     int i;
     fluid_clip(sample_rate, 8000.0f, 96000.0f);
     synth->sample_rate = sample_rate;
+    fluid_iir_filter_init_table(synth->iir_sincos_table, sample_rate);
 
     synth->min_note_length_ticks = fluid_synth_get_min_note_length_LOCAL(synth);
 
