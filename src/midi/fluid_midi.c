@@ -21,6 +21,7 @@
 #include "fluid_sys.h"
 #include "fluid_synth.h"
 #include "fluid_settings.h"
+#include <limits.h>
 
 
 static int fluid_midi_event_length(unsigned char event);
@@ -640,6 +641,13 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
         return FLUID_FAILED;
     }
 
+    /* Accumulate ticks until fluid_player_playlist_load() resets the track for playback. */
+    if((unsigned int)mf->varlen > INT_MAX - track->ticks)
+    {
+        FLUID_LOG(FLUID_ERR, "MIDI track duration exceeds the supported tick range");
+        return FLUID_FAILED;
+    }
+    track->ticks += mf->varlen;
     mf->dtime += mf->varlen;
 
     /* read the status byte */
