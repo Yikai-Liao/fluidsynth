@@ -61,6 +61,7 @@ ADD_FLUID_TEST(test_rvoice_dsp_interpolate)
 ADD_FLUID_TEST(test_iir_coefficient_reuse)
 
 if ( NOT OSAL STREQUAL "embedded" )
+    ADD_FLUID_TEST(test_relative_clock_init)
     ADD_FLUID_TEST(test_threading)
 endif ( NOT OSAL STREQUAL "embedded" )
 

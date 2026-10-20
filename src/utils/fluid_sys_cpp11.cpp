@@ -43,6 +43,14 @@ double fluid_utime()
     return std::chrono::duration_cast<std::chrono::microseconds>(now).count();
 }
 
+unsigned int fluid_curtime(void)
+{
+    /* Initialize the shared origin before any thread computes elapsed time. */
+    static const auto initial_time = std::chrono::steady_clock::now();
+    const auto now = std::chrono::steady_clock::now();
+    return static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - initial_time).count());
+}
+
 static void thread_wrapper(fluid_thread_func_t func, void *data)
 {
     try

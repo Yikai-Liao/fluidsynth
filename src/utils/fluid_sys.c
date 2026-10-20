@@ -409,6 +409,7 @@ char *fluid_strtok(char **str, char *delim)
  * Get time in milliseconds to be used in relative timing operations.
  * @return Monotonic time in milliseconds.
  */
+#if OSAL_embedded
 unsigned int fluid_curtime(void)
 {
     double now;
@@ -424,6 +425,7 @@ unsigned int fluid_curtime(void)
     return (unsigned int)((now - initial_time) / 1000.0);
 }
 
+#endif
 
 #if !OSAL_embedded
 
