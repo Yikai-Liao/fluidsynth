@@ -1,0 +1,136 @@
+name: FluidSynth Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean_dependencies:
+        description: Build dependencies without restoring or saving the cache
+        type: boolean
+        default: false
+  push:
+    branches: ['ci/android-superbuild-*']
+    paths:
+      - '.github/workflows/android.yml'
+      - 'contrib/android/**'
+      - 'doc/android/**'
+      - 'test/run-android-tests.sh'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NDK_VERSION: '27.3.13750724'
+  ANDROID_API: '24'
+
+jobs:
+  android:
+    name: Android ${{ matrix.abi }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout build dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Locate the pinned NDK
+        id: toolchain
+        run: |
+          ndk="$ANDROID_HOME/ndk/$NDK_VERSION"
+          if [[ ! -f "$ndk/build/cmake/android.toolchain.cmake" ]]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
+          fi
+          echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "image=$ImageVersion" >> "$GITHUB_OUTPUT"
+          cmake --version
+          nproc
+          lscpu | grep -E "Model name|CPU\(s\)"
+          cat "$ndk/source.properties"
+      - uses: actions/cache/restore@v5
+        id: dependencies
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: build/android/prefix
+          key: android-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}-${{ hashFiles('contrib/android/CMakeLists.txt', 'contrib/android/dependencies.cmake', 'contrib/android/*.in') }}
+      - name: Configure the superbuild
+        env:
+          CACHE_HIT: ${{ steps.dependencies.outputs.cache-hit }}
+          ABI: ${{ matrix.abi }}
+        run: |
+          build_deps=ON
+          if [[ "$CACHE_HIT" == true ]]; then build_deps=OFF; fi
+          cmake -S contrib/android -B build/android -G Ninja \
+            -DANDROID_NDK="$ANDROID_NDK_HOME" -DANDROID_ABI="$ABI" \
+            -DANDROID_PLATFORM="$ANDROID_API" -DANDROID_BUILD_DEPENDENCIES="$build_deps" \
+            -DANDROID_BUILD_JOBS="$(nproc)"
+      - name: Build dependencies
+        run: cmake --build build/android --target android-dependencies --parallel 2
+      # Save before FluidSynth installs into the same prefix.
+      - uses: actions/cache/save@v5
+        if: ${{ !inputs.clean_dependencies && steps.dependencies.outputs.cache-hit != 'true' }}
+        with:
+          path: build/android/prefix
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+      - name: Cache CMake FetchContent dependencies
+        uses: actions/cache@v5
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: build/android/build/fluidsynth/_deps
+          key: android-fetchcontent-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-ndk${{ env.NDK_VERSION }}-${{ steps.toolchain.outputs.image }}-${{ hashFiles('signalsmith-audio-basics/CMakeLists.txt') }}
+      - name: Build FluidSynth, native tests and asset loader; package libraries
+        run: cmake --build build/android --target android-package --parallel 2
+      - name: Cache the emulator and API 24 system image
+        uses: actions/cache@v5
+        if: ${{ (matrix.abi == 'x86' || matrix.abi == 'x86_64') && !inputs.clean_dependencies }}
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}/system-images/android-24/default/${{ matrix.abi }}
+            ${{ env.ANDROID_HOME }}/emulator
+          key: android-emulator-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.image }}-api24-default-${{ matrix.abi }}
+      - name: Install the emulator image and grant KVM access
+        if: matrix.abi == 'x86' || matrix.abi == 'x86_64'
+        env:
+          ABI: ${{ matrix.abi }}
+        run: |
+          test -e /dev/kvm
+          sudo chmod a+rw /dev/kvm
+          packages=()
+          if [[ ! -f "$ANDROID_HOME/system-images/android-$ANDROID_API/default/$ABI/source.properties" ]]; then
+            packages+=("system-images;android-$ANDROID_API;default;$ABI")
+          fi
+          if [[ ! -x "$ANDROID_HOME/emulator/emulator" ]]; then packages+=(emulator); fi
+          if [[ ! -x "$ANDROID_HOME/platform-tools/adb" ]]; then packages+=(platform-tools); fi
+          if (( ${#packages[@]} )); then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "${packages[@]}"
+          fi
+          cat "$ANDROID_HOME/emulator/source.properties"
+          cat "$ANDROID_HOME/system-images/android-$ANDROID_API/default/$ABI/source.properties"
+      - name: Run native tests in the emulator
+        if: matrix.abi == 'x86' || matrix.abi == 'x86_64'
+        env:
+          ABI: ${{ matrix.abi }}
+        run: bash contrib/android/run-emulator.sh build/android "$ABI"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fluidsynth-android24-${{ matrix.abi }}
+          path: build/android/package
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-logs-${{ matrix.abi }}
+          path: |
+            build/android/logs
+            build/android/build/**/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 7

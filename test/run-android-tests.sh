@@ -107,22 +107,22 @@ done
 # Also need to push required shared libraries if they exist
 LIB_DIR="${PREFIX}/lib"
 
-# Push libc++_shared.so from the NDK toolchain sysroot. The test executables are built with
-# ANDROID_STL=c++_shared (see cmake-android.yml), so they dynamically link against this runtime.
-# It does NOT live in ${PREFIX}/lib (it's part of the NDK, not a fluidsynth dependency), so the
-# loop below never picks it up. Without it, every test aborts with:
-#   CANNOT LINK EXECUTABLE "...": library "libc++_shared.so" not found
-if [[ -n "$NDK" ]]; then
+# The superbuild packages the NDK runtime alongside the other libraries.
+# Keep the Azure NDK lookup until that pipeline is retired.
+if [[ -f "${LIB_DIR}/libc++_shared.so" ]]; then
+    adb shell "mkdir -p ${TEST_DIR}/lib"
+    adb push "${LIB_DIR}/libc++_shared.so" "${TEST_DIR}/lib/"
+elif [[ -n "$NDK" ]]; then
     LIBCXX_SHARED="${NDK_TOOLCHAIN}/sysroot/usr/lib/${ARCH}-linux-android${ANDROID_TARGET_ABI}/libc++_shared.so"
-    if [[ -f "$LIBCXX_SHARED" ]]; then
-        adb shell "mkdir -p ${TEST_DIR}/lib" || true
-        print_status "  Pushing libc++_shared.so"
-        adb push "$LIBCXX_SHARED" "${TEST_DIR}/lib/" || print_warning "Failed to push libc++_shared.so"
-    else
-        print_warning "libc++_shared.so not found (looked in ${LIBCXX_SHARED}); tests will likely fail to link"
+    if [[ ! -f "$LIBCXX_SHARED" ]]; then
+        print_error "libc++_shared.so not found: ${LIBCXX_SHARED}"
+        exit 1
     fi
+    adb shell "mkdir -p ${TEST_DIR}/lib"
+    adb push "$LIBCXX_SHARED" "${TEST_DIR}/lib/"
 else
-    print_warning "NDK environment variable not set; cannot locate libc++_shared.so"
+    print_error "libc++_shared.so missing from ${LIB_DIR}; build android-package first"
+    exit 1
 fi
 
 if [[ -d "$LIB_DIR" ]]; then
@@ -136,6 +136,8 @@ if [[ -d "$LIB_DIR" ]]; then
         libogg.so \
         libvorbis.so \
         libvorbisenc.so \
+        libvorbisfile.so \
+        libopus.so \
         libFLAC.so \
         libsndfile.so \
         liboboe.so \

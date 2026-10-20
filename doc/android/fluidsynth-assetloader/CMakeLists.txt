@@ -11,8 +11,6 @@ target_compile_options ( fluidsynth-assetloader
                         PRIVATE -Wall
                         PRIVATE "$<$<CONFIG:DEBUG>:-Werror>") # Only include -Werror when building debug config
 
-target_include_directories ( fluidsynth-assetloader PRIVATE ../../../include )
-
-set ( CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L../../../dist/${ANDROID_ABI} -lfluidsynth" )
-
-target_link_libraries ( fluidsynth-assetloader PRIVATE log android )
+find_package ( FluidSynth CONFIG REQUIRED )
+target_link_libraries ( fluidsynth-assetloader PRIVATE FluidSynth::libfluidsynth log android )
+install ( TARGETS fluidsynth-assetloader LIBRARY DESTINATION lib )

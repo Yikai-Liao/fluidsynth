@@ -1,0 +1,9 @@
+prefix=@ANDROID_PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: Oboe
+Description: Oboe library
+Version: @OBOE_VERSION@
+Libs: -L${libdir} -loboe -landroid -llog
+Cflags: -I${includedir}

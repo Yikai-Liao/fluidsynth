@@ -10,7 +10,7 @@ CMAKEFILE=$ANDROID_NDK_PATH/build/cmake/android.toolchain.cmake
 for A_ABI in $ABIS ; do
     mkdir -p build/$A_ABI && \
 	    cd build/$A_ABI && \
-	    cmake -DCMAKE_TOOLCHAIN_FILE=$CMAKEFILE -DANDROID_PLATFORM=android-27 -DANDROID_ABI=$A_ABI ../.. && \
+	    cmake -DFluidSynth_DIR=../../../build/$A_ABI -DCMAKE_TOOLCHAIN_FILE=$CMAKEFILE -DANDROID_PLATFORM=android-27 -DANDROID_ABI=$A_ABI ../.. && \
 	    make &&
 	    cd ../.. ;
 done
