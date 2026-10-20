@@ -20,6 +20,8 @@
 
 #include "fluid_rev_dattorro.h"
 #include <stdexcept>
+#include <utility>
+#include <cmath>
 
 
 // fluidsynth's convenience wet scale factor
@@ -314,6 +316,26 @@ void fluid_revmodel_dattorro::set(int set, fluid_real_t roomsize, fluid_real_t d
 
 int fluid_revmodel_dattorro::samplerate_change(fluid_real_t sample_rate)
 {
-    FLUID_LOG(FLUID_ERR, "Dattorro reverb: sample rate change is not supported");
-    return FLUID_FAILED;
+    if(!std::isfinite(sample_rate) || sample_rate < 8000 || sample_rate > 96000)
+    {
+        return FLUID_FAILED;
+    }
+    if(sample_rate == cached_sample_rate)
+    {
+        return FLUID_OK;
+    }
+    try
+    {
+        /* Allocate all new delay lines before replacing the active reverb state. */
+        fluid_revmodel_dattorro replacement(sample_rate);
+        replacement.bandwidth = bandwidth;
+        replacement.set(FLUID_REVMODEL_SET_ALL, roomsize, damp, width, level);
+        *this = std::move(replacement);
+        return FLUID_OK;
+    }
+    catch(const std::exception &error)
+    {
+        FLUID_LOG(FLUID_ERR, "Dattorro reverb: sample rate change failed: %s", error.what());
+        return FLUID_FAILED;
+    }
 }

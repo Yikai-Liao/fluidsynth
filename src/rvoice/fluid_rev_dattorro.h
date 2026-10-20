@@ -86,6 +86,7 @@ struct fluid_revmodel_dattorro : public _fluid_revmodel_t
 
     explicit fluid_revmodel_dattorro(fluid_real_t sample_rate);
     ~fluid_revmodel_dattorro() override;
+    fluid_revmodel_dattorro &operator=(fluid_revmodel_dattorro &&) noexcept = default;
 
     void processmix(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
     void processreplace(const fluid_real_t *in, fluid_real_t *left_out, fluid_real_t *right_out) override;
