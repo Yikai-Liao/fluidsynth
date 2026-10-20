@@ -661,6 +661,12 @@ fluid_sample_set_sound_data(fluid_sample_t *sample,
     fluid_return_val_if_fail(sample != NULL, FLUID_FAILED);
     fluid_return_val_if_fail(data != NULL, FLUID_FAILED);
     fluid_return_val_if_fail(nbframes != 0, FLUID_FAILED);
+    if(copy_data && (nbframes > UINT_MAX - 2 * SAMPLE_LOOP_MARGIN ||
+                    (uint64_t)nbframes + 2 * SAMPLE_LOOP_MARGIN > SIZE_MAX / sizeof(short)))
+    {
+        FLUID_LOG(FLUID_ERR, "Sample frame count exceeds the supported allocation size");
+        return FLUID_FAILED;
+    }
 
     /* in case we already have some data */
     if((sample->data != NULL || sample->data24 != NULL) && sample->auto_free)

@@ -3,6 +3,7 @@
 #include "fluidsynth.h"
 #include "sfloader/fluid_sfont.h"
 #include "utils/fluid_sys.h"
+#include <limits.h>
 
 
 // this tests ensures that samples with invalid SfSampleType flag combinations are rejected
@@ -100,6 +101,16 @@ int main(void)
         TEST_ASSERT(fluid_sample_validate(sample, 2) == FLUID_FAILED);
     }
 
+    {
+        short data[48] = {1,2,3};
+        short *saved;
+        TEST_SUCCESS(fluid_sample_set_sound_data(sample, data, NULL, 48, 44100, 1));
+        saved = sample->data;
+        /* Reject unrepresentable counts before reading data or replacing the saved storage. */
+        TEST_ASSERT(fluid_sample_set_sound_data(sample, data, NULL, UINT_MAX, 44100, 1) == FLUID_FAILED);
+        TEST_ASSERT(sample->data == saved && sample->data[sample->start] == 1);
+        TEST_ASSERT(fluid_sample_set_sound_data(sample, data, NULL, UINT_MAX - 15, 44100, 1) == FLUID_FAILED);
+    }
     delete_fluid_sample(sample);
 
     return EXIT_SUCCESS;
