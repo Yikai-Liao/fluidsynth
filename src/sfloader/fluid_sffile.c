@@ -2649,6 +2649,8 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
     };
     sfvio_data_t sfdata;
     short *wav_data = NULL;
+    float float_data[4096];
+    sf_count_t frames_read, frames, buffer_size, i;
 
     if((start_byte > sf->samplesize) || (end_byte > sf->samplesize))
     {
@@ -2703,7 +2705,12 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
         FLUID_LOG(FLUID_WARN, "OGG sample is not OGG compressed, this is not officially supported");
     }
 
-    wav_data = FLUID_ARRAY(short, sfinfo.frames * sfinfo.channels);
+    if(sfinfo.frames > INT_MAX || (uint64_t)sfinfo.frames > SIZE_MAX / sizeof(short))
+    {
+        FLUID_LOG(FLUID_ERR, "Decompressed sample exceeds the supported frame count");
+        goto error_exit;
+    }
+    wav_data = FLUID_ARRAY(short, sfinfo.frames);
 
     if(!wav_data)
     {
@@ -2711,18 +2718,48 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
         goto error_exit;
     }
 
-    // Avoid clipping for loud samples, see
-    // https://github.com/FluidSynth/fluidsynth/issues/1380
-    // and
-    // https://github.com/libsndfile/libsndfile/issues/194
-    sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
-
-    /* Automatically decompresses the Ogg Vorbis data to 16-bit PCM */
-    if(sf_readf_short(sndfile, wav_data, sfinfo.frames) < sfinfo.frames)
+    /* Read normalized floats and saturate each sample without rescaling the
+     * entire waveform when the Vorbis decoder exceeds full scale (issue #1856). */
+    buffer_size = sizeof(float_data) / sizeof(float_data[0]);
+    frames_read = 0;
+    while(frames_read < sfinfo.frames)
     {
-        FLUID_LOG(FLUID_DBG, "Decompression failed!");
-        FLUID_LOG(FLUID_ERR, "sf_readf_short(): %s", sf_strerror(sndfile));
-        goto error_exit;
+        frames = sfinfo.frames - frames_read;
+        if(frames > buffer_size)
+        {
+            frames = buffer_size;
+        }
+
+        if(sf_readf_float(sndfile, float_data, frames) < frames)
+        {
+            FLUID_LOG(FLUID_DBG, "Decompression failed!");
+            FLUID_LOG(FLUID_ERR, "sf_readf_float(): %s", sf_strerror(sndfile));
+            goto error_exit;
+        }
+
+        for(i = 0; i < frames; i++)
+        {
+            float sample = float_data[i];
+            if(!isfinite(sample))
+            {
+                FLUID_LOG(FLUID_ERR, "Non-finite sample in compressed SoundFont");
+                goto error_exit;
+            }
+            if(sample >= 32767.0f / 32768.0f)
+            {
+                wav_data[frames_read + i] = 32767;
+            }
+            else if(sample <= -1.0f)
+            {
+                wav_data[frames_read + i] = -32768;
+            }
+            else
+            {
+                wav_data[frames_read + i] = (short)lrintf(sample * 32768.0f);
+            }
+        }
+
+        frames_read += frames;
     }
 
     sf_close(sndfile);
