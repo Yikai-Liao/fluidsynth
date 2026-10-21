@@ -32,21 +32,35 @@ defaults:
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally
-    # well on Windows or Mac.  You can convert this to a matrix build if you need
-    # cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-22.04
+    # Run the compiler/configuration matrix on native x64 and ARM64 hosts.
+    runs-on: ${{ matrix.image }}
     strategy:
+      fail-fast: false
       matrix:
+        image: [ubuntu-22.04, ubuntu-22.04-arm]
         CC: [""]
         CXX: [""]
         CMAKE_FLAGS: ["-Denable-profiling=1","-Denable-floats=1 -Denable-profiling=1","-Denable-floats=1","-Denable-trap-on-fpe=1","-Denable-fpe-check=1","-Denable-ipv6=0","-Denable-network=0","-Denable-aufile=0","-DBUILD_SHARED_LIBS=0", "-Denable-debug=1 -DCMAKE_C_FLAGS_DEBUG=-fuse-ld=gold", "-Dosal=cpp11 -Denable-ladspa=0"]
+        exclude:
+          # Keep the legacy x87 checker on x86: fluid_check_fpe_i386() emits
+          # fnstsw/fnclex instructions, which cannot be assembled for ARM.
+          - image: ubuntu-22.04-arm
+            CMAKE_FLAGS: "-Denable-fpe-check=1"
         include:
-          - CC: "clang-15"
+          - image: ubuntu-22.04
+            CC: "clang-15"
             CXX: "clang++-15"
             CMAKE_FLAGS: ""
-          - CC: "clang-15"
+          - image: ubuntu-22.04
+            CC: "clang-15"
+            CXX: "clang++-15"
+            CMAKE_FLAGS: "-DBUILD_SHARED_LIBS=0"
+          - image: ubuntu-22.04-arm
+            CC: "clang-15"
+            CXX: "clang++-15"
+            CMAKE_FLAGS: ""
+          - image: ubuntu-22.04-arm
+            CC: "clang-15"
             CXX: "clang++-15"
             CMAKE_FLAGS: "-DBUILD_SHARED_LIBS=0"
 # clang9 is covered by openSUSE Leap 15.2
@@ -54,6 +68,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+
+    - name: Identify native host
+      run: |
+        uname -a
+        lscpu
 
     - name: Checkout build dependencies
       # Skip test/manual; this workflow does not run check_rendering or check_manual.
