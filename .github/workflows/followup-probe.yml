@@ -157,8 +157,6 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: c2be079545ed864a78172a238c9aae9a6a945477
       - name: Exercise the production cache contract on macOS
         run: |
           helper=contrib/macos/xcode-cache-inputs.sh
@@ -166,7 +164,7 @@ jobs:
           grep -qx eligible=true "$RUNNER_TEMP/baseline.outputs"
           baseline=$(sed -n 's/^hash=//p' "$RUNNER_TEMP/baseline.outputs")
           test -n "$baseline"
-          for name in CPATH LIBRARY_PATH; do
+          for name in CPATH LIBRARY_PATH SndFile_ROOT SDL3_DIR PIPX_BIN_DIR; do
             env "$name=/cache-key-probe/$name" GITHUB_OUTPUT="$RUNNER_TEMP/$name.outputs" bash "$helper"
             changed=$(sed -n 's/^hash=//p' "$RUNNER_TEMP/$name.outputs")
             test -n "$changed"
@@ -174,7 +172,7 @@ jobs:
             echo "PASS $name changes the configuration key"
           done
           for name in CMAKE_TOOLCHAIN_FILE CMAKE_PREFIX_PATH CMAKE_APPBUNDLE_PATH PKG_CONFIG \
-            PKG_CONFIG_SYSTEM_LIBRARY_PATH SndFile_ROOT SDL3_DIR; do
+            PKG_CONFIG_SYSTEM_LIBRARY_PATH; do
             env "$name=/cache-key-probe/$name" GITHUB_OUTPUT="$RUNNER_TEMP/$name.outputs" bash "$helper"
             grep -qx eligible=false "$RUNNER_TEMP/$name.outputs"
             echo "PASS $name bypasses cached discoveries"
