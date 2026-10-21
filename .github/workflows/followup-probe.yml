@@ -18,6 +18,7 @@ env:
 
 jobs:
   arm-host:
+    if: false
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 8
     steps:
@@ -43,6 +44,7 @@ jobs:
           command -v adb || true
 
   mac-config:
+    if: false
     runs-on: ${{ matrix.image }}
     timeout-minutes: 25
     strategy:
@@ -102,3 +104,50 @@ jobs:
             ${{ runner.temp }}/macos/xcode/CMakeFiles/CMakeConfigureLog.yaml
             ${{ runner.temp }}/xcode-metadata/CMakeCache.txt
           retention-days: 7
+
+  cache-invalidation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 3485aba1a56df5ce84c2c78f0f4a9449ae4efd02
+      - name: Checkout configuration dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Record the production configuration hash
+        id: baseline
+        env:
+          CONFIG_HASH: ${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/*.cmake.in', 'cmake_admin/**', 'signalsmith-audio-basics/**', 'contrib/macos/**', '.github/workflows/macos.yml', '.gitmodules') }}
+        run: |
+          test -n "$CONFIG_HASH"
+          echo "hash=$CONFIG_HASH" >> "$GITHUB_OUTPUT"
+          printf '\nbrew "zstd"\n' >> contrib/macos/Brewfile
+      - name: Check that declaring a new Homebrew dependency invalidates the key
+        env:
+          BASE_HASH: ${{ steps.baseline.outputs.hash }}
+          CHANGED_HASH: ${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/*.cmake.in', 'cmake_admin/**', 'signalsmith-audio-basics/**', 'contrib/macos/**', '.github/workflows/macos.yml', '.gitmodules') }}
+        run: |
+          test -n "$CHANGED_HASH"
+          test "$CHANGED_HASH" != "$BASE_HASH"
+          echo "PASS new Homebrew dependency changes the configuration key: $BASE_HASH -> $CHANGED_HASH"
+          git restore -- contrib/macos/Brewfile
+          printf 'find_package(ZLIB REQUIRED)\n' > cmake_admin/cache_dependency_probe.cmake
+      - name: Check that adding a CMake dependency file invalidates the key
+        env:
+          BASE_HASH: ${{ steps.baseline.outputs.hash }}
+          CHANGED_HASH: ${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/*.cmake.in', 'cmake_admin/**', 'signalsmith-audio-basics/**', 'contrib/macos/**', '.github/workflows/macos.yml', '.gitmodules') }}
+        run: |
+          test -n "$CHANGED_HASH"
+          test "$CHANGED_HASH" != "$BASE_HASH"
+          echo "PASS new CMake dependency file changes the configuration key: $BASE_HASH -> $CHANGED_HASH"
+          rm cmake_admin/cache_dependency_probe.cmake
+          mkdir cache-key-probe
+          printf 'find_package(ZLIB REQUIRED)\n' > cache-key-probe/CMakeLists.txt
+      - name: Check that a new subdirectory CMakeLists invalidates the key
+        env:
+          BASE_HASH: ${{ steps.baseline.outputs.hash }}
+          CHANGED_HASH: ${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/*.cmake.in', 'cmake_admin/**', 'signalsmith-audio-basics/**', 'contrib/macos/**', '.github/workflows/macos.yml', '.gitmodules') }}
+        run: |
+          test -n "$CHANGED_HASH"
+          test "$CHANGED_HASH" != "$BASE_HASH"
+          echo "PASS new nested CMakeLists changes the configuration key: $BASE_HASH -> $CHANGED_HASH"
