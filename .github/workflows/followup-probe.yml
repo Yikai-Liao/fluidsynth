@@ -111,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: 2c3465b1ce2b0954774545e089dc1a5ca5792165
+          ref: c2be079545ed864a78172a238c9aae9a6a945477
       - name: Checkout configuration dependencies
         run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
       - name: Record the production configuration hash
@@ -158,28 +158,24 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: 2c3465b1ce2b0954774545e089dc1a5ca5792165
-      - name: Exercise the production environment signature on macOS
+          ref: c2be079545ed864a78172a238c9aae9a6a945477
+      - name: Exercise the production cache contract on macOS
         run: |
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
-          import textwrap
-          source = Path('.github/workflows/macos.yml').read_text()
-          block = source.split('      - name: Identify Xcode configuration inputs\n', 1)[1]
-          block = block.split('        run: |\n', 1)[1].split('      - name: Cache Xcode compiler', 1)[0]
-          Path(os.environ['RUNNER_TEMP'], 'capture-environment.sh').write_text(textwrap.dedent(block))
-          PY
-          GITHUB_OUTPUT="$RUNNER_TEMP/baseline.outputs" bash "$RUNNER_TEMP/capture-environment.sh"
+          helper=contrib/macos/xcode-cache-inputs.sh
+          GITHUB_OUTPUT="$RUNNER_TEMP/baseline.outputs" bash "$helper"
+          grep -qx eligible=true "$RUNNER_TEMP/baseline.outputs"
           baseline=$(sed -n 's/^hash=//p' "$RUNNER_TEMP/baseline.outputs")
           test -n "$baseline"
-          cp "$RUNNER_TEMP/xcode-environment.txt" "$RUNNER_TEMP/baseline-environment.txt"
-          for name in CPATH LIBRARY_PATH CMAKE_PREFIX_PATH; do
-            env "$name=/cache-key-probe/$name" GITHUB_OUTPUT="$RUNNER_TEMP/$name.outputs" \
-              bash "$RUNNER_TEMP/capture-environment.sh"
+          for name in CPATH LIBRARY_PATH; do
+            env "$name=/cache-key-probe/$name" GITHUB_OUTPUT="$RUNNER_TEMP/$name.outputs" bash "$helper"
             changed=$(sed -n 's/^hash=//p' "$RUNNER_TEMP/$name.outputs")
             test -n "$changed"
             test "$changed" != "$baseline"
-            echo "PASS $name changes the environment key: $baseline -> $changed"
-            diff -u "$RUNNER_TEMP/baseline-environment.txt" "$RUNNER_TEMP/xcode-environment.txt" || true
+            echo "PASS $name changes the configuration key"
+          done
+          for name in CMAKE_TOOLCHAIN_FILE CMAKE_PREFIX_PATH CMAKE_APPBUNDLE_PATH PKG_CONFIG \
+            PKG_CONFIG_SYSTEM_LIBRARY_PATH SndFile_ROOT SDL3_DIR; do
+            env "$name=/cache-key-probe/$name" GITHUB_OUTPUT="$RUNNER_TEMP/$name.outputs" bash "$helper"
+            grep -qx eligible=false "$RUNNER_TEMP/$name.outputs"
+            echo "PASS $name bypasses cached discoveries"
           done
