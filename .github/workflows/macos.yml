@@ -1,0 +1,175 @@
+name: FluidSynth macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean_dependencies:
+        description: Install dependencies without restoring or saving caches
+        type: boolean
+        default: false
+  # Run every PR so path filters cannot leave required checks pending.
+  pull_request:
+  push:
+    branches: ['**']
+    paths:
+      - '**'
+      - '!.azure/**'
+      - '!.circleci/**'
+      - '!.github/**'
+      - '.github/workflows/macos.yml'
+      - '.github/scripts/macos-*.sh'
+      - '!README.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: '1'
+
+jobs:
+  ports:
+    name: MacPorts universal (${{ matrix.image }})
+    runs-on: ${{ matrix.image }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        # Apple Silicon is the primary platform; Intel checks compatibility.
+        image: [macos-15, macos-26, macos-15-intel, macos-26-intel]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout build dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Prepare cache directory and identify the compiler image
+        id: host
+        run: |
+          sudo install -d -o "$(id -u)" -g "$(id -g)" /opt/local
+          echo "image=$ImageVersion" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v5
+        id: dependencies
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          # Cache the SDK without MacPorts tools, registry or build directories.
+          # Dependencies that require bin/libexec tools need a wider payload.
+          path: |
+            /opt/local/include
+            /opt/local/lib
+            /opt/local/share
+          key: macports-universal-v2-${{ matrix.image }}-${{ runner.arch }}-${{ steps.host.outputs.image }}-${{ hashFiles('.github/scripts/macos-install-sdk.sh') }}
+      - name: Install universal dependencies
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        run: |
+          bash .github/scripts/macos-install-sdk.sh
+          sudo chown -R "$(id -u):$(id -g)" /opt/local
+      - uses: actions/cache/save@v5
+        if: ${{ !inputs.clean_dependencies && steps.dependencies.outputs.cache-hit != 'true' }}
+        with:
+          path: |
+            /opt/local/include
+            /opt/local/lib
+            /opt/local/share
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+      - name: Build, test, install and validate consumers
+        run: bash .github/scripts/macos-build.sh ports-universal "$RUNNER_TEMP/macos" | tee "$RUNNER_TEMP/macos-validation.log"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fluidsynth-macos-universal-${{ matrix.image }}
+          path: ${{ runner.temp }}/macos/sdk.tar
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: macos-ports-logs-${{ matrix.image }}
+          path: |
+            ${{ runner.temp }}/macos-validation.log
+            ${{ runner.temp }}/macos/build/test/Testing/Temporary
+            /opt/local/var/macports/logs
+          retention-days: 14
+
+  brew:
+    env:
+      BREW_PACKAGES: 'libsndfile pkgconf jack pulseaudio portaudio sdl3 libomp readline'
+    name: Homebrew ${{ matrix.group }} (${{ matrix.image }})
+    runs-on: ${{ matrix.image }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Keep long Xcode builds separate from each host's shorter profiles.
+          - {image: macos-26, group: framework, profiles: [framework]}
+          - {image: macos-15, group: framework, profiles: [framework]}
+          - {image: macos-26, group: unix, profiles: [unix-shared, unix-static, unix-static-readline]}
+          - {image: macos-15, group: unix, profiles: [unix-shared, unix-static]}
+          # Retain Intel compatibility, including the 10.14 deployment target.
+          - {image: macos-26-intel, group: framework, profiles: [framework]}
+          - {image: macos-15-intel, group: framework, profiles: [framework]}
+          - {image: macos-26-intel, group: unix, profiles: [unix-shared, unix-static, unix-static-readline]}
+          - {image: macos-15-intel, group: unix-and-10.14, profiles: [unix-shared, unix-static, framework-10.14]}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout build dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Locate Homebrew's download cache
+        id: brew
+        run: |
+          echo "cache=$(brew --cache)" >> "$GITHUB_OUTPUT"
+          packages_hash=$(printf '%s' "$BREW_PACKAGES" | shasum -a 256 | cut -d ' ' -f 1)
+          echo "packages=$packages_hash" >> "$GITHUB_OUTPUT"
+          echo "image=$ImageVersion" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v5
+        id: dependencies
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: ${{ steps.brew.outputs.cache }}/downloads
+          key: brew-downloads-v1-${{ matrix.image }}-${{ runner.arch }}-${{ steps.brew.outputs.image }}-${{ steps.brew.outputs.packages }}
+      - name: Install dependencies
+        run: |
+          read -r -a packages <<< "$BREW_PACKAGES"
+          brew install "${packages[@]}"
+          brew list --versions
+      - uses: actions/cache/save@v5
+        if: ${{ !inputs.clean_dependencies && steps.dependencies.outputs.cache-hit != 'true' }}
+        with:
+          path: ${{ steps.brew.outputs.cache }}/downloads
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
+      - name: Build, test, install and validate consumers or Xcode
+        env:
+          PROFILES: ${{ join(matrix.profiles, ' ') }}
+        run: |
+          status=0
+          read -r -a profiles <<< "$PROFILES"
+          for profile in "${profiles[@]}"; do
+            directory="$RUNNER_TEMP/macos/$profile"
+            mkdir -p "$directory"
+            # Continue with the other profiles after a build or test failure.
+            if ! bash .github/scripts/macos-build.sh "$profile" "$directory" 2>&1 | tee "$directory/validation.log"; then
+              status=1
+            fi
+          done
+          exit "$status"
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: fluidsynth-macos-${{ matrix.image }}-${{ matrix.group }}
+          path: ${{ runner.temp }}/macos/*/sdk.tar
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: macos-brew-logs-${{ matrix.image }}-${{ matrix.group }}
+          path: |
+            ${{ runner.temp }}/macos/*/validation.log
+            ${{ runner.temp }}/macos/*/build/test/Testing/Temporary
+            ${{ runner.temp }}/macos/*/xcode/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 14
