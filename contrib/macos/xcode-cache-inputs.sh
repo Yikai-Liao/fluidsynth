@@ -30,9 +30,9 @@ if [[ "$eligible" != true ]]; then exit 0; fi
     # roots for overrides. Hash the values instead of exposing them in artifacts.
     roots_hash=$(
         while IFS= read -r name; do
-            case "$name" in
-                *_ROOT|*_DIR) printf '%s=%s\n' "$name" "${!name-}" ;;
-            esac
+            if [[ "$name" == *_ROOT || "$name" == *_DIR ]]; then
+                printf '%s=%s\n' "$name" "${!name-}"
+            fi
         done < <(compgen -e | LC_ALL=C sort) | shasum -a 256 | awk '{print $1}'
     )
     printf 'package-roots=%s\n' "$roots_hash"
