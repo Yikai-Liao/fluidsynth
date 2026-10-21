@@ -27,7 +27,7 @@ jobs:
           lscpu
           ls -l /dev/kvm || true
           for entry in /proc/sys/fs/binfmt_misc/*; do
-            if [[ -f "$entry" ]]; then cat "$entry"; fi
+            if [[ -f "$entry" && "${entry##*/}" != register ]]; then cat "$entry"; fi
           done
           printf '.global _start\n_start:\n mov x0, #0\n mov x8, #93\n svc #0\n' > "$RUNNER_TEMP/arm64.s"
           printf '.global _start\n_start:\n mov r0, #0\n mov r7, #1\n svc #0\n' > "$RUNNER_TEMP/arm32.s"
@@ -82,7 +82,7 @@ jobs:
           du -sk "$metadata"
           rm -rf "$xcode_dir"
           mkdir -p "$xcode_dir"
-          cp -R "$metadata/" "$xcode_dir/"
+          cp -R "$metadata/." "$xcode_dir/"
           sources=()
           for dependency in signalsmith-linear signalsmith-dsp signalsmith-hilbert; do
             upper=$(printf '%s' "$dependency" | tr '[:lower:]' '[:upper:]')
