@@ -1,0 +1,104 @@
+name: FluidSynth CI follow-up probes
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['ci/followup-probe-20261021']
+    paths: ['.github/workflows/followup-probe.yml']
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: '1'
+
+jobs:
+  arm-host:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 8
+    steps:
+      - name: Inspect native execution and virtualization
+        run: |
+          uname -a
+          lscpu
+          ls -l /dev/kvm || true
+          for entry in /proc/sys/fs/binfmt_misc/*; do
+            if [[ -f "$entry" ]]; then cat "$entry"; fi
+          done
+          printf '.global _start\n_start:\n mov x0, #0\n mov x8, #93\n svc #0\n' > "$RUNNER_TEMP/arm64.s"
+          printf '.global _start\n_start:\n mov r0, #0\n mov r7, #1\n svc #0\n' > "$RUNNER_TEMP/arm32.s"
+          clang --target=aarch64-linux-gnu -fuse-ld=lld -nostdlib -static -Wl,-e,_start "$RUNNER_TEMP/arm64.s" -o "$RUNNER_TEMP/arm64"
+          clang --target=armv7a-linux-gnueabihf -fuse-ld=lld -nostdlib -static -Wl,-e,_start "$RUNNER_TEMP/arm32.s" -o "$RUNNER_TEMP/arm32"
+          file "$RUNNER_TEMP/arm64" "$RUNNER_TEMP/arm32"
+          "$RUNNER_TEMP/arm64"
+          echo 'NATIVE_ARM64_PASS'
+          if "$RUNNER_TEMP/arm32"; then echo 'NATIVE_ARM32_PASS'; else echo 'NATIVE_ARM32_UNAVAILABLE'; fi
+          echo 'ANDROID_TOOL_PATHS'
+          command -v sdkmanager || true
+          command -v emulator || true
+          command -v adb || true
+
+  mac-config:
+    runs-on: ${{ matrix.image }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [macos-15-intel, macos-26-intel]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout build dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Install dependencies
+        run: bash contrib/macos/dependencies.sh brew
+      - name: Identify runner image
+        id: host
+        run: echo "image=$ImageVersion" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/macos/build/_deps
+          key: macos-fetchcontent-v1-${{ matrix.image }}-${{ runner.arch }}-framework-${{ steps.host.outputs.image }}-${{ hashFiles('signalsmith-audio-basics/CMakeLists.txt') }}
+      - name: Compare fresh and restored Xcode configuration metadata
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('contrib/macos/build.sh')
+          source = p.read_text()
+          target = '        phase build-xcode cmake --build "$build_dir/xcode" --config Debug --parallel "$jobs"'
+          assert source.count(target) == 1
+          Path('contrib/macos/build-probe.sh').write_text(source.replace(target, '        echo PROBE_DEFER_XCODE_BUILD'))
+          PY
+          bash contrib/macos/build-probe.sh framework "$RUNNER_TEMP/macos" | tee "$RUNNER_TEMP/mac-config-probe.log"
+          xcode_dir="$RUNNER_TEMP/macos/xcode"
+          metadata="$RUNNER_TEMP/xcode-metadata"
+          mkdir -p "$metadata/CMakeFiles"
+          cp "$xcode_dir/CMakeCache.txt" "$metadata/"
+          cp -R "$xcode_dir"/CMakeFiles/[0-9]* "$metadata/CMakeFiles/"
+          cp "$xcode_dir/config.h" "$RUNNER_TEMP/config-cold.h"
+          du -sk "$metadata"
+          rm -rf "$xcode_dir"
+          mkdir -p "$xcode_dir"
+          cp -R "$metadata/" "$xcode_dir/"
+          sources=()
+          for dependency in signalsmith-linear signalsmith-dsp signalsmith-hilbert; do
+            upper=$(printf '%s' "$dependency" | tr '[:lower:]' '[:upper:]')
+            sources+=("-DFETCHCONTENT_SOURCE_DIR_$upper=$RUNNER_TEMP/macos/build/_deps/$dependency-src")
+          done
+          started=$SECONDS
+          cmake -S . -B "$xcode_dir" -G Xcode -Denable-sdl3=OFF -Denable-readline=OFF -Denable-dbus=OFF "${sources[@]}" | tee -a "$RUNNER_TEMP/mac-config-probe.log"
+          echo "TIMING configure-xcode-restored $((SECONDS-started)) seconds" | tee -a "$RUNNER_TEMP/mac-config-probe.log"
+          cmp "$RUNNER_TEMP/config-cold.h" "$xcode_dir/config.h"
+          cmake --build "$xcode_dir" --config Debug --parallel "$(sysctl -n hw.logicalcpu)" | tee -a "$RUNNER_TEMP/mac-config-probe.log"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mac-config-probe-${{ matrix.image }}
+          path: |
+            ${{ runner.temp }}/mac-config-probe.log
+            ${{ runner.temp }}/macos/xcode/CMakeFiles/CMakeConfigureLog.yaml
+            ${{ runner.temp }}/xcode-metadata/CMakeCache.txt
+          retention-days: 7
