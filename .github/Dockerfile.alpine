@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=alpine:3.24
+FROM ${BASE_IMAGE}
+
+RUN apk add --no-cache \
+      bash cmake make ninja gcc g++ git pkgconf \
+      dbus-dev ladspa-dev libsndfile-dev sdl3-dev readline-dev
+
+CMD ["bash"]

@@ -1,0 +1,105 @@
+name: FluidSynth Alpine
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean_dependencies:
+        description: Build the dependency image without restoring or saving its cache
+        type: boolean
+        default: false
+  # Run every PR so path filters cannot leave required checks pending.
+  pull_request:
+  push:
+    branches: ['**']
+    paths:
+      - '**'
+      - '!.azure/**'
+      - '!.circleci/**'
+      - '!.github/**'
+      - '.github/workflows/alpine.yml'
+      - '.github/Dockerfile.alpine'
+      - '!README.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alpine-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  alpine:
+    name: Alpine ${{ matrix.profile }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {profile: default, cflags: '', cxxflags: '', cmflags: ''}
+          - {profile: posix, cflags: '-D_POSIX_C_SOURCE=199506L', cxxflags: '', cmflags: ''}
+          - profile: gentoo
+            cflags: '-pipe -frecord-gcc-switches -fno-diagnostics-color -fmessage-length=0 -D_POSIX_C_SOURCE=199506L'
+            cxxflags: '-pipe -frecord-gcc-switches -fno-diagnostics-color -fmessage-length=0'
+            cmflags: '-Denable-profiling=ON -Denable-readline=ON -Denable-systemd=OFF -Denable-threads=OFF -Denable-trap-on-fpe=ON -Denable-ubsan=OFF'
+          - profile: strncasecmp
+            cflags: '-D_POSIX_C_SOURCE=199506L -DNCURSES_WIDECHAR'
+            cxxflags: ''
+            cmflags: '-Denable-floats=ON'
+          - {profile: osal-cpp11, cflags: '', cxxflags: '', cmflags: '-Dosal=cpp11'}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout build dependencies
+        run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - uses: actions/cache/restore@v5
+        id: image
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: ${{ runner.temp }}/alpine-image.tar
+          key: alpine-image-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/Dockerfile.alpine') }}
+      - name: Load or build the dependency image
+        run: |
+          if [[ -f "$RUNNER_TEMP/alpine-image.tar" ]]; then
+            docker load --input "$RUNNER_TEMP/alpine-image.tar"
+          else
+            docker build -f .github/Dockerfile.alpine -t fluidsynth-alpine-ci .
+          fi
+      - name: Export dependency image for caching
+        if: ${{ !inputs.clean_dependencies && steps.image.outputs.cache-hit != 'true' }}
+        run: docker save --output "$RUNNER_TEMP/alpine-image.tar" fluidsynth-alpine-ci
+      - uses: actions/cache/save@v5
+        if: ${{ !inputs.clean_dependencies && steps.image.outputs.cache-hit != 'true' }}
+        with:
+          path: ${{ runner.temp }}/alpine-image.tar
+          key: ${{ steps.image.outputs.cache-primary-key }}
+      - name: Build and run the musl tests
+        env:
+          CFLAGS: ${{ matrix.cflags }}
+          CXXFLAGS: ${{ matrix.cxxflags }}
+          CMFLAGS: ${{ matrix.cmflags }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/alpine-build"
+          docker run --rm -i --user "$(id -u):$(id -g)" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/src,readonly" \
+            --mount "type=bind,src=$RUNNER_TEMP/alpine-build,dst=/build" \
+            --workdir /src -e CFLAGS -e CXXFLAGS -e CMFLAGS \
+            fluidsynth-alpine-ci bash -s <<'BUILD' | tee "$RUNNER_TEMP/alpine-validation.log"
+          set -euo pipefail
+          read -r -a flags <<< "$CMFLAGS"
+          cmake -S /src -B /build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo "${flags[@]}"
+          cmake --build /build --parallel "$(nproc)"
+          CTEST_PARALLEL_LEVEL=$(nproc) cmake --build /build --target check --parallel "$(nproc)"
+          BUILD
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: alpine-logs-${{ matrix.profile }}
+          path: |
+            ${{ runner.temp }}/alpine-validation.log
+            ${{ runner.temp }}/alpine-build/test/Testing/Temporary
+            ${{ runner.temp }}/alpine-build/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 14
