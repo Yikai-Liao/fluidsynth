@@ -121,6 +121,19 @@ jobs:
         env:
           ABI: ${{ matrix.abi }}
         run: bash contrib/android/run-emulator.sh build/android "$ABI"
+      - name: Bundle ARM test executables, data and libraries
+        if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
+        run: |
+          bundle="$RUNNER_TEMP/android-tests"
+          mkdir -p "$bundle/lib"
+          cp -a build/android/build/fluidsynth/test "$bundle/"
+          cp -a build/android/prefix/lib/*.so "$bundle/lib/"
+          tar -C "$bundle" -czf "$RUNNER_TEMP/android-tests.tar.gz" .
+      - uses: actions/upload-artifact@v7
+        if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
+        with:
+          name: android-tests-${{ matrix.abi }}
+          path: ${{ runner.temp }}/android-tests.tar.gz
       - uses: actions/upload-artifact@v7
         with:
           name: fluidsynth-android24-${{ matrix.abi }}
@@ -133,4 +146,50 @@ jobs:
           path: |
             build/android/logs
             build/android/build/**/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 7
+
+  # Hosted ARM runners do not expose nested KVM. Execute Android/Bionic tests
+  # on their Linux kernel; Android framework services and device drivers remain
+  # outside this path's coverage. Keep x86 Android emulator tests above.
+  arm-tests:
+    name: Native Android/Bionic ${{ matrix.abi }}
+    needs: android
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [armeabi-v7a, arm64-v8a]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-tests-${{ matrix.abi }}
+          path: ${{ runner.temp }}/android-tests
+      - name: Cache the pinned API 24 ARM userspace
+        id: runtime
+        uses: actions/cache@v5
+        if: ${{ !inputs.clean_dependencies }}
+        with:
+          path: ${{ runner.temp }}/android-runtime
+          key: android-native-runtime-v1-api24-${{ matrix.abi }}-${{ hashFiles('contrib/android/prepare-runtime.sh') }}
+      - name: Extract the Android userspace
+        if: steps.runtime.outputs.cache-hit != 'true'
+        env:
+          ABI: ${{ matrix.abi }}
+        run: bash contrib/android/prepare-runtime.sh "$ABI" "$RUNNER_TEMP/android-runtime"
+      - name: Run native ARM Android binaries
+        env:
+          ABI: ${{ matrix.abi }}
+        run: |
+          bash contrib/android/run-native-tests.sh "$ABI" "$RUNNER_TEMP/android-runtime" \
+            "$RUNNER_TEMP/android-tests/android-tests.tar.gz" "$RUNNER_TEMP/native-tests"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-native-logs-${{ matrix.abi }}
+          path: |
+            ${{ runner.temp }}/native-tests/logs
+            ${{ runner.temp }}/native-tests/results.txt
+            ${{ runner.temp }}/android-runtime/provenance.txt
           retention-days: 7

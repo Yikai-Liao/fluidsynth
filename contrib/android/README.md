@@ -39,9 +39,16 @@ bash contrib/android/run-emulator.sh build/android-x86_64 x86_64
 The script creates its own AVD, waits for Android to finish booting, calls the
 existing `test/run-android-tests.sh`, saves results and emulator/logcat output to
 `<build>/logs`, and removes its emulator and AVD on exit. Port 5554 must be free.
-ARM builds are compiled and checked for ELF alignment; they are not run under
-software emulation on the x86 GitHub runner. ELF alignment checks do not establish
-runtime compatibility with a 16 KB page-size device.
+ARM builds are compiled and checked for ELF alignment on the x86 runner, then
+their test executables, data and libraries are passed to `ubuntu-24.04-arm`.
+`prepare-runtime.sh` extracts API 24 Bionic binaries and libraries from Google's
+pinned ARM system images. `run-native-tests.sh` runs both ARM ABIs directly on
+the ARM CPU inside a chroot using the host Linux kernel, without QEMU translation.
+GitHub's hosted ARM runners do not expose nested KVM, so this path avoids booting
+a second, unaccelerated Android guest. It checks Android/Bionic userspace behavior;
+it does not validate Android framework services, Android device drivers, or
+runtime compatibility with a 16 KB page-size device. The x86/x86_64 emulator tests
+continue to execute under an Android kernel.
 
 The workflow caches the emulator binary, API 24 system images and the dependency
 installation prefix. CMake FetchContent downloads and population metadata have
