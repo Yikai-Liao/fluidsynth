@@ -2625,6 +2625,32 @@ static sf_count_t sfvio_tell(void *user_data)
     return data->offset;
 }
 
+/* Convert a normalized binary32 sample to saturated signed 16-bit PCM. */
+static inline int16_t fluid_sf3_float_to_s16(float sample)
+{
+    uint32_t bits;
+    int32_t magnitude, limit, pcm;
+    float bias;
+
+    /* Inspect IEEE binary32 bits, not a numeric cast. Ignoring the sign lets
+     * integer NaN classification and saturation auto-vectorize; memcpy avoids
+     * strict-aliasing violations. NaNs become silence, infinities saturate. */
+    memcpy(&bits, &sample, sizeof bits);
+    magnitude = (int32_t)(bits & 0x7fffffffu);
+    limit = bits >> 31 ? 0x3f800000 : 0x3f7ffe00; /* 1 or 32767/32768. */
+    magnitude = magnitude > 0x7f800000 ? 0 : magnitude; /* NaN -> 0. */
+    magnitude = magnitude > limit ? limit : magnitude;
+    bits = (bits & 0x80000000u) | (uint32_t)magnitude;
+    memcpy(&sample, &bits, sizeof sample);
+
+    /* +/-384 has ULP 1/32768; matching signs preserves rounding direction. */
+    bias = copysignf(384.0f, sample);
+    sample += bias;
+    memcpy(&bits, &sample, sizeof bits);
+    pcm = (int32_t)(bits & 0xffffu); /* The bias has zero low 16 bits. */
+    return (int16_t)(bits >> 31 ? -pcm : pcm);
+}
+
 /**
  * Read Ogg Vorbis compressed data from the Soundfont and decompress it, returning the number of samples
  * in the decompressed WAV. Only 16-bit mono samples are supported.
@@ -2738,29 +2764,11 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
         }
 
         {
-            const float scale = 32768.0f;
-            const float max_sample = INT16_MAX / scale;
             short *output = wav_data + frames_read;
 
             for(i = 0; i < frames; i++)
             {
-                const float sample = float_data[i];
-                if(isnan(sample))
-                {
-                    output[i] = 0;
-                }
-                else if(sample >= max_sample)
-                {
-                    output[i] = INT16_MAX;
-                }
-                else if(sample <= -1.0f)
-                {
-                    output[i] = INT16_MIN;
-                }
-                else
-                {
-                    output[i] = (short)lrintf(sample * scale);
-                }
+                output[i] = fluid_sf3_float_to_s16(float_data[i]);
             }
         }
 
