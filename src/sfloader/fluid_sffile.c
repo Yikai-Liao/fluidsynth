@@ -2737,25 +2737,30 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
             goto error_exit;
         }
 
-        for(i = 0; i < frames; i++)
         {
-            float sample = float_data[i];
-            if(!isfinite(sample))
+            const float scale = 32768.0f;
+            const float max_sample = INT16_MAX / scale;
+            short *output = wav_data + frames_read;
+
+            for(i = 0; i < frames; i++)
             {
-                FLUID_LOG(FLUID_ERR, "Non-finite sample in compressed SoundFont");
-                goto error_exit;
-            }
-            if(sample >= 32767.0f / 32768.0f)
-            {
-                wav_data[frames_read + i] = 32767;
-            }
-            else if(sample <= -1.0f)
-            {
-                wav_data[frames_read + i] = -32768;
-            }
-            else
-            {
-                wav_data[frames_read + i] = (short)lrintf(sample * 32768.0f);
+                const float sample = float_data[i];
+                if(isnan(sample))
+                {
+                    output[i] = 0;
+                }
+                else if(sample >= max_sample)
+                {
+                    output[i] = INT16_MAX;
+                }
+                else if(sample <= -1.0f)
+                {
+                    output[i] = INT16_MIN;
+                }
+                else
+                {
+                    output[i] = (short)lrintf(sample * scale);
+                }
             }
         }
 
