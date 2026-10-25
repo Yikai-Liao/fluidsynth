@@ -1,0 +1,61 @@
+name: Android developer build probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  developer-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ABI: arm64-v8a
+      ANDROID_API: '35'
+      BUILD_TYPE: Debug
+      VCPKG_ROOT: ${{ github.workspace }}/build/vcpkg
+    steps:
+      - uses: actions/checkout@v7
+      - run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+      - name: Select the official NDK
+        run: |
+          ndk="$ANDROID_HOME/ndk/27.3.13750724"
+          if [[ ! -f "$ndk/build/cmake/android.toolchain.cmake" ]]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;27.3.13750724'
+          fi
+          echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+        with:
+          repository: microsoft/vcpkg
+          ref: '2026.10.16'
+          path: build/vcpkg
+      - name: Build an API 35 Debug SDK from outside the checkout
+        run: |
+          cd "$RUNNER_TEMP"
+          bash "$GITHUB_WORKSPACE/doc/android/build.sh" build-dependencies
+          bash "$GITHUB_WORKSPACE/doc/android/build.sh" build-and-install
+          bash "$GITHUB_WORKSPACE/doc/android/build.sh" package
+          work="$GITHUB_WORKSPACE/build/android/$ABI-api$ANDROID_API-$BUILD_TYPE"
+          grep -E '^ANDROID_PLATFORM:[^=]+=android-35$' "$work/build/fluidsynth/CMakeCache.txt"
+          grep -E '^CMAKE_BUILD_TYPE:[^=]+=Debug$' "$work/build/fluidsynth/CMakeCache.txt"
+          test -s "$work/package/lib/$ABI/libfluidsynth.so"
+          test -s "$work/package/lib/$ABI/libfluidsynth-assetloader.so"
+      - name: Compile the real asset-loader example against the build-tree package
+        run: |
+          work="$GITHUB_WORKSPACE/build/android/$ABI-api$ANDROID_API-$BUILD_TYPE"
+          cmake -S doc/android/fluidsynth-assetloader -B "$RUNNER_TEMP/assetloader-buildtree" -G Ninja \
+            "-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-35 -DANDROID_STL=c++_shared \
+            -DCMAKE_BUILD_TYPE=Debug "-DFluidSynth_DIR=$work/build/fluidsynth"
+          cmake --build "$RUNNER_TEMP/assetloader-buildtree" --parallel
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-developer-probe
+          path: |
+            build/android/arm64-v8a-api35-Debug/package
+            build/android/arm64-v8a-api35-Debug/build/fluidsynth/CMakeCache.txt
+            build/android/arm64-v8a-api35-Debug/build/assetloader/CMakeCache.txt
+            build/vcpkg/buildtrees/**/*.log
+            ${{ runner.temp }}/assetloader-buildtree/CMakeCache.txt
