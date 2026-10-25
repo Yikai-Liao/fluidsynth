@@ -28,6 +28,8 @@
 #include "fluid_dls.h"
 #include "fluid_audio_convert.h"
 #include "fluid_rev.h"
+#include <limits.h>
+#include <math.h>
 
 #ifdef TRAP_ON_FPE
 #define _GNU_SOURCE
@@ -64,7 +66,7 @@ static void fluid_synth_api_exit(fluid_synth_t *synth);
 static int fluid_synth_noteon_LOCAL(fluid_synth_t *synth, int chan, int key,
                                     int vel);
 static int fluid_synth_noteoff_LOCAL(fluid_synth_t *synth, int chan, int key);
-static int fluid_synth_cc_LOCAL(fluid_synth_t *synth, int channum, int num);
+static int fluid_synth_cc_LOCAL(fluid_synth_t *synth, int channum, int num, int old_value);
 static int fluid_synth_sysex_midi_tuning(fluid_synth_t *synth, const char *data,
         int len, char *response,
         int *response_len, int avail_response,
@@ -1267,6 +1269,8 @@ delete_fluid_synth(fluid_synth_t *synth)
                                 NULL, NULL);
     fluid_settings_callback_num(synth->settings, "synth.chorus.speed",
                                 NULL, NULL);
+    fluid_settings_callback_str(synth->settings, "synth.portamento-time",
+                                NULL, NULL);
 
     /* turn off all voices, needed to unload SoundFont data */
     if(synth->voice != NULL)
@@ -1643,6 +1647,7 @@ fluid_synth_add_default_mod(fluid_synth_t *synth, const fluid_mod_t *mod, int mo
     fluid_return_val_if_fail(synth != NULL, FLUID_FAILED);
     fluid_return_val_if_fail(mod != NULL, FLUID_FAILED);
     fluid_return_val_if_fail((mode == FLUID_SYNTH_ADD) || (mode == FLUID_SYNTH_OVERWRITE) , FLUID_FAILED);
+    fluid_return_val_if_fail(mod->dest < GEN_LAST, FLUID_FAILED);
 
     /* Checks if modulators sources are valid */
     if(!fluid_mod_check_sources(mod, "api fluid_synth_add_default_mod mod"))
@@ -1771,6 +1776,7 @@ int
 fluid_synth_cc(fluid_synth_t *synth, int chan, int num, int val)
 {
     int result = FLUID_FAILED;
+    int old_value;
     fluid_channel_t *channel;
     fluid_return_val_if_fail(num >= 0 && num <= 127, FLUID_FAILED);
     fluid_return_val_if_fail(val >= 0 && val <= 127, FLUID_FAILED);
@@ -1786,8 +1792,9 @@ fluid_synth_cc(fluid_synth_t *synth, int chan, int num, int val)
             FLUID_LOG(FLUID_INFO, "cc\t\t%d\t%d\t%d", chan, num, val);
         }
 
+        old_value = fluid_channel_get_cc(channel, num);
         fluid_channel_set_cc(channel, num, val);
-        result = fluid_synth_cc_LOCAL(synth, chan, num);
+        result = fluid_synth_cc_LOCAL(synth, chan, num, old_value);
     }
     else /* chan is disabled so it is a candidate for global channel */
     {
@@ -1820,8 +1827,9 @@ fluid_synth_cc(fluid_synth_t *synth, int chan, int num, int val)
                     FLUID_LOG(FLUID_INFO, "cc\t\t%d\t%d\t%d", i, num, val);
                 }
 
+                old_value = fluid_channel_get_cc(synth->channel[i], num);
                 fluid_channel_set_cc(synth->channel[i], num, val);
-                result = fluid_synth_cc_LOCAL(synth, i, num);
+                result = fluid_synth_cc_LOCAL(synth, i, num, old_value);
             }
         }
         /* The channel chan is not a valid 'global channel' */
@@ -1867,10 +1875,11 @@ fluid_synth_cc(fluid_synth_t *synth, int chan, int num, int val)
  these SF recommendations on CC receive.
 */
 static int
-fluid_synth_cc_LOCAL(fluid_synth_t *synth, int channum, int num)
+fluid_synth_cc_LOCAL(fluid_synth_t *synth, int channum, int num, int old_value)
 {
     fluid_channel_t *chan = synth->channel[channum];
     int nrpn_select;
+    int nrpn_increment;
     int value;
 
     value = fluid_channel_get_cc(chan, num);
@@ -1970,8 +1979,7 @@ fluid_synth_cc_LOCAL(fluid_synth_t *synth, int channum, int num)
         {
             fluid_synth_damp_voices_by_sostenuto_LOCAL(synth, channum);
         }
-        else /* Sostenuto is depressed */
-            /* Update sostenuto order id when pedaling on Sostenuto */
+        else if(old_value < 64) /* Sostenuto changed from released to depressed */
         {
             chan->sostenuto_orderid = synth->noteid; /* future voice id value */
         }
@@ -2155,21 +2163,31 @@ fluid_synth_cc_LOCAL(fluid_synth_t *synth, int channum, int num)
         /* SontFont 2.01 NRPN Message (Sect. 9.6, p. 74)  */
         if(fluid_channel_get_cc(chan, NRPN_MSB) == 120)
         {
+            nrpn_increment = 0;
+
             if(value == 100)
             {
-                chan->nrpn_select += 100;
+                nrpn_increment = 100;
             }
             else if(value == 101)
             {
-                chan->nrpn_select += 1000;
+                nrpn_increment = 1000;
             }
             else if(value == 102)
             {
-                chan->nrpn_select += 10000;
+                nrpn_increment = 10000;
             }
             else if(value < 100)
             {
-                chan->nrpn_select += value;
+                nrpn_increment = value;
+            }
+
+            if(nrpn_increment > 0)
+            {
+                nrpn_select = (int)chan->nrpn_select + nrpn_increment;
+                chan->nrpn_select = nrpn_select < GEN_LAST
+                                    ? (enum fluid_gen_type)nrpn_select
+                                    : GEN_LAST;
             }
         }
 
@@ -2387,6 +2405,7 @@ fluid_synth_sysex_midi_tuning(fluid_synth_t *synth, const char *data, int len,
                               int *handled, int dryrun)
 {
     int realtime, msgid;
+    const double mts_max_pitch = 12800.0 - 200.0 / 16384.0;
     int bank = 0, prog, channels;
     double tunedata[128];
     int keys[128];
@@ -2467,6 +2486,17 @@ fluid_synth_sysex_midi_tuning(fluid_synth_t *synth, const char *data, int len,
 
         for(i = 0; i < 128; i++)
         {
+            /* Saturate before converting to integers. The largest frequency
+             * word is 7F 7F 7E; 7F 7F 7F means "no change", not maximum pitch. */
+            if(!(tunedata[i] > 0.0))
+            {
+                tunedata[i] = 0.0;
+            }
+            else if(tunedata[i] > mts_max_pitch)
+            {
+                tunedata[i] = mts_max_pitch;
+            }
+
             note = tunedata[i] / 100.0;
             fluid_clip(note, 0, 127);
 
@@ -2687,14 +2717,27 @@ fluid_synth_sysex_gs_dt1(fluid_synth_t *synth, const char *data, int len,
         FLUID_LOG(FLUID_INFO, "SysEx GS DT1: message too short, dropping it.");
         return FLUID_FAILED;
     }
+    if(((unsigned char)data[4] | (unsigned char)data[5] | (unsigned char)data[6]) & 0x80)
+    {
+        FLUID_LOG(FLUID_INFO, "SysEx GS DT1: address contains a non-7-bit byte, dropping it.");
+        return FLUID_FAILED;
+    }
+    for(i = 7; i < len; ++i)
+    {
+        if((unsigned char)data[i] & 0x80)
+        {
+            FLUID_LOG(FLUID_INFO, "SysEx GS DT1: data contains a non-7-bit byte, dropping it.");
+            return FLUID_FAILED;
+        }
+    }
     len_data = len - 8;
     addr = (data[4] << 16) | (data[5] << 8) | data[6];
 
     for (i = 4; i < len - 1; ++i)
     {
-        checksum += data[i];
+        checksum = (checksum + (unsigned char)data[i]) & 0x7F;
     }
-    checksum = 0x80 - (checksum & 0x7F);
+    checksum = 0x80 - checksum;
     // An intermediate checksum of 0x80 must be treated as zero! #1578
     if ((checksum & 0x7F) != data[len - 1])
     {
@@ -2768,7 +2811,7 @@ fluid_synth_sysex_gs_dt1(fluid_synth_t *synth, const char *data, int len,
             // MSGS selects the standard drum kit right after this message (which is equivalent to sending a prog change 0).
             // However, this behavior is insonsistent with the note on site 60:
             // "To select a drum set after setting the part mode, transmit a program change [...]"
-            fluid_synth_cc_LOCAL(synth, chan, ALL_CTRL_OFF);
+            fluid_synth_cc_LOCAL(synth, chan, ALL_CTRL_OFF, 0);
             fluid_channel_set_sfont_bank_prog(synth->channel[chan],
                                               -1,
                                               type == CHANNEL_TYPE_DRUM ? DRUM_INST_BANK : 0,
@@ -2793,6 +2836,11 @@ fluid_synth_sysex_xg(fluid_synth_t *synth, const char *data, int len,
 
     if(len < 7) // at least one byte of data should be transmitted
     {
+        return FLUID_FAILED;
+    }
+    if(((unsigned char)data[3] | (unsigned char)data[4] | (unsigned char)data[5]) & 0x80)
+    {
+        FLUID_LOG(FLUID_INFO, "SysEx XG: address contains a non-7-bit byte, dropping it.");
         return FLUID_FAILED;
     }
     len_data = len - 6;
@@ -3872,6 +3920,7 @@ void
 fluid_synth_set_gain(fluid_synth_t *synth, float gain)
 {
     fluid_return_if_fail(synth != NULL);
+    fluid_return_if_fail(isfinite(gain));
     fluid_synth_api_enter(synth);
 
     fluid_clip(gain, 0.0f, 10.0f);
@@ -5417,11 +5466,11 @@ fluid_synth_alloc_voice_LOCAL(fluid_synth_t *synth, fluid_sample_t *sample, int 
     {
         int mono = fluid_channel_is_playing_mono(channel);
         fluid_mod_t *default_mod;
-        if (sample->default_modulators != NULL)
-        {
-            default_mod = sample->default_modulators;
-        }
-        else
+        default_mod = sample->default_modulators != NULL
+                      ? *sample->default_modulators
+                      : NULL;
+
+        if(default_mod == NULL)
         {
             default_mod = synth->default_mod;
         }
@@ -5460,8 +5509,18 @@ static void
 fluid_synth_kill_by_exclusive_class_LOCAL(fluid_synth_t *synth,
         fluid_voice_t *new_voice)
 {
-    int excl_class = fluid_voice_gen_value(new_voice, GEN_EXCLUSIVECLASS);
+    fluid_real_t excl_class_value = fluid_voice_gen_value(new_voice, GEN_EXCLUSIVECLASS);
+    int excl_class;
     int i;
+
+    if(!isfinite(excl_class_value)
+            || (double)excl_class_value < INT_MIN
+            || (double)excl_class_value > INT_MAX)
+    {
+        return;
+    }
+
+    excl_class = (int)excl_class_value;
 
     /* Excl. class 0: No exclusive class */
     if(excl_class == 0)
@@ -6310,9 +6369,18 @@ fluid_synth_set_reverb_full(fluid_synth_t *synth, int fx_group, int set,
                             const double values[])
 {
     fluid_rvoice_param_t param[MAX_EVENT_PARAMS];
+    int i;
 
     /* if non of the flags is set, fail */
     fluid_return_val_if_fail(set & FLUID_REVMODEL_SET_ALL, FLUID_FAILED);
+
+    for(i = 0; i < FLUID_REVERB_PARAM_LAST; i++)
+    {
+        if((set & FLUID_REVPARAM_TO_SETFLAG(i)) && !isfinite(values[i]))
+        {
+            return FLUID_FAILED;
+        }
+    }
 
     /* fx group shadow values are set here so that they will be returned if queried */
     fluid_rvoice_mixer_set_reverb_full(synth->eventhandler->mixer, fx_group, set,
@@ -6810,9 +6878,18 @@ fluid_synth_set_chorus_full(fluid_synth_t *synth, int fx_group, int set,
                             const double values[])
 {
     fluid_rvoice_param_t param[MAX_EVENT_PARAMS];
+    int i;
 
     /* if non of the flags is set, fail */
     fluid_return_val_if_fail(set & FLUID_CHORUS_SET_ALL, FLUID_FAILED);
+
+    for(i = 0; i < FLUID_CHORUS_PARAM_LAST; i++)
+    {
+        if((set & FLUID_CHORPARAM_TO_SETFLAG(i)) && !isfinite(values[i]))
+        {
+            return FLUID_FAILED;
+        }
+    }
 
     /* fx group shadow values are set here so that they will be returned if queried */
     fluid_rvoice_mixer_set_chorus_full(synth->eventhandler->mixer, fx_group,
@@ -7360,6 +7437,22 @@ fluid_synth_update_voice_tuning_LOCAL(fluid_synth_t *synth, fluid_channel_t *cha
     }
 }
 
+static int
+fluid_synth_tuning_values_are_finite(const double *pitch, int count)
+{
+    int i;
+
+    for(i = 0; i < count; i++)
+    {
+        if(!isfinite(pitch[i]))
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 /**
  * Set the tuning of the entire MIDI note scale.
  * @param synth FluidSynth instance
@@ -7385,6 +7478,7 @@ fluid_synth_activate_key_tuning(fluid_synth_t *synth, int bank, int prog,
     fluid_return_val_if_fail(bank >= 0 && bank < 128, FLUID_FAILED);
     fluid_return_val_if_fail(prog >= 0 && prog < 128, FLUID_FAILED);
     fluid_return_val_if_fail(name != NULL, FLUID_FAILED);
+    fluid_return_val_if_fail(pitch == NULL || fluid_synth_tuning_values_are_finite(pitch, 128), FLUID_FAILED);
 
     fluid_synth_api_enter(synth);
 
@@ -7438,6 +7532,7 @@ fluid_synth_activate_octave_tuning(fluid_synth_t *synth, int bank, int prog,
     fluid_return_val_if_fail(prog >= 0 && prog < 128, FLUID_FAILED);
     fluid_return_val_if_fail(name != NULL, FLUID_FAILED);
     fluid_return_val_if_fail(pitch != NULL, FLUID_FAILED);
+    fluid_return_val_if_fail(fluid_synth_tuning_values_are_finite(pitch, 12), FLUID_FAILED);
 
     fluid_synth_api_enter(synth);
     tuning = new_fluid_tuning(name, bank, prog);
@@ -7491,6 +7586,7 @@ fluid_synth_tune_notes(fluid_synth_t *synth, int bank, int prog,
     fluid_return_val_if_fail(len > 0, FLUID_FAILED);
     fluid_return_val_if_fail(key != NULL, FLUID_FAILED);
     fluid_return_val_if_fail(pitch != NULL, FLUID_FAILED);
+    fluid_return_val_if_fail(fluid_synth_tuning_values_are_finite(pitch, len), FLUID_FAILED);
 
     fluid_synth_api_enter(synth);
 
@@ -7727,6 +7823,7 @@ fluid_synth_tuning_dump(fluid_synth_t *synth, int bank, int prog,
     fluid_tuning_t *tuning;
 
     fluid_return_val_if_fail(synth != NULL, FLUID_FAILED);
+    fluid_return_val_if_fail(name == NULL || len > 0, FLUID_FAILED);
     fluid_synth_api_enter(synth);
 
     tuning = fluid_synth_get_tuning(synth, bank, prog);
@@ -7735,7 +7832,7 @@ fluid_synth_tuning_dump(fluid_synth_t *synth, int bank, int prog,
     {
         if(name)
         {
-            FLUID_SNPRINTF(name, len - 1, "%s", fluid_tuning_get_name(tuning));
+            FLUID_SNPRINTF(name, len, "%s", fluid_tuning_get_name(tuning));
             name[len - 1] = 0;  /* make sure the string is null terminated */
         }
 
@@ -7778,6 +7875,7 @@ fluid_synth_get_settings(fluid_synth_t *synth)
 int fluid_synth_set_gen(fluid_synth_t *synth, int chan, int param, float value)
 {
     fluid_return_val_if_fail(param >= 0 && param < GEN_LAST, FLUID_FAILED);
+    fluid_return_val_if_fail(isfinite(value), FLUID_FAILED);
     FLUID_API_ENTRY_CHAN(FLUID_FAILED);
 
     fluid_synth_set_gen_LOCAL(synth, chan, param, value);

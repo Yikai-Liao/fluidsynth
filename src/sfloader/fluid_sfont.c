@@ -18,6 +18,7 @@
  */
 
 #include "fluid_sfont.h"
+#include "fluid_gen.h"
 #include "fluid_sys.h"
 #include "fluid_mod.h"
 
@@ -350,27 +351,41 @@ int fluid_sfont_set_default_mod(fluid_sfont_t *sfont, const fluid_mod_t *mods, i
 {
     int i;
     fluid_mod_t *list = NULL;
+    fluid_mod_t *old_list;
 
     fluid_return_val_if_fail(sfont != NULL, FLUID_FAILED);
     fluid_return_val_if_fail(nmods >= 0, FLUID_FAILED);
 
-    delete_fluid_list_mod(sfont->default_mod_list);
-
     if (mods == NULL || nmods == 0)
     {
-        sfont->default_mod_list = NULL;
-        return FLUID_OK;
+        list = NULL;
     }
-
-    for (i = nmods - 1; i >= 0; i--) // To preserve input order
+    else
     {
-        fluid_mod_t *r = new_fluid_mod();
-        fluid_mod_clone(r, &mods[i]);
-        r->next = list;
-        list = r;
+        for (i = 0; i < nmods; i++)
+        {
+            fluid_return_val_if_fail(mods[i].dest < GEN_LAST, FLUID_FAILED);
+        }
+
+        for (i = nmods - 1; i >= 0; i--) // To preserve input order
+        {
+            fluid_mod_t *r = new_fluid_mod();
+
+            if(r == NULL)
+            {
+                delete_fluid_list_mod(list);
+                return FLUID_FAILED;
+            }
+
+            fluid_mod_clone(r, &mods[i]);
+            r->next = list;
+            list = r;
+        }
     }
 
+    old_list = sfont->default_mod_list;
     sfont->default_mod_list = list;
+    delete_fluid_list_mod(old_list);
     return FLUID_OK;
 }
 
@@ -813,7 +828,7 @@ int fluid_sample_validate(fluid_sample_t *sample, unsigned int buffer_size)
     if((sample->sampletype & EXCLUSIVE_FLAGS) == 0)
     {
         FLUID_LOG(FLUID_INFO, "Sample '%s' has no flags set, assuming mono", sample->name);
-        sample->sampletype = FLUID_SAMPLETYPE_MONO;
+        sample->sampletype |= FLUID_SAMPLETYPE_MONO;
     }
 
     /* Ogg vorbis compressed samples in the SF3 format use byte indices for
@@ -831,7 +846,7 @@ int fluid_sample_validate(fluid_sample_t *sample, unsigned int buffer_size)
         buffer_size /= 2;
     }
 
-    if((sample->end > buffer_size) || (sample->start >= sample->end))
+    if((sample->end >= buffer_size) || (sample->start >= sample->end))
     {
         FLUID_LOG(FLUID_WARN, "Sample '%s': invalid start/end file positions", sample->name);
         return FLUID_FAILED;

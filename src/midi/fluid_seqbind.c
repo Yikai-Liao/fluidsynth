@@ -185,8 +185,18 @@ fluid_seq_fluidsynth_callback(unsigned int time, fluid_event_t *evt, fluid_seque
     switch(fluid_event_get_type(evt))
     {
     case FLUID_SEQ_NOTEON:
-        fluid_synth_noteon(synth, fluid_event_get_channel(evt), fluid_event_get_key(evt), fluid_event_get_velocity(evt));
+    {
+        int chan = fluid_event_get_channel(evt);
+        short key = fluid_event_get_key(evt);
+
+        if(fluid_synth_noteon(synth, chan, key, fluid_event_get_velocity(evt)) == FLUID_OK)
+        {
+            fluid_note_id_t id = fluid_note_compute_id(chan, key);
+            fluid_sequencer_invalidate_note(seqbind->seq, seqbind->client_id, id);
+            fluid_note_container_remove(seqbind->note_container, id);
+        }
         break;
+    }
 
     case FLUID_SEQ_NOTEOFF:
     {
@@ -202,13 +212,20 @@ fluid_seq_fluidsynth_callback(unsigned int time, fluid_event_t *evt, fluid_seque
     case FLUID_SEQ_NOTE:
     {
         unsigned int dur = fluid_event_get_duration(evt);
+        fluid_note_id_t id;
+        int res;
         short vel = fluid_event_get_velocity(evt);
         short key = fluid_event_get_key(evt);
         int chan = fluid_event_get_channel(evt);
 
-        fluid_note_id_t id = fluid_note_compute_id(chan, key);
+        if(chan < 0 || chan >= synth->midi_channels || key < 0 || key > 127)
+        {
+            break;
+        }
 
-        int res = fluid_note_container_insert(seqbind->note_container, id);
+        id = fluid_note_compute_id(chan, key);
+
+        res = fluid_note_container_insert(seqbind->note_container, id);
         if(res == FLUID_FAILED)
         {
             goto err;
@@ -240,12 +257,10 @@ fluid_seq_fluidsynth_callback(unsigned int time, fluid_event_t *evt, fluid_seque
     break;
 
     case FLUID_SEQ_ALLSOUNDSOFF:
-        fluid_note_container_clear(seqbind->note_container);
         fluid_synth_all_sounds_off(synth, fluid_event_get_channel(evt));
         break;
 
     case FLUID_SEQ_ALLNOTESOFF:
-        fluid_note_container_clear(seqbind->note_container);
         fluid_synth_all_notes_off(synth, fluid_event_get_channel(evt));
         break;
 

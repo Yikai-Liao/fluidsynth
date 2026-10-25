@@ -453,7 +453,7 @@ struct fluid_dls_font
     inline void parse_wvpl(fluid_long_long_t offset);
     inline void parse_wave(fluid_long_long_t offset, fluid_dls_sample &sample);
     // offset is at wsmpnnnn^... (chunk data)
-    inline uint32_t parse_wsmp(fluid_long_long_t offset, fluid_dls_wsmp &wsmp);
+    inline uint32_t parse_wsmp(fluid_long_long_t offset, uint32_t size, fluid_dls_wsmp &wsmp);
 
 #if LIBSNDFILE_SUPPORT
     inline void parse_wave_sndfile(fluid_long_long_t offset, fluid_dls_sample &sample);
@@ -664,6 +664,42 @@ static inline int READCHUNK(fluid_dls_font *dlsfont, RIFFChunk &chunk)
     return 8;
 }
 
+static inline int READCHUNK_BOUNDED(fluid_dls_font *dlsfont, RIFFChunk &chunk,
+                                    fluid_long_long_t remaining)
+{
+    if(remaining < 8)
+    {
+        throw std::runtime_error{ "Truncated subchunk header" };
+    }
+
+    READCHUNK_RAW(dlsfont, &chunk);
+
+    if(chunk.id == LIST_FCC || chunk.id == RIFF_FCC)
+    {
+        if(chunk.size < 4)
+        {
+            throw std::runtime_error{ "Bad LIST header: size < 4" };
+        }
+
+        if(remaining < 12)
+        {
+            throw std::runtime_error{ "Truncated LIST subchunk header" };
+        }
+
+        READID(dlsfont, &chunk.id);
+        chunk.size -= 4;
+        return 12;
+    }
+
+    if(chunk.id == CRS1_FCC)
+    {
+        // see CRS1_FCC comment
+        chunk.size = 28;
+    }
+
+    return 8;
+}
+
 template<class Visitor>
 inline std::enable_if_t<std::is_invocable_v<Visitor, RIFFChunk, int, fluid_long_long_t>, RIFFChunk>
 fluid_dls_font::visit_subchunks(fluid_long_long_t offset, uint32_t expected_4cc, Visitor &&visitor)
@@ -704,13 +740,22 @@ fluid_dls_font::visit_subchunks(fluid_long_long_t offset, uint32_t expected_4cc,
     }
 
     fluid_long_long_t pos = offset + 12;
+    const fluid_long_long_t list_end = pos + chunk.size;
 
-    while(pos < offset + 12 + chunk.size)
+    while(pos < list_end)
     {
         RIFFChunk subchunk;
         fseek(pos, SEEK_SET);
         auto subchunkpos = pos;
-        auto headersize = READCHUNK(this, subchunk);
+        auto remaining = list_end - pos;
+        auto headersize = READCHUNK_BOUNDED(this, subchunk, remaining);
+
+        if(headersize + static_cast<fluid_long_long_t>(subchunk.size)
+                + (subchunk.size & 1u) > remaining)
+        {
+            throw std::runtime_error{ "Subchunk exceeds its LIST boundary" };
+        }
+
         pos += headersize;
 
         try
@@ -746,12 +791,22 @@ inline std::string fluid_dls_font::read_name_from_info_entries(fluid_long_long_t
 {
     fseek(offset, SEEK_SET);
     fluid_long_long_t pos = offset;
+    const fluid_long_long_t info_end = offset + size;
 
-    while(pos < offset + size)
+    while(pos < info_end)
     {
         RIFFChunk chunk;
         fseek(pos, SEEK_SET);
-        pos += READCHUNK(this, chunk);
+        auto remaining = info_end - pos;
+        auto headersize = READCHUNK_BOUNDED(this, chunk, remaining);
+
+        if(headersize + static_cast<fluid_long_long_t>(chunk.size)
+                + (chunk.size & 1u) > remaining)
+        {
+            throw std::runtime_error{ "INFO subchunk exceeds its LIST boundary" };
+        }
+
+        pos += headersize;
 
         if(chunk.id == INAM_FCC)
         {
@@ -845,7 +900,7 @@ static inline void read_data_lpcm(void *dest, const void *data, fluid_long_long_
 
     for(fluid_long_long_t i = 0; i < size; ++i)
     {
-        dest16[i] = (static_cast<int8_t>(src[i] - 128) << 8);
+        dest16[i] = static_cast<int16_t>((static_cast<int>(src[i]) - 128) * 256);
     }
 }
 
@@ -1569,6 +1624,12 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
                 uint32_t colh;
                 READ32(this, colh);
+
+                if(colh > filesize / 32) // A LIST[INS] with its required INSH chunk needs at least 32 bytes
+                {
+                    throw std::runtime_error{ "DLS instrument count exceeds file size" };
+                }
+
                 instruments.reserve(colh);
                 break;
             }
@@ -1608,7 +1669,6 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
                     READ32(this, poolcues[i]);
                 }
 
-                samples.reserve(cues);
                 break;
             }
 
@@ -1753,7 +1813,7 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
         fluid.data = sampledata.data();
         fluid.sampletype = FLUID_SAMPLETYPE_MONO;
-        fluid.default_modulators = this->sfont->default_mod_list;
+        fluid.default_modulators = &this->sfont->default_mod_list;
 
         if(fluid_sample_validate(&fluid, sampledata.size() * sizeof(decltype(sampledata)::value_type)) != FLUID_OK)
         {
@@ -2116,20 +2176,14 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
 
             if(opcode == 0x0011)  // Query
             {
-                if(result.has_value())
-                {
-                    push(result.value());
-                }
-                else
-                {
-                    throw std::runtime_error
-                    {
-                        string_format("CDL query for unsupported DLSID, pc=0x%x", pc)
-                    };
-                }
+                // DLS 2.2 section 2.6: unsupported queries evaluate to FALSE.
+                push(result.value_or(0));
+            }
+            else
+            {
+                push(result.has_value() ? 1 : 0); // Query_Supported
             }
 
-            push(result.has_value() ? 1 : 0); // Query_Supported
             pc += sizeof(DLSID);
             break;
         }
@@ -2208,6 +2262,11 @@ inline void fluid_dls_font::parse_wave(fluid_long_long_t offset, fluid_dls_sampl
 
         case FMT_FCC:   // See WAVEFORMAT struct (mmreg.h)
         {
+            if(subchunk.size < 16)
+            {
+                throw std::runtime_error{ "DLS fmt chunk is too short" };
+            }
+
             uint16_t temp16;
             uint32_t temp32;
             READ16(this, temp16); // read formatTag
@@ -2247,7 +2306,7 @@ inline void fluid_dls_font::parse_wave(fluid_long_long_t offset, fluid_dls_sampl
         }
 
         case WSMP_FCC:
-            if(parse_wsmp(pos + headersize, sample.wsmp.emplace()) != subchunk.size)
+            if(parse_wsmp(pos + headersize, subchunk.size, sample.wsmp.emplace()) != subchunk.size)
             {
                 throw std::runtime_error{ "DLS wsmp chunk in wave chunk has corrupted size" };
             }
@@ -2335,9 +2394,16 @@ inline void fluid_dls_font::parse_wave(fluid_long_long_t offset, fluid_dls_sampl
 #endif
 }
 
-inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset, fluid_dls_wsmp &wsmp)
+inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset,
+                                          uint32_t size,
+                                          fluid_dls_wsmp &wsmp)
 {
     fseek(offset, SEEK_SET);
+
+    if(size < 4)
+    {
+        throw std::runtime_error{ "DLS wsmp chunk is too short to contain cbSize" };
+    }
 
     uint32_t cbsize;
     READ32(this, cbsize);
@@ -2349,7 +2415,17 @@ inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset, fluid_dls_w
         cbsize = 20;
     }
 
+    if(cbsize > size)
+    {
+        throw std::runtime_error{ "DLS wsmp cbSize exceeds its chunk" };
+    }
+
     READ16(this, wsmp.unity_note);
+    if(wsmp.unity_note > 127)
+    {
+        throw std::runtime_error{ "DLS wsmp unity note is outside the MIDI note range" };
+    }
+
     READ16(this, wsmp.fine_tune);
     READ32(this, wsmp.gain);
     fskip(4); // fulOptions
@@ -2361,9 +2437,19 @@ inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset, fluid_dls_w
         throw std::runtime_error{ "DLS wsmp chunk has more than one loop" };
     }
 
+    if(cbsize > 20)
+    {
+        fskip(cbsize - 20);
+    }
+
     if(loops == 0)
     {
         return cbsize;
+    }
+
+    if(size - cbsize < 4)
+    {
+        throw std::runtime_error{ "DLS wsmp loop header exceeds its chunk" };
     }
 
     uint32_t loopcbsize;
@@ -2374,6 +2460,11 @@ inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset, fluid_dls_w
         // This is also seen in Crystal's DLS. See CRS1_FCC comment.
         FLUID_LOG(FLUID_WARN, "DLS wsmp chunk loop cbSize < 16. The file is probably corrupted.");
         loopcbsize = 16;
+    }
+
+    if(loopcbsize > size - cbsize)
+    {
+        throw std::runtime_error{ "DLS wsmp loop exceeds its chunk" };
     }
 
     READ32(this, wsmp.loop_type);
@@ -2415,6 +2506,13 @@ inline void fluid_dls_font::parse_lins(fluid_long_long_t offset)
 inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instrument &instrument)
 {
     size_t articulation_index = -1; // in C++26 we can do std::optional<T&>
+    fseek(offset, SEEK_SET);
+    RIFFChunk ins_chunk;
+
+    if(READCHUNK(this, ins_chunk) != 12 || ins_chunk.id != INS_FCC)
+    {
+        throw std::runtime_error{ "Expected DLS instrument LIST" };
+    }
 
     visit_subchunks(offset, INS_FCC, [&](RIFFChunk subchunk, int headersize [[maybe_unused]], fluid_long_long_t pos)
     {
@@ -2438,6 +2536,12 @@ inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instru
 
             uint32_t temp;
             READ32(this, temp); // cRegions
+
+            if(temp > ins_chunk.size / 52) // Minimum size of a region LIST, RGNH and WLNK chunks
+            {
+                throw std::runtime_error{ "DLS region count exceeds instrument chunk size" };
+            }
+
             instrument.regions.reserve(temp);
             READ32(this, temp); // bank
             instrument.is_drums = (temp & 0x80000000) != 0;
@@ -2491,45 +2595,42 @@ inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instru
 
 inline bool fluid_dls_font::parse_lart(fluid_long_long_t offset, fluid_dls_articulation &articulation)
 {
-    bool bypassed{};
+    bool applicable = true;
 
-    try
+    // DLS 2.2 section 2.6 allows CDL after ART. Check conditions before
+    // modifying an articulation shared with earlier lists at this level.
+    visit_subchunks(offset, 0, [&](RIFFChunk subchunk, int headersize, fluid_long_long_t pos)
     {
-        visit_subchunks(offset, 0, [&](RIFFChunk subchunk, int headersize [[maybe_unused]], fluid_long_long_t pos)
+        if(applicable && subchunk.id == CDL_FCC)
         {
-            if(subchunk.id == CDL_FCC)
-            {
-                if(!execute_cdls(pos + headersize, subchunk.size))
-                {
-                    bypassed = false;
-                    throw std::exception{};
-                }
+            applicable = execute_cdls(pos + headersize, subchunk.size);
+        }
+    });
 
-                return;
-            }
-
-            if(subchunk.id != ART1_FCC && subchunk.id != ART2_FCC)
-            {
-                // clang-format off
-                FLUID_LOG(FLUID_WARN,
-                          "Unknown DLS chunk '" FMT_4CC_SPEC "' ofs=0x%llx in LIST[lart]",
-                          FMT_4CC_ARG(subchunk.id), pos);
-                return;
-                // clang-format on
-            }
-
-            parse_art(pos, articulation);
-        });
+    if(!applicable)
+    {
+        return false;
     }
-    catch(...)
+
+    visit_subchunks(offset, 0, [&](RIFFChunk subchunk, int headersize [[maybe_unused]], fluid_long_long_t pos)
     {
-        if(bypassed)
+        if(subchunk.id == CDL_FCC)
         {
-            return false;
+            return;
         }
 
-        throw;
-    }
+        if(subchunk.id != ART1_FCC && subchunk.id != ART2_FCC)
+        {
+            // clang-format off
+            FLUID_LOG(FLUID_WARN,
+                      "Unknown DLS chunk '" FMT_4CC_SPEC "' ofs=0x%llx in LIST[lart]",
+                      FMT_4CC_ARG(subchunk.id), pos);
+            return;
+            // clang-format on
+        }
+
+        parse_art(pos, articulation);
+    });
 
     return true;
 }
@@ -2666,6 +2767,11 @@ inline bool fluid_dls_font::parse_rgn(fluid_long_long_t offset, fluid_dls_region
                 break;
 
             case WLNK_FCC:
+                if(subchunk.size < 12)
+                {
+                    throw std::runtime_error{ "DLS wlnk chunk is too small" };
+                }
+
                 fskip(8); // fluidsynth does not implement phase-locking and multichannel output
                 READ32(this, region.sampleindex);
 
@@ -2713,6 +2819,11 @@ inline bool fluid_dls_font::parse_rgn(fluid_long_long_t offset, fluid_dls_region
 
             case RGNH_FCC:
             {
+                if(subchunk.size < 12)
+                {
+                    throw std::runtime_error{ "DLS rgnh chunk is too small" };
+                }
+
                 uint16_t temp;
                 READ16(this, temp); // key low
                 region.range.keylo = temp;
@@ -2747,7 +2858,11 @@ inline bool fluid_dls_font::parse_rgn(fluid_long_long_t offset, fluid_dls_region
             // DLS-2 2.2 "the structure tree" ... rgn -> ... wsmp (optional) ...
             // DLS-2 2.8 Other chunks at the same nesting level include a <wsmp-ck> wave sample chunk.
             case WSMP_FCC:
-                parse_wsmp(pos + headersize, region.wsmp.emplace());
+                if(parse_wsmp(pos + headersize, subchunk.size, region.wsmp.emplace()) != subchunk.size)
+                {
+                    throw std::runtime_error{ "DLS wsmp chunk in region has corrupted size" };
+                }
+
                 break;
 
             default:
@@ -2803,6 +2918,13 @@ inline void fluid_dls_font::parse_pgal(fluid_long_long_t offset, int size)
     // melodic instrument aliasing table
     uint32_t nAlias;
     READ32(this, nAlias);
+
+    const uint32_t alias_header_size = version == 0x03020100 ? 132u : 136u;
+
+    if(nAlias > static_cast<uint32_t>(size - alias_header_size) / 8u)
+    {
+        throw std::runtime_error{ "DLS pgal alias count exceeds its chunk" };
+    }
 
     for(uint32_t i = 0; i < nAlias; i++)
     {
@@ -3270,7 +3392,19 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
     tuned_key_f *= dlspreset->keynum_scale;
 
     // key with subtonal tuning and key number generator applied
-    int tuned_key = static_cast<int>(std::round(tuned_key_f));
+    int tuned_key;
+    if(!std::isfinite(tuned_key_f) || tuned_key_f <= std::numeric_limits<int>::min())
+    {
+        tuned_key = std::numeric_limits<int>::min();
+    }
+    else if(tuned_key_f >= std::numeric_limits<int>::max())
+    {
+        tuned_key = std::numeric_limits<int>::max();
+    }
+    else
+    {
+        tuned_key = static_cast<int>(std::round(tuned_key_f));
+    }
     // key with only key number generator applied
     int adjusted_key;
     if (synth->channel[chan]->channel_type == CHANNEL_TYPE_DRUM)
@@ -3284,7 +3418,7 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
     }
     else
     {
-        adjusted_key = static_cast<int>(std::round(key * dlspreset->keynum_scale));
+        adjusted_key = std::clamp(static_cast<int>(std::round(key * dlspreset->keynum_scale)), 0, 127);
     }
 
     for(auto &region : dlspreset->regions)

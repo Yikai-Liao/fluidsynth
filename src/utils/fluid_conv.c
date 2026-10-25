@@ -19,6 +19,8 @@
 
 #include "fluid_conv.h"
 #include "fluid_sys.h"
+#include <limits.h>
+#include <math.h>
 
 extern const fluid_real_t *const fluid_cb2amp_tab;
 extern const fluid_real_t *const fluid_ct2hz_tab;
@@ -51,13 +53,29 @@ fluid_real_t
 fluid_ct2hz_real(fluid_real_t cents)
 {
     fluid_real_t mult;
-    int fac, rem;
-    int icents = (int)cents;
+    int fac, rem, icents;
+
+    /* Several public tuning and generator APIs accept arbitrary pitch values.
+     * Keep the conversion to int, and the subsequent offset arithmetic, in range. */
+    if(isnan(cents))
+    {
+        cents = 0.0;
+    }
+    else if(cents > (fluid_real_t)(INT_MAX / 2))
+    {
+        cents = (fluid_real_t)(INT_MAX / 2);
+    }
+    else if(cents < (fluid_real_t)(INT_MIN / 2))
+    {
+        cents = (fluid_real_t)(INT_MIN / 2);
+    }
+
+    icents = (int)cents;
 
     // Offset the input argument by 300 cents, so that if cents==6900 +300 gives 7200 cents,
     // which is nicely divisible by 1200 and yields 2^6, which just perfectly matches the
     // 440/2^6 Hz reference value of our lookup table. Magic.
-    icents += 300u;
+    icents += 300;
 
     // don't use stdlib div() here, it turned out have poor performance
     fac = icents / 1200;

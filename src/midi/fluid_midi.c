@@ -21,11 +21,12 @@
 #include "fluid_sys.h"
 #include "fluid_synth.h"
 #include "fluid_settings.h"
+#include <limits.h>
 
 
 static int fluid_midi_event_length(unsigned char event);
 static int fluid_isasciistring(char *s);
-static long fluid_getlength(const unsigned char *s);
+static uint32_t fluid_getlength(const unsigned char *s);
 
 
 /* Read the entire contents of a file into memory, allocating enough memory
@@ -233,6 +234,12 @@ fluid_midi_file_getc(fluid_midi_file *mf)
     }
     else
     {
+        if(mf->tracklen > 0 && mf->trackpos >= mf->tracklen)
+        {
+            mf->eof = TRUE;
+            return -1;
+        }
+
         if(mf->buf_pos >= mf->buf_len)
         {
             mf->eof = TRUE;
@@ -263,8 +270,17 @@ fluid_midi_file_push(fluid_midi_file *mf, int c)
 int
 fluid_midi_file_read(fluid_midi_file *mf, void *buf, int len)
 {
-    int num = len < mf->buf_len - mf->buf_pos
-              ? len : mf->buf_len - mf->buf_pos;
+    int num;
+
+    if(mf->tracklen > 0 &&
+       (mf->trackpos > mf->tracklen || len > mf->tracklen - mf->trackpos))
+    {
+        mf->eof = TRUE;
+        return FLUID_FAILED;
+    }
+
+    num = len < mf->buf_len - mf->buf_pos
+          ? len : mf->buf_len - mf->buf_pos;
 
     if(num != len)
     {
@@ -428,12 +444,11 @@ fluid_isasciistring(char *s)
 /*
  * fluid_getlength
  */
-long
+uint32_t
 fluid_getlength(const unsigned char *s)
 {
-    long i = 0;
-    i = s[3] | (s[2] << 8) | (s[1] << 16) | (s[0] << 24);
-    return i;
+    return (uint32_t)s[3] | ((uint32_t)s[2] << 8) |
+           ((uint32_t)s[1] << 16) | ((uint32_t)s[0] << 24);
 }
 
 /*
@@ -443,13 +458,22 @@ int
 fluid_midi_file_read_tracklen(fluid_midi_file *mf)
 {
     unsigned char length[5];
+    uint32_t tracklen;
 
     if(fluid_midi_file_read(mf, length, 4) != FLUID_OK)
     {
         return FLUID_FAILED;
     }
 
-    mf->tracklen = fluid_getlength(length);
+    tracklen = fluid_getlength(length);
+
+    if(tracklen > (uint32_t)(mf->buf_len - mf->buf_pos))
+    {
+        FLUID_LOG(FLUID_ERR, "MIDI track length exceeds remaining file data");
+        return FLUID_FAILED;
+    }
+
+    mf->tracklen = (int)tracklen;
     mf->trackpos = 0;
     mf->eot = 0;
     return FLUID_OK;
@@ -481,7 +505,11 @@ fluid_midi_file_read_track(fluid_midi_file *mf, fluid_player_t *player, int num)
     fluid_track_t *track;
     unsigned char id[5], length[5];
     int found_track = 0;
-    int skip;
+    uint32_t skip;
+
+    /* The previous track's length no longer applies while reading chunk headers. */
+    mf->tracklen = 0;
+    mf->running_status = 0;
 
     if(fluid_midi_file_read(mf, id, 4) != FLUID_OK)
     {
@@ -556,8 +584,14 @@ fluid_midi_file_read_track(fluid_midi_file *mf, fluid_player_t *player, int num)
 
             skip = fluid_getlength(length);
 
+            if(skip > (uint32_t)(mf->buf_len - mf->buf_pos))
+            {
+                FLUID_LOG(FLUID_ERR, "MIDI chunk length exceeds remaining file data");
+                return FLUID_FAILED;
+            }
+
             /* fseek(mf->fp, skip, SEEK_CUR); */
-            if(fluid_midi_file_skip(mf, skip) != FLUID_OK)
+            if(fluid_midi_file_skip(mf, (int)skip) != FLUID_OK)
             {
                 return FLUID_FAILED;
             }
@@ -626,7 +660,7 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
     unsigned char *metadata = NULL;
     unsigned char *dyn_buf = NULL;
     unsigned char static_buf[256];
-    int nominator, denominator, clocks, notes;
+    int nominator, clocks, notes;
     fluid_midi_event_t *evt;
     int channel = 0;
     int param1 = 0;
@@ -649,6 +683,12 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
     {
         FLUID_LOG(FLUID_ERR, "Unexpected end of file");
         return FLUID_FAILED;
+    }
+
+    /* Meta and SysEx events cancel channel running status in an SMF track. */
+    if(status == MIDI_SYSEX || status == MIDI_EOX || status == MIDI_META_EVENT)
+    {
+        mf->running_status = 0;
     }
 
     /* not a valid status byte: use the running status instead */
@@ -738,6 +778,13 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
         if(fluid_midi_file_read_varlen(mf) != FLUID_OK)
         {
             FLUID_LOG(FLUID_DBG, "Failed to read length of META msg (track=%d)", track->num);
+            return FLUID_FAILED;
+        }
+
+        if((mf->tracklen > 0 && mf->varlen > mf->tracklen - mf->trackpos) ||
+           mf->varlen > mf->buf_len - mf->buf_pos)
+        {
+            FLUID_LOG(FLUID_ERR, "META message length exceeds remaining track data");
             return FLUID_FAILED;
         }
 
@@ -901,6 +948,7 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
             break; /* we don't use smtp */
 
         case MIDI_TIME_SIGNATURE:
+        {
             if(mf->varlen != 4)
             {
                 FLUID_LOG(FLUID_ERR,
@@ -910,15 +958,25 @@ fluid_midi_file_read_event(fluid_midi_file *mf, fluid_track_t *track)
             }
 
             nominator = metadata[0];
-            denominator = pow(2.0, (double) metadata[1]);
             clocks = metadata[2];
             notes = metadata[3];
 
-            FLUID_LOG(FLUID_DBG,
-                      "signature=%d/%d, metronome=%d, 32nd-notes=%d",
-                      nominator, denominator, clocks, notes);
+            if(metadata[1] < sizeof(unsigned int) * CHAR_BIT)
+            {
+                unsigned int denominator = 1u << metadata[1];
+                FLUID_LOG(FLUID_DBG,
+                          "signature=%d/%u, metronome=%d, 32nd-notes=%d",
+                          nominator, denominator, clocks, notes);
+            }
+            else
+            {
+                FLUID_LOG(FLUID_DBG,
+                          "signature=%d/2^%u, metronome=%d, 32nd-notes=%d",
+                          nominator, metadata[1], clocks, notes);
+            }
 
             break;
+        }
 
         case MIDI_KEY_SIGNATURE:
             if(mf->varlen != 2)
@@ -1496,7 +1554,7 @@ fluid_track_set_name(fluid_track_t *track, char *name)
 int
 fluid_track_get_duration(fluid_track_t *track)
 {
-    int time = 0;
+    uint64_t time = 0;
     fluid_midi_event_t *evt = track->first;
 
     while(evt != NULL)
@@ -1505,7 +1563,7 @@ fluid_track_get_duration(fluid_track_t *track)
         evt = evt->next;
     }
 
-    return time;
+    return time > INT_MAX ? INT_MAX : (int)time;
 }
 
 /*
@@ -1563,7 +1621,7 @@ static void
 fluid_track_send_events(fluid_track_t *track,
                         fluid_synth_t *synth,
                         fluid_player_t *player,
-                        unsigned int ticks,
+                        uint64_t ticks,
                         int seek_ticks
                        )
 {
@@ -1894,6 +1952,8 @@ fluid_player_set_playback_callback(fluid_player_t *player,
  * This callback is not set by default, but can optionally
  * be changed to a user-defined function for intercepting all MIDI
  * tick changes and react to them with precision.
+ * Positions beyond the int range are reported as INT_MAX, and the listener
+ * is not called again while that saturated position remains unchanged.
  *
  * @since 2.2.0
  */
@@ -2182,9 +2242,24 @@ fluid_player_callback(void *data, unsigned int msec)
 
         player->cur_msec = msec;
         deltatime = fluid_atomic_float_get(&player->deltatime);
-        player->cur_ticks = (player->start_ticks
-                             + (int)((double)(player->cur_msec - player->start_msec)
-                                     / deltatime + 0.5)); /* 0.5 to average overall error when casting */
+        if(!(deltatime > 0.0f))
+        {
+            FLUID_LOG(FLUID_ERR, "Invalid MIDI player tick duration. Terminating player!");
+            fluid_player_stop(player);
+            fluid_player_seek(player, 0);
+            player->cur_ticks = 0;
+            return 0;
+        }
+
+        {
+            double ticks = player->start_ticks
+                           + (double)(player->cur_msec - player->start_msec) / deltatime + 0.5;
+
+            /* SMF delta times accumulate beyond the public int tick range.
+             * Keep playback advancing; only the public position is saturated. */
+            player->cur_ticks = ticks >= (double)UINT64_MAX ? UINT64_MAX
+                                : (ticks <= 0 ? 0 : (uint64_t)ticks);
+        }
 
         seek_ticks = fluid_atomic_int_get(&player->seek_ticks);
         if(seek_ticks >= 0)
@@ -2270,9 +2345,14 @@ fluid_player_callback(void *data, unsigned int msec)
             loadnextfile = 1;
         }
 
-        if (player->tick_callback != NULL && player->last_callback_ticks != player->cur_ticks) {
-            player->tick_callback(player->tick_userdata, player->cur_ticks);
-            player->last_callback_ticks = player->cur_ticks;
+        if(player->tick_callback != NULL)
+        {
+            int callback_ticks = fluid_player_get_current_tick(player);
+            if(player->last_callback_ticks != callback_ticks)
+            {
+                player->tick_callback(player->tick_userdata, callback_ticks);
+                player->last_callback_ticks = callback_ticks;
+            }
         }
     }
     while(loadnextfile);
@@ -2450,8 +2530,8 @@ static void fluid_player_update_tempo(fluid_player_t *player)
     player->start_ticks = player->cur_ticks;
 
     FLUID_LOG(FLUID_DBG,
-              "tempo=%d, tick time=%f msec, cur time=%d msec, cur tick=%d",
-              tempo, player->deltatime, player->cur_msec, player->cur_ticks);
+              "tempo=%d, tick time=%f msec, cur time=%u msec, cur tick=%.0f",
+              tempo, player->deltatime, player->cur_msec, (double)player->cur_ticks);
 
 }
 
@@ -2600,17 +2680,20 @@ fluid_player_join(fluid_player_t *player)
  * Get the number of tempo ticks passed.
  * @param player MIDI player instance
  * @return The number of tempo ticks passed
+ * @note Positions exceeding the int range are reported as INT_MAX. Playback
+ * continues using the full internal tick position.
  * @since 1.1.7
  */
 int fluid_player_get_current_tick(fluid_player_t *player)
 {
-    return player->cur_ticks;
+    return player->cur_ticks > INT_MAX ? INT_MAX : (int)player->cur_ticks;
 }
 
 /**
  * Looks through all available MIDI tracks and gets the absolute tick of the very last event to play.
  * @param player MIDI player instance
  * @return Total tick count of the sequence
+ * @note Durations exceeding the int range are reported as INT_MAX.
  * @since 1.1.7
  */
 int fluid_player_get_total_ticks(fluid_player_t *player)
@@ -2752,7 +2835,12 @@ fluid_midi_parser_parse(fluid_midi_parser_t *parser, unsigned char c)
     if(c >= 0xF8)
     {
         parser->event.type = c;
-        parser->status = 0; /* clear the status */
+
+        if(c == MIDI_SYSTEM_RESET)
+        {
+            parser->status = 0;
+        }
+
         return &parser->event;
     }
 

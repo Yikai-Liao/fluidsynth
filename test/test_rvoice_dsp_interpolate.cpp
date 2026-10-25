@@ -1328,6 +1328,31 @@ static void test_M_sine_wave_interpolation(void)
 
 /* ========================================================================= */
 
+/* A full render may leave the phase exactly one past the last sample. If
+ * pitch then underflows to a zero step, the finished voice must stay finished. */
+static void test_zero_step_at_sample_end()
+{
+    fluid_rvoice_t rvoice;
+    fluid_sample_t sample;
+    std::array<short, FLUID_BUFSIZE> data{};
+    std::array<fluid_real_t, FLUID_BUFSIZE> buf{};
+
+    setup_rvoice(&rvoice, &sample, data.data(), nullptr,
+                 0.0, 1.0, 0, FLUID_BUFSIZE - 1, 0, 0, 0, FLUID_INTERP_NONE);
+    TEST_ASSERT(fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 0) == FLUID_BUFSIZE);
+    rvoice.dsp.phase_incr = 0.0;
+    TEST_ASSERT(fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 0) == 0);
+
+    /* A zero step at the last valid sample still fills the buffer. */
+    data.back() = 123;
+    fluid_phase_set_int(rvoice.dsp.phase, FLUID_BUFSIZE - 1);
+    TEST_ASSERT(fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 0) == FLUID_BUFSIZE);
+    for(int i = 0; i < FLUID_BUFSIZE; ++i)
+    {
+        test_sample_eq(buf[i], 123, 0, i);
+    }
+}
+
 int main(void)
 {
     printf("FluidSynth DSP Interpolation Unit Tests\n");
@@ -1371,6 +1396,8 @@ int main(void)
 
     test_M_sine_wave_interpolation();
     printf("\n");
+
+    test_zero_step_at_sample_end();
 
     printf("========================================\n");
     printf("All tests PASSED\n");

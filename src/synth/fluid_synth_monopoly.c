@@ -20,6 +20,7 @@
 #include "fluid_synth.h"
 #include "fluid_chan.h"
 #include "fluid_defsfont.h"
+#include <math.h>
 
 
 /******************************************************************************
@@ -654,6 +655,22 @@ int fluid_synth_noteon_monopoly_legato(fluid_synth_t *synth, int chan,
     enum fluid_channel_legato_mode legatomode = channel->legatomode;
     fluid_voice_t *voice;
     int i ;
+    int zone_key = tokey;
+
+    /* Preset zone selection applies channel tuning before comparing ranges. */
+    if(channel->channel_type == CHANNEL_TYPE_MELODIC)
+    {
+        fluid_real_t tuned_key = fluid_channel_get_key_pitch(channel, tokey) / 100.0f + 0.5f;
+        if(!isfinite(tuned_key) || tuned_key <= -1.0f || tuned_key >= 128.0f)
+        {
+            zone_key = 128; /* outside every MIDI key range */
+        }
+        else
+        {
+            zone_key = (int)tuned_key;
+        }
+    }
+
     /* Gets possible 'fromkey portamento' and possible 'fromkey legato' note  */
     fromkey = fluid_synth_get_fromkey_portamento_legato(channel, fromkey);
 
@@ -672,7 +689,7 @@ int fluid_synth_noteon_monopoly_legato(fluid_synth_t *synth, int chan,
 
                 /* Ignores voice when there is no instrument zone (i.e no zone_range). Otherwise
                    checks if tokey is inside the range of the running voice */
-                if(zone_range && fluid_zone_inside_range(zone_range, tokey, vel))
+                if(zone_range && fluid_zone_inside_range(zone_range, zone_key, vel))
                 {
                     switch(legatomode)
                     {

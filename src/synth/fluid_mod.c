@@ -17,6 +17,7 @@
  * <https://www.gnu.org/licenses/>.
  */
 
+#include <limits.h>
 #include "fluid_mod.h"
 #include "fluid_chan.h"
 #include "fluid_voice.h"
@@ -96,7 +97,7 @@ fluid_mod_set_source2(fluid_mod_t *mod, int src, int flags)
 void
 fluid_mod_set_dest(fluid_mod_t *mod, int dest)
 {
-    mod->dest = dest;
+    mod->dest = dest < 0 || dest > UCHAR_MAX ? UCHAR_MAX : dest;
 }
 
 /**

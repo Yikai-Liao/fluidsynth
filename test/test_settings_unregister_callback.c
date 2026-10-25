@@ -53,6 +53,9 @@ int main(void)
     // delete the objects
     delete_fluid_player(player);
     delete_fluid_synth(synth);
+
+    /* A valid portamento mode exercises the synth callback after deletion. */
+    TEST_SUCCESS(fluid_settings_setstr(settings, "synth.portamento-time", "linear"));
     
     // and now, start making changes to those realtime settings
     // Anything below fluidsynth 2.1.5 will crash

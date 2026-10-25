@@ -237,7 +237,7 @@ struct _fluid_midi_event_t
 {
     fluid_midi_event_t *next; /* Link to next event */
     void *paramptr;           /* Pointer parameter (for SYSEX data), size is stored to param1, param2 indicates if pointer should be freed (dynamic if TRUE) */
-    unsigned int dtime;       /* Delay (ticks) between this and previous event. midi tracks. */
+    uint64_t dtime;           /* Delay (ticks), including any skipped SMF meta events. */
     unsigned int param1;      /* First parameter */
     unsigned int param2;      /* Second parameter */
     unsigned char type;       /* MIDI event type */
@@ -255,7 +255,7 @@ struct _fluid_track_t
     fluid_midi_event_t *first;
     fluid_midi_event_t *cur;
     fluid_midi_event_t *last;
-    unsigned int ticks;
+    uint64_t ticks;
 };
 
 typedef struct _fluid_track_t fluid_track_t;
@@ -303,8 +303,8 @@ struct _fluid_player_t
     char use_system_timer;   /* if zero, use sample timers, otherwise use system clock timer */
     char reset_synth_between_songs; /* 1 if system reset should be sent to the synth between songs. */
     fluid_atomic_int_t seek_ticks; /* new position in tempo ticks (midi ticks) for seeking */
-    int start_ticks;          /* the number of tempo ticks passed at the last tempo change */
-    int cur_ticks;            /* the number of tempo ticks passed */
+    uint64_t start_ticks;     /* the number of tempo ticks passed at the last tempo change */
+    uint64_t cur_ticks;       /* the number of tempo ticks passed */
     int last_callback_ticks;  /* the last tick number that was passed to player->tick_callback */
     int begin_msec;           /* the time (msec) of the beginning of the file */
     int start_msec;           /* the start time of the last tempo change */
@@ -363,7 +363,7 @@ typedef struct
     int trackpos;
     int eot;
     int varlen;
-    int dtime;
+    uint64_t dtime;
 } fluid_midi_file;
 
 

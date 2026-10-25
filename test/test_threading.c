@@ -62,6 +62,12 @@ static fluid_thread_return_t increment(void *_data)
     return FLUID_THREAD_RETURN_VALUE;
 }
 
+static fluid_thread_return_t thread_entry(void *data)
+{
+    ++*(int *)data;
+    return FLUID_THREAD_RETURN_VALUE;
+}
+
 void test_atomic_inc(void)
 {
     int i;
@@ -100,8 +106,20 @@ void test_atomic_inc(void)
     delete_fluid_cond_mutex(data.mutex);
 }
 
+void test_thread_priority(void)
+{
+    int called = 0;
+    fluid_thread_t *thread = new_fluid_thread("priority", thread_entry, &called, 1, FALSE);
+
+    TEST_ASSERT(thread != NULL);
+    fluid_thread_join(thread);
+    delete_fluid_thread(thread);
+    TEST_ASSERT(called == 1);
+}
+
 int main(void)
 {
     test_atomic_inc();
+    test_thread_priority();
     return EXIT_SUCCESS;
 }

@@ -25,6 +25,7 @@
 #include "fluid_mdriver.h"
 #include "fluid_settings.h"
 #include "fluid_midi.h"
+#include <math.h>
 
 /* maximum allowed components of a settings variable (separated by '.') */
 #define MAX_SETTINGS_TOKENS 8	/* currently only a max of 3 are used */
@@ -1367,7 +1368,7 @@ fluid_settings_setnum(fluid_settings_t *settings, const char *name, double val)
 
     setting = &node->num;
 
-    if(val < setting->min || val > setting->max)
+    if(!isfinite(val) || val < setting->min || val > setting->max)
     {
         FLUID_LOG(FLUID_ERR, "requested set value for '%s' out of range", name);
         goto error_recovery;

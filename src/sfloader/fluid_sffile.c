@@ -2031,6 +2031,18 @@ int load_igen(SFData *sf, int size)
                     {
                         /* gen valid? */
                         READW(sf, genval.sword);
+
+                        /* These generators are MIDI keys. Invalid fixed keys can
+                         * otherwise index beyond the channel's tuning table. */
+                        if((genid == GEN_KEYNUM || genid == GEN_OVERRIDEROOTKEY) &&
+                                (genval.sword < -1 || genval.sword > 127))
+                        {
+                            FLUID_LOG(FLUID_WARN,
+                                      "Discarding invalid fixed key %d in instrument '%s' zone %d.",
+                                      genval.sword, inst->name, z);
+                            genval.sword = -1;
+                        }
+
                         dup = find_gen_by_id(genid, zone->gen);
 
                         if(dup)

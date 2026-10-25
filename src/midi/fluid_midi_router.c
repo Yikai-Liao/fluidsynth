@@ -60,10 +60,33 @@ struct _fluid_midi_router_rule_t
     int par2_add;
 
     int pending_events;                      /* In case of noteon: How many keys are still down? */
-    char keys_cc[128];                       /* Flags, whether a key is down / controller is set (sustain) */
+    char *keys_cc;                           /* Per-channel flags for active keys and sustain pedals */
     fluid_midi_router_rule_t *next;          /* next entry */
     int waiting;                             /* Set to TRUE when rule has been deactivated but there are still pending_events */
 };
+
+static int fluid_midi_router_rule_init_key_state(fluid_midi_router_t *router,
+        fluid_midi_router_rule_t *rule)
+{
+    size_t state_size;
+
+    if(rule->keys_cc != NULL || router->nr_midi_channels <= 0
+            || router->nr_midi_channels > 256)
+    {
+        return FLUID_FAILED;
+    }
+
+    state_size = (size_t)router->nr_midi_channels * 128;
+    rule->keys_cc = FLUID_MALLOC(state_size);
+
+    if(rule->keys_cc == NULL)
+    {
+        return FLUID_FAILED;
+    }
+
+    FLUID_MEMSET(rule->keys_cc, 0, state_size);
+    return FLUID_OK;
+}
 
 
 /**
@@ -115,6 +138,11 @@ new_fluid_midi_router(fluid_settings_t *settings, handle_midi_event_func_t handl
         {
             goto error_recovery;
         }
+
+        if(fluid_midi_router_rule_init_key_state(router, router->rules[i]) != FLUID_OK)
+        {
+            goto error_recovery;
+        }
     }
 
     return router;
@@ -142,8 +170,14 @@ delete_fluid_midi_router(fluid_midi_router_t *router)
         for(rule = router->rules[i]; rule; rule = next_rule)
         {
             next_rule = rule->next;
-            FLUID_FREE(rule);
+            delete_fluid_midi_router_rule(rule);
         }
+    }
+
+    for(rule = router->free_rules; rule; rule = next_rule)
+    {
+        next_rule = rule->next;
+        delete_fluid_midi_router_rule(rule);
     }
 
     fluid_mutex_destroy(router->rules_mutex);
@@ -179,6 +213,18 @@ fluid_midi_router_set_default_rules(fluid_midi_router_t *router)
         if(!new_rules[i])
         {
             /* Free already allocated rules */
+            for(i2 = 0; i2 < i; i2++)
+            {
+                delete_fluid_midi_router_rule(new_rules[i2]);
+            }
+
+            return FLUID_FAILED;
+        }
+
+        if(fluid_midi_router_rule_init_key_state(router, new_rules[i]) != FLUID_OK)
+        {
+            delete_fluid_midi_router_rule(new_rules[i]);
+
             for(i2 = 0; i2 < i; i2++)
             {
                 delete_fluid_midi_router_rule(new_rules[i2]);
@@ -239,7 +285,7 @@ fluid_midi_router_set_default_rules(fluid_midi_router_t *router)
         for(rule = del_rules[i]; rule; rule = next_rule)
         {
             next_rule = rule->next;
-            FLUID_FREE(rule);
+            delete_fluid_midi_router_rule(rule);
         }
     }
 
@@ -311,7 +357,7 @@ fluid_midi_router_clear_rules(fluid_midi_router_t *router)
         for(rule = del_rules[i]; rule; rule = next_rule)
         {
             next_rule = rule->next;
-            FLUID_FREE(rule);
+            delete_fluid_midi_router_rule(rule);
         }
     }
 
@@ -337,6 +383,11 @@ fluid_midi_router_add_rule(fluid_midi_router_t *router, fluid_midi_router_rule_t
     fluid_return_val_if_fail(rule != NULL, FLUID_FAILED);
     fluid_return_val_if_fail(type >= 0 && type < FLUID_MIDI_ROUTER_RULE_COUNT, FLUID_FAILED);
 
+    if(fluid_midi_router_rule_init_key_state(router, rule) != FLUID_OK)
+    {
+        return FLUID_FAILED;
+    }
+
 
     fluid_mutex_lock(router->rules_mutex);        /* ++ lock */
 
@@ -355,7 +406,7 @@ fluid_midi_router_add_rule(fluid_midi_router_t *router, fluid_midi_router_rule_t
     for(; free_rules; free_rules = next_rule)
     {
         next_rule = free_rules->next;
-        FLUID_FREE(free_rules);
+        delete_fluid_midi_router_rule(free_rules);
     }
 
     return FLUID_OK;
@@ -416,6 +467,7 @@ void
 delete_fluid_midi_router_rule(fluid_midi_router_rule_t *rule)
 {
     fluid_return_if_fail(rule != NULL);
+    FLUID_FREE(rule->keys_cc);
     FLUID_FREE(rule);
 }
 
@@ -794,9 +846,17 @@ fluid_midi_router_handle_midi_event(void *data, fluid_midi_event_t *event)
                                       && par1 == SUSTAIN_SWITCH && par2 >= 64))
         {
             /* Noteon or sustain pedal down event generated */
-            if(rule->keys_cc[par1] == 0)
+            size_t key_state_index = (size_t)chan * 128 + par1;
+
+            /* A waiting rule must only track events it actually forwarded. */
+            if(rule->waiting)
             {
-                rule->keys_cc[par1] = 1;
+                continue;
+            }
+
+            if(rule->keys_cc[key_state_index] == 0)
+            {
+                rule->keys_cc[key_state_index] = 1;
                 rule->pending_events++;
             }
         }
@@ -804,9 +864,11 @@ fluid_midi_router_handle_midi_event(void *data, fluid_midi_event_t *event)
                                             && par1 == SUSTAIN_SWITCH && par2 < 64))
         {
             /* Noteoff or sustain pedal up event generated */
-            if(rule->keys_cc[par1] > 0)
+            size_t key_state_index = (size_t)chan * 128 + par1;
+
+            if(rule->keys_cc[key_state_index] > 0)
             {
-                rule->keys_cc[par1] = 0;
+                rule->keys_cc[key_state_index] = 0;
                 rule->pending_events--;
 
                 /* Rule is waiting for negative event to be destroyed? */

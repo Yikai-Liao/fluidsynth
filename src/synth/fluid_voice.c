@@ -27,6 +27,9 @@
 #include "fluid_sfont.h"
 #include "fluid_rvoice_event.h"
 #include "fluid_defsfont.h"
+#include <limits.h>
+#include <math.h>
+#include <stdint.h>
 
 /* used for filter turn off optimization - if filter cutoff is above the
    specified value and filter q is below the other value, turn filter off */
@@ -35,6 +38,39 @@
 
 /* min vol envelope release (to stop clicks) in SoundFont timecents */
 #define FLUID_MIN_VOLENVRELEASE -7200.0f /* ~16ms */
+
+static int fluid_voice_offset_to_int(fluid_real_t value)
+{
+    if(value >= INT_MAX)
+    {
+        return INT_MAX;
+    }
+
+    if(value <= INT_MIN)
+    {
+        return INT_MIN;
+    }
+
+    if(value != value) /* NaN cannot be converted to an integer. */
+    {
+        return 0;
+    }
+
+    return (int)value;
+}
+
+static int fluid_voice_sample_address(unsigned int base, fluid_real_t fine, fluid_real_t coarse)
+{
+    int64_t index = (int64_t)base + fluid_voice_offset_to_int(fine)
+                    + 32768LL * fluid_voice_offset_to_int(coarse);
+
+    if(index < 0)
+    {
+        return 0;
+    }
+
+    return index > INT_MAX ? INT_MAX : (int)index;
+}
 
 
 static const int32_t INT24_MAX = (1 << (16 + 8 - 1));
@@ -400,6 +436,10 @@ fluid_voice_set_output_rate(fluid_voice_t *voice, fluid_real_t value)
 void
 fluid_voice_gen_set(fluid_voice_t *voice, int i, float val)
 {
+    fluid_return_if_fail(voice != NULL);
+    fluid_return_if_fail(i >= 0 && i < GEN_LAST);
+    fluid_return_if_fail(isfinite(val));
+
     voice->gen[i].val = val;
     voice->gen[i].flags = GEN_SET;
 
@@ -419,7 +459,16 @@ fluid_voice_gen_set(fluid_voice_t *voice, int i, float val)
 void
 fluid_voice_gen_incr(fluid_voice_t *voice, int i, float val)
 {
-    voice->gen[i].val += val;
+    fluid_real_t new_value;
+
+    fluid_return_if_fail(voice != NULL);
+    fluid_return_if_fail(i >= 0 && i < GEN_LAST);
+    fluid_return_if_fail(isfinite(val));
+
+    new_value = voice->gen[i].val + val;
+    fluid_return_if_fail(isfinite(new_value));
+
+    voice->gen[i].val = new_value;
     voice->gen[i].flags = GEN_SET;
 }
 
@@ -433,6 +482,9 @@ fluid_voice_gen_incr(fluid_voice_t *voice, int i, float val)
 float
 fluid_voice_gen_get(fluid_voice_t *voice, int gen)
 {
+    fluid_return_val_if_fail(voice != NULL, 0.0f);
+    fluid_return_val_if_fail(gen >= 0 && gen < GEN_LAST, 0.0f);
+
     return voice->gen[gen].val;
 }
 
@@ -765,7 +817,12 @@ void
 fluid_voice_update_param(fluid_voice_t *voice, int gen)
 {
     unsigned int count, z;
-    fluid_real_t x = fluid_voice_gen_value(voice, gen);
+    fluid_real_t x;
+
+    fluid_return_if_fail(voice != NULL);
+    fluid_return_if_fail(gen >= 0 && gen < GEN_LAST);
+
+    x = fluid_voice_gen_value(voice, gen);
 
     switch(gen)
     {
@@ -834,12 +891,17 @@ fluid_voice_update_param(fluid_voice_t *voice, int gen)
         z = voice->sample != NULL ? voice->sample->samplerate : voice->output_rate;
         if(voice->gen[GEN_OVERRIDEROOTKEY].val > -1)
         {
-            voice->root_key = voice->gen[GEN_OVERRIDEROOTKEY].val * 100.0f;
+            x = voice->gen[GEN_OVERRIDEROOTKEY].val;
         }
         else
         {
-            voice->root_key = voice->sample->origpitch * 100.0f;
+            x = voice->sample->origpitch;
         }
+
+        /* Public voice APIs can bypass SoundFont loader validation. The root
+         * key also indexes the channel's 128-entry tuning table. */
+        fluid_clip(x, 0.0f, 127.0f);
+        voice->root_key = x * 100.0f;
 
         x = (fluid_ct2hz_real(voice->root_key - voice->sample->pitchadj) * ((fluid_real_t) voice->output_rate / z));
 
@@ -1000,7 +1062,8 @@ fluid_voice_update_param(fluid_voice_t *voice, int gen)
             fluid_real_t start_fine = fluid_voice_gen_value(voice, GEN_STARTADDROFS);
             fluid_real_t start_coar = fluid_voice_gen_value(voice, GEN_STARTADDRCOARSEOFS);
 
-            z = voice->sample->start + (int)start_fine + 32768 * (int)start_coar;
+            z = (unsigned int)fluid_voice_sample_address(voice->sample->start,
+                    start_fine, start_coar);
             UPDATE_RVOICE_I1(fluid_rvoice_set_start, z);
         }
 
@@ -1013,7 +1076,8 @@ fluid_voice_update_param(fluid_voice_t *voice, int gen)
             fluid_real_t end_fine = fluid_voice_gen_value(voice, GEN_ENDADDROFS);
             fluid_real_t end_coar = fluid_voice_gen_value(voice, GEN_ENDADDRCOARSEOFS);
 
-            z = voice->sample->end + (int)end_fine + 32768 * (int)end_coar;
+            z = (unsigned int)fluid_voice_sample_address(voice->sample->end,
+                    end_fine, end_coar);
             UPDATE_RVOICE_I1(fluid_rvoice_set_end, z);
         }
 
@@ -1026,7 +1090,8 @@ fluid_voice_update_param(fluid_voice_t *voice, int gen)
             fluid_real_t lstart_fine = fluid_voice_gen_value(voice, GEN_STARTLOOPADDROFS);
             fluid_real_t lstart_coar = fluid_voice_gen_value(voice, GEN_STARTLOOPADDRCOARSEOFS);
 
-            z = voice->sample->loopstart + (int)lstart_fine + 32768 * (int)lstart_coar;
+            z = (unsigned int)fluid_voice_sample_address(voice->sample->loopstart,
+                    lstart_fine, lstart_coar);
             UPDATE_RVOICE_I1(fluid_rvoice_set_loopstart, z);
         }
 
@@ -1039,7 +1104,8 @@ fluid_voice_update_param(fluid_voice_t *voice, int gen)
             fluid_real_t lend_fine = fluid_voice_gen_value(voice, GEN_ENDLOOPADDROFS);
             fluid_real_t lend_coar = fluid_voice_gen_value(voice, GEN_ENDLOOPADDRCOARSEOFS);
 
-            z = voice->sample->loopend + (int)lend_fine + 32768 * (int)lend_coar;
+            z = (unsigned int)fluid_voice_sample_address(voice->sample->loopend,
+                    lend_fine, lend_coar);
             UPDATE_RVOICE_I1(fluid_rvoice_set_loopend, z);
         }
 
@@ -1479,6 +1545,10 @@ fluid_voice_stop(fluid_voice_t *voice)
 void
 fluid_voice_add_mod(fluid_voice_t *voice, fluid_mod_t *mod, int mode)
 {
+    fluid_return_if_fail(voice != NULL);
+    fluid_return_if_fail(mod != NULL);
+    fluid_return_if_fail(mod->dest < GEN_LAST);
+
     /* Ignore the modulator if its sources inputs are invalid */
     if(fluid_mod_check_sources(mod, "api fluid_voice_add_mod mod"))
     {
@@ -1714,7 +1784,7 @@ int fluid_voice_get_actual_key(const fluid_voice_t *voice)
 
     if(x >= 0)
     {
-        return (int)x;
+        return x > 127 ? 127 : (int)x;
     }
     else
     {
@@ -1754,9 +1824,9 @@ int fluid_voice_get_actual_velocity(const fluid_voice_t *voice)
 {
     fluid_real_t x = fluid_voice_gen_value(voice, GEN_VELOCITY);
 
-    if(x > 0)
+    if(x >= 0)
     {
-        return (int)x;
+        return x > 127 ? 127 : (int)x;
     }
     else
     {

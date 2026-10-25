@@ -65,6 +65,66 @@ static void test_sostenuto(fluid_synth_t *synth, int chan)
     TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
 }
 
+static void test_sostenuto_repeated_press_does_not_capture_new_notes(fluid_synth_t *synth, int chan)
+{
+    fluid_voice_t *voices[512];
+    int i;
+    int found_note = 0;
+    int note_was_held = 0;
+
+    TEST_SUCCESS(fluid_synth_noteon(synth, chan, 60, 127));
+    TEST_SUCCESS(fluid_synth_process(synth, 128, 0, NULL, 0, NULL));
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, SOSTENUTO_SWITCH, 127));
+
+    TEST_SUCCESS(fluid_synth_noteon(synth, chan, 61, 127));
+    TEST_SUCCESS(fluid_synth_process(synth, 128, 0, NULL, 0, NULL));
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, SOSTENUTO_SWITCH, 64));
+    TEST_SUCCESS(fluid_synth_noteoff(synth, chan, 61));
+    TEST_SUCCESS(fluid_synth_process(synth, 128, 0, NULL, 0, NULL));
+
+    fluid_synth_get_voicelist(synth, voices, 512, -1);
+    for(i = 0; voices[i] != NULL; i++)
+    {
+        if(fluid_voice_get_key(voices[i]) == 61)
+        {
+            found_note = 1;
+            note_was_held |= fluid_voice_is_sostenuto(voices[i]);
+        }
+    }
+
+    TEST_ASSERT(found_note);
+    TEST_ASSERT(!note_was_held);
+
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, SOSTENUTO_SWITCH, 0));
+    TEST_SUCCESS(fluid_synth_noteoff(synth, chan, 60));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+}
+
+static void test_breath_sync_after_all_ctrl_off(fluid_synth_t *synth, int chan)
+{
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, POLY_OFF, 0));
+    TEST_SUCCESS(fluid_synth_set_breath_mode(synth, chan,
+                 FLUID_CHANNEL_BREATH_MONO | FLUID_CHANNEL_BREATH_SYNC));
+
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, BREATH_MSB, 127));
+    TEST_SUCCESS(fluid_synth_noteon(synth, chan, 60, 100));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) > 0);
+
+    TEST_SUCCESS(fluid_synth_noteoff(synth, chan, 60));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, ALL_CTRL_OFF, 0));
+    TEST_SUCCESS(fluid_synth_noteon(synth, chan, 61, 100));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, BREATH_MSB, 127));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) > 0);
+}
+
 static void test_portamento_fromkey(fluid_synth_t* synth, int chan)
 {
     int ptc;
@@ -120,6 +180,9 @@ int main(void)
     TEST_ASSERT(synth != NULL);
     TEST_SUCCESS(fluid_synth_sfload(synth, TEST_SOUNDFONT, 1));
 
+    test_breath_sync_after_all_ctrl_off(synth, 0);
+    fluid_synth_system_reset(synth);
+
     for (chan = 0; chan < fluid_synth_count_midi_channels(synth); chan++)
     {
         const fluid_channel_t* channel = synth->channel[chan];
@@ -136,6 +199,9 @@ int main(void)
         fluid_synth_system_reset(synth);
         
         test_sostenuto(synth, chan);
+        fluid_synth_system_reset(synth);
+
+        test_sostenuto_repeated_press_does_not_capture_new_notes(synth, chan);
         fluid_synth_system_reset(synth);
     }
     

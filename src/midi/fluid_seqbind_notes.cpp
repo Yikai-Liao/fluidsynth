@@ -106,9 +106,3 @@ void fluid_note_container_remove(void* cont, fluid_note_id_t id)
         // should never happen
     }
 }
-
-// Empties the entire collection, e.g. in case of a AllNotesOff event
-void fluid_note_container_clear(void* cont)
-{
-    static_cast<note_container_t*>(cont)->clear();
-}

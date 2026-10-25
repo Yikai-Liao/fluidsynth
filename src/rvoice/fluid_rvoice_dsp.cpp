@@ -80,6 +80,12 @@ compute_interpolation_steps(fluid_phase_t dsp_phase, fluid_phase_t dsp_phase_inc
     // How many steps until phase_index > limit?
     fluid_phase_t boundary;
     fluid_phase_set_int(boundary, dsp_end_index + 1);
+
+    if(dsp_phase_incr == 0)
+    {
+        return dsp_phase >= boundary ? 0 : (FLUID_BUFSIZE - dsp_i);
+    }
+
     fluid_phase_t steps = dsp_phase > boundary ? 0 : ((boundary - dsp_phase + dsp_phase_incr - 1) / dsp_phase_incr);
     unsigned short iters = static_cast<unsigned short>(std::min<fluid_phase_t>(steps, (FLUID_BUFSIZE - dsp_i)));
     return iters;

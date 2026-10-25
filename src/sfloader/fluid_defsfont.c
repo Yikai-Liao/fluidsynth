@@ -27,6 +27,9 @@
 #include "fluid_samplecache.h"
 #include "fluid_chan.h"
 
+#include <limits.h>
+#include <math.h>
+
 /* EMU8k/10k hardware applies this factor to initial attenuation generator values set at preset and
  * instrument level in a soundfont. We apply this factor when loading the generator values to stay
  * compatible as most existing soundfonts expect exactly this (strange, non-standard) behaviour. */
@@ -890,6 +893,7 @@ fluid_defpreset_noteon(fluid_defpreset_t *defpreset, fluid_synth_t *synth, int c
     fluid_list_t *list;
     fluid_voice_t *voice;
     int tuned_key;
+    fluid_real_t tuned_key_f;
     int i;
 
     /* For detuned channels it might be better to use another key for Soundfont sample selection
@@ -902,7 +906,20 @@ fluid_defpreset_noteon(fluid_defpreset_t *defpreset, fluid_synth_t *synth, int c
 
     if(synth->channel[chan]->channel_type == CHANNEL_TYPE_MELODIC)
     {
-        tuned_key = (int)(fluid_channel_get_key_pitch(synth->channel[chan], key) / 100.0f + 0.5f);
+        tuned_key_f = fluid_channel_get_key_pitch(synth->channel[chan], key) / 100.0f + 0.5f;
+
+        if(!isfinite(tuned_key_f) || tuned_key_f <= INT_MIN)
+        {
+            tuned_key = INT_MIN;
+        }
+        else if(tuned_key_f >= INT_MAX)
+        {
+            tuned_key = INT_MAX;
+        }
+        else
+        {
+            tuned_key = (int)tuned_key_f;
+        }
     }
     else
     {
@@ -1573,20 +1590,29 @@ static int
 fluid_mod_import_sfont(fluid_mod_t **mod, fluid_list_t *sfmod)
 {
     fluid_list_t *r;
-    int count;
+    fluid_mod_t *last_mod = NULL;
 
     /* Import the modulators (only SF2.1 and higher) */
-    for(count = 0, r = sfmod; r != NULL; count++)
+    for(r = sfmod; r != NULL; r = fluid_list_next(r))
     {
 
         SFMod *mod_src = (SFMod*)(r->data);
-        fluid_mod_t *mod_dest = new_fluid_mod();
+        fluid_mod_t *mod_dest;
 
         if (mod_src == NULL)
         {
             // empty list (DMOD case) - nothing to do!
             return FLUID_OK;
         }
+
+        if(mod_src->dest >= GEN_LAST)
+        {
+            FLUID_LOG(FLUID_WARN, "Ignoring SoundFont modulator with invalid generator destination %u",
+                      (unsigned int)mod_src->dest);
+            continue;
+        }
+
+        mod_dest = new_fluid_mod();
 
         if(mod_dest == NULL)
         {
@@ -1636,24 +1662,16 @@ fluid_mod_import_sfont(fluid_mod_t **mod, fluid_list_t *sfmod)
          * will make a difference, at least in an instrument context: The
          * second modulator overwrites the first one, if they only differ
          * in amount. */
-        if(count == 0)
+        if(last_mod == NULL)
         {
             *mod = mod_dest;
         }
         else
         {
-            fluid_mod_t *last_mod = *mod;
-
-            /* Find the end of the list */
-            while(last_mod->next != NULL)
-            {
-                last_mod = last_mod->next;
-            }
-
             last_mod->next = mod_dest;
         }
 
-        r = fluid_list_next(r);
+        last_mod = mod_dest;
     } /* foreach modulator */
     return FLUID_OK;
 }
@@ -2094,10 +2112,12 @@ fluid_sample_import_sfont(fluid_sample_t *sample, SFSample *sfsample, fluid_defs
     sample->loopstart = sample->source_loopstart;
     sample->loopend = sample->source_loopend;
     sample->samplerate = sfsample->samplerate;
-    sample->origpitch = sfsample->origpitch;
+    /* SF2 uses 255 for unpitched samples and requires a fallback root key of
+     * 60. Values 128..254 are invalid and use the same fallback. */
+    sample->origpitch = sfsample->origpitch <= 127 ? sfsample->origpitch : 60;
     sample->pitchadj = sfsample->pitchadj;
     sample->sampletype = sfsample->sampletype;
-    sample->default_modulators = defsfont->sfont->default_mod_list;
+    sample->default_modulators = &defsfont->sfont->default_mod_list;
 
     if(defsfont->dynamic_samples)
     {

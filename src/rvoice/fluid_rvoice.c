@@ -250,6 +250,14 @@ fluid_rvoice_check_sample_sanity(fluid_rvoice_t *voice)
         fluid_phase_set_int(voice->dsp.phase, voice->dsp.start);
     } /* if startup */
 
+    /* A loop may have been disabled because its points are no longer valid.
+       The interpolation code uses has_looped to select a loop-relative guard
+       sample, so it must not outlive the loop itself. */
+    if(voice->dsp.samplemode == FLUID_UNLOOPED)
+    {
+        voice->dsp.has_looped = 0;
+    }
+
     /* Is this voice run in loop mode, or does it run straight to the
        end of the waveform data? */
     if(((voice->dsp.samplemode == FLUID_LOOP_UNTIL_RELEASE) &&

@@ -67,7 +67,11 @@ new_fluid_thread(const char *name, fluid_thread_func_t func, void *data, int pri
     {
         if (prio_level > 0)
         {
-            info = new fluid_thread_info_t;
+            info = FLUID_NEW(fluid_thread_info_t);
+
+            if (info == nullptr)
+                throw std::bad_alloc();
+
             info->func = func;
             info->data = data;
             info->prio_level = prio_level;
@@ -91,7 +95,7 @@ new_fluid_thread(const char *name, fluid_thread_func_t func, void *data, int pri
         FLUID_LOG(FLUID_ERR, "Failed to create thread");
     }
 
-    delete info;
+    FLUID_FREE(info);
     return nullptr;
 }
 
