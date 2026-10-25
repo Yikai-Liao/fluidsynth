@@ -1,8 +1,12 @@
 #include "test.h"
 #include <fluidsynth.h>
+#include "fluid_dls.h"
+#include "fluid_sfont.h"
+#include <cmath>
 
 #include <algorithm>
 #include <cstdint>
+#include "fluid_voice.h"
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -106,7 +110,7 @@ static size_t find_list(const std::vector<uint8_t> &data,
     return data.size();
 }
 
-static void append_first_region_cdl(std::vector<uint8_t> &data,
+static size_t append_first_region_cdl(std::vector<uint8_t> &data,
                                     const std::vector<uint8_t> &expression)
 {
     const size_t riff_end = 8 + read_u32(data, 4);
@@ -123,7 +127,7 @@ static void append_first_region_cdl(std::vector<uint8_t> &data,
     TEST_ASSERT(region < data.size());
 
     const size_t insert_at = region + 8 + read_u32(data, region + 4);
-    std::vector<uint8_t> chunk(8 + expression.size());
+    std::vector<uint8_t> chunk(8 + expression.size() + (expression.size() & 1u), 0);
     std::memcpy(chunk.data(), "cdl ", 4);
     write_u32(chunk, 4, static_cast<uint32_t>(expression.size()));
     std::memcpy(chunk.data() + 8, expression.data(), expression.size());
@@ -134,6 +138,7 @@ static void append_first_region_cdl(std::vector<uint8_t> &data,
     {
         write_u32(data, size_field, read_u32(data, size_field) + growth);
     }
+    return insert_at + 8;
 }
 
 static void append_first_region_articulation_cdl(std::vector<uint8_t> &data,
@@ -255,6 +260,275 @@ static void write_dls_file(const char *path, const std::vector<uint8_t> &data)
     TEST_ASSERT(output.good());
 }
 
+/* Check numeric CDL words against independent DLS 2.2 opcode expectations. */
+static void assert_numeric_cdl(const std::vector<uint8_t> &data, size_t control_voice_count)
+{
+    /* DLS Level 2.2 v1.0 section 2.6, pp. 42-43: binary operators use
+     * top-of-stack X and previous Y; logical TRUE is the all-ones word.
+     * Keep all inputs ordinary: nonzero divisors and no arithmetic overflow. */
+    struct NumericCdlCase
+    {
+        uint16_t opcode;
+        uint32_t y;
+        uint32_t x;
+        uint32_t expected;
+    };
+    const NumericCdlCase numeric_cdl_cases[] = {
+        {0x0001, 12, 10, 8},          // Bitwise AND
+        {0x0002, 12, 10, 14},         // Bitwise OR
+        {0x0003, 12, 10, 6},          // Bitwise XOR
+        {0x0004, 12, 10, 22},         // ADD
+        {0x0005, 3, 17, 14},          // SUBTRACT: X - Y
+        {0x0006, 12, 10, 120},        // MULTIPLY
+        {0x0007, 3, 17, 5},           // DIVIDE: X / Y, integer quotient
+        {0x0007, 17, 3, 0},           // DIVIDE: reversed operands
+        {0x0008, 4, 0, 0},            // Logical AND: X is false
+        {0x0009, 4, 0, UINT32_MAX}     // Logical OR: X is false, Y is true
+    };
+    const char *numeric_cdl_path = "test_dls_numeric_cdl_tmp.dls";
+    for(const auto &numeric_case : numeric_cdl_cases)
+    {
+        for(bool matches : { true, false })
+        {
+            std::vector<uint8_t> expression(22);
+            write_u16(expression, 0, 0x0010); // CONST Y
+            write_u32(expression, 2, numeric_case.y);
+            write_u16(expression, 6, 0x0010); // CONST X
+            write_u32(expression, 8, numeric_case.x);
+            write_u16(expression, 12, numeric_case.opcode);
+            write_u16(expression, 14, 0x0010); // CONST expected result
+            write_u32(expression, 16, matches ? numeric_case.expected
+                                             : numeric_case.expected ^ uint32_t{1});
+            write_u16(expression, 20, 0x000e); // EQ, testing the complete word
+
+            std::vector<uint8_t> numeric_dls(data);
+            append_first_region_cdl(numeric_dls, expression);
+            write_dls_file(numeric_cdl_path, numeric_dls);
+            const size_t voices = playing_voice_attenuations(numeric_cdl_path).size();
+            TEST_ASSERT(std::remove(numeric_cdl_path) == 0);
+            /* Both files are valid. Only the unequal result skips a region. */
+            TEST_ASSERT(voices + (matches ? 0u : 1u) == control_voice_count);
+        }
+    }
+}
+
+/* Render bounded audio, so release assertions observe the DSP lifecycle too. */
+static void render_dls_frames(fluid_synth_t *synth, int frames)
+{
+    float left[512], right[512];
+    while(frames > 0)
+    {
+        const int count = std::min(frames, 512);
+        TEST_SUCCESS(fluid_synth_write_float(synth, count, left, 0, 1, right, 0, 1));
+        frames -= count;
+    }
+}
+
+/* PGAL is a supported legacy extension, not part of the normative DLS format.
+ * Its on-disk compatibility layout comes from the audited pre-refactor loader. */
+static std::vector<uint8_t> make_pgal_alias_bank(const std::vector<uint8_t> &data,
+                                               bool versioned)
+{
+    const size_t table = versioned ? 12 : 8;
+    std::vector<uint8_t> pgal(table + 128 + 4 + 16, 0);
+    std::memcpy(pgal.data(), "pgal", 4);
+    write_u32(pgal, 4, static_cast<uint32_t>(pgal.size() - 8));
+    // The explicit version is zero. The legacy form starts with notes 0,1,2,3.
+    for(size_t note = 0; note < 128; ++note)
+    {
+        pgal[table + note] = static_cast<uint8_t>(note);
+    }
+    write_u32(pgal, table + 128, 2);
+    const uint16_t banks[] = {5, 130};
+    const uint8_t programs[] = {17, 23};
+    for(size_t i = 0; i < 2; ++i)
+    {
+        const size_t record = table + 132 + i * 8;
+        write_u16(pgal, record, banks[i]);
+        pgal[record + 2] = programs[i];
+        // Remaining fields select original bank 0 / program 0, with zero pads.
+    }
+    std::vector<uint8_t> result(data);
+    const size_t riff_end = 8 + read_u32(data, 4);
+    result.insert(result.begin() + riff_end, pgal.begin(), pgal.end());
+    write_u32(result, 4, read_u32(data, 4) + pgal.size());
+    return result;
+}
+
+struct PgalObservation
+{
+    std::vector<const fluid_sample_t *> samples;
+    std::vector<float> pcm;
+};
+
+/* Observe selection and complete audio onset at block-aligned positions. */
+static PgalObservation observe_pgal_preset(fluid_synth_t *synth, int id,
+                                          int bank, int program)
+{
+    TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
+    render_dls_frames(synth, 512);
+    TEST_SUCCESS(fluid_synth_program_select(synth, 0, id, bank, program));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    fluid_voice_t *voices[512] = {};
+    fluid_synth_get_voicelist(synth, voices, 512, -1);
+    PgalObservation result;
+    for(auto *voice : voices)
+    {
+        if(voice != nullptr && fluid_voice_is_on(voice))
+        {
+            TEST_ASSERT(fluid_voice_get_key(voice) == 60);
+            TEST_ASSERT(fluid_voice_get_actual_key(voice) == 60);
+            result.samples.push_back(voice->sample);
+        }
+    }
+    TEST_ASSERT(!result.samples.empty());
+    std::sort(result.samples.begin(), result.samples.end(),
+              [](const fluid_sample_t *a, const fluid_sample_t *b)
+              { return a->start < b->start; });
+    result.pcm.resize(4096);
+    TEST_SUCCESS(fluid_synth_write_float(synth, 2048, result.pcm.data(), 0, 2,
+                                         result.pcm.data(), 1, 2));
+    double energy = 0;
+    for(float value : result.pcm)
+    {
+        TEST_ASSERT(std::isfinite(value));
+        energy += double(value) * value;
+    }
+    TEST_ASSERT(energy > 1e-8);
+    return result;
+}
+
+/* Alias records must publish their own metadata but play the original preset.
+ * Both supported header layouts must preserve exact sample and audio identity. */
+static void assert_pgal_melodic_aliases(const std::vector<uint8_t> &data)
+{
+    const char *path = "test_dls_pgal_melodic_alias_tmp.dls";
+    for(bool versioned : {true, false})
+    {
+        write_dls_file(path, make_pgal_alias_bank(data, versioned));
+        fluid_settings_t *settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        TEST_SUCCESS(fluid_settings_setstr(settings, "synth.midi-bank-select", "mma"));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
+        fluid_synth_t *synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int id = fluid_synth_sfload(synth, path, 1);
+        TEST_ASSERT(id >= 0);
+        fluid_sfont_t *sfont = fluid_synth_get_sfont_by_id(synth, id);
+        TEST_ASSERT(sfont != nullptr);
+        const PgalObservation original = observe_pgal_preset(synth, id, 0, 0);
+        const int banks[] = {5, 130};
+        const int programs[] = {17, 23};
+        for(size_t i = 0; i < 2; ++i)
+        {
+            fluid_preset_t *preset = fluid_sfont_get_preset(sfont, banks[i], programs[i]);
+            TEST_ASSERT(preset != nullptr);
+            TEST_ASSERT(fluid_preset_get_banknum(preset) == banks[i]);
+            TEST_ASSERT(fluid_preset_get_num(preset) == programs[i]);
+            const PgalObservation alias = observe_pgal_preset(synth, id, banks[i], programs[i]);
+            TEST_ASSERT(alias.samples == original.samples);
+            TEST_ASSERT(alias.pcm == original.pcm);
+        }
+        TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
+        render_dls_frames(synth, 512);
+        TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+        TEST_ASSERT(std::remove(path) == 0);
+    }
+}
+
+/* Compare rendered note behavior without reverb/chorus tails across bank loads. */
+static std::vector<float> capture_dls_bank_audio(fluid_synth_t *synth, int sfont)
+{
+    TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
+    render_dls_frames(synth, 512);
+    TEST_SUCCESS(fluid_synth_program_select(synth, 0, sfont, 0, 0));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    std::vector<float> pcm(2048);
+    TEST_SUCCESS(fluid_synth_write_float(synth, 1024, pcm.data(), 0, 2,
+                                         pcm.data(), 1, 2));
+    double energy = 0;
+    for(float sample : pcm)
+    {
+        TEST_ASSERT(std::isfinite(sample));
+        energy += sample * sample;
+    }
+    TEST_ASSERT(energy > 1e-8);
+    TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
+    render_dls_frames(synth, 512);
+    return pcm;
+}
+
+/* DLS 2.2 section 2.6: a false top-level condition excludes the whole bank
+ * with an error result; it is a valid file, not a malformed-input test. */
+static void assert_top_level_cdl(const std::vector<uint8_t> &data)
+{
+    const char *path = "test_dls_top_level_cdl_tmp.dls";
+    write_dls_file(path, data);
+    fluid_settings_t *settings = new_fluid_settings();
+    TEST_ASSERT(settings != nullptr);
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
+    fluid_synth_t *synth = new_fluid_synth(settings);
+    TEST_ASSERT(synth != nullptr);
+    const int original = fluid_synth_sfload(synth, path, 0);
+    TEST_ASSERT(original >= 0);
+    const auto reference = capture_dls_bank_audio(synth, original);
+    for(bool condition_first : { true, false })
+    {
+        for(bool applicable : { true, false })
+        {
+            std::vector<uint8_t> condition(14, 0);
+            std::memcpy(condition.data(), "cdl ", 4);
+            write_u32(condition, 4, 6);
+            write_u16(condition, 8, 0x0010); // CONST
+            write_u32(condition, 10, applicable ? 1 : 0);
+            std::vector<uint8_t> conditional(data);
+            const size_t at = condition_first ? 12 : 8 + read_u32(data, 4);
+            conditional.insert(conditional.begin() + at, condition.begin(), condition.end());
+            write_u32(conditional, 4, read_u32(data, 4) + condition.size());
+            write_dls_file(path, conditional);
+            const int loaded = fluid_synth_sfload(synth, path, 0);
+            if(applicable)
+            {
+                TEST_ASSERT(loaded >= 0);
+                TEST_ASSERT(fluid_synth_sfcount(synth) == 2);
+                TEST_ASSERT(capture_dls_bank_audio(synth, loaded) == reference);
+                TEST_SUCCESS(fluid_synth_sfunload(synth, loaded, 0));
+            }
+            else
+            {
+                TEST_ASSERT(loaded == FLUID_FAILED);
+            }
+            TEST_ASSERT(fluid_synth_sfcount(synth) == 1);
+            TEST_ASSERT(fluid_synth_get_sfont_by_id(synth, original) != nullptr);
+            TEST_ASSERT(capture_dls_bank_audio(synth, original) == reference);
+        }
+    }
+    TEST_SUCCESS(fluid_synth_sfunload(synth, original, 0));
+    delete_fluid_synth(synth);
+    delete_fluid_settings(settings);
+    TEST_ASSERT(std::remove(path) == 0);
+}
+
+/* Observe the actual read callback, not only the eventual load result:
+ * rejecting after reading a sibling or padding is too late. */
+static fluid_sfloader_callback_read_t observed_read;
+static fluid_sfloader_callback_tell_t observed_tell;
+static fluid_long_long_t observed_begin, observed_end;
+
+static int assert_bounded_read(void *buffer, fluid_long_long_t count, void *handle)
+{
+    const fluid_long_long_t position = observed_tell(handle);
+    if(position >= observed_begin && position <= observed_end)
+    {
+        TEST_ASSERT(count <= observed_end - position);
+    }
+    return observed_read(buffer, count, handle);
+}
+
 static size_t make_wave_chunks_8bit(std::vector<uint8_t> &data, size_t start, size_t end)
 {
     size_t formats = 0;
@@ -331,6 +605,9 @@ int main(void)
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
     TEST_ASSERT(std::remove(path.c_str()) == 0);
+
+    assert_top_level_cdl(data);
+    assert_pgal_melodic_aliases(data);
 
     /* A false conditional articulation list is skipped, not a bad SoundFont. */
     std::vector<uint8_t> false_cdl(6);
@@ -501,7 +778,89 @@ int main(void)
         assert_cdl_value(expression, boolean_case.result ? UINT32_MAX : 0);
     }
 
+    assert_numeric_cdl(data, control_voice_count);
+
+    /* CDL reads must stop at the payload boundary, even when padding or a
+     * following region supplies enough physical bytes to finish an operand. */
+    const char *reader_bounds_path = "test_dls_reader_bounds_tmp.dls";
+    auto assert_load_result = [&](const std::vector<uint8_t> &fixture, bool valid,
+                                  size_t begin = 0, size_t end = 0)
+    {
+        write_dls_file(reader_bounds_path, fixture);
+        fluid_settings_t *test_settings = new_fluid_settings();
+        TEST_ASSERT(test_settings != nullptr);
+        fluid_synth_t *test_synth = new_fluid_synth(test_settings);
+        TEST_ASSERT(test_synth != nullptr);
+        if(end != 0)
+        {
+            fluid_sfloader_t *loader = new_fluid_dls_loader(test_synth, test_settings);
+            TEST_ASSERT(loader != nullptr);
+            observed_read = loader->file_callbacks.fread;
+            observed_tell = loader->file_callbacks.ftell;
+            observed_begin = begin;
+            observed_end = end;
+            loader->file_callbacks.fread = assert_bounded_read;
+            fluid_synth_add_sfloader(test_synth, loader);
+        }
+        const int loaded = fluid_synth_sfload(test_synth, reader_bounds_path, 1);
+        delete_fluid_synth(test_synth);
+        delete_fluid_settings(test_settings);
+        TEST_ASSERT(std::remove(reader_bounds_path) == 0);
+        TEST_ASSERT((loaded != FLUID_FAILED) == valid);
+    };
+    const std::vector<std::vector<uint8_t>> short_expressions = {
+        {0x10},                         // Partial CONST opcode, completed by padding
+        {0x10, 0x00},                   // Missing CONST operand
+        {0x10, 0x00, 0x01, 0x00},       // Partial CONST operand
+        {0x11, 0x00},                   // Missing QUERY identifier
+        {0x12, 0x00},                   // Missing QUERY_SUPPORTED identifier
+        {0x10, 0x00, 1, 0, 0, 0, 0x0f} // Partial NOT after a complete CONST
+    };
+    for(const auto &expression : short_expressions)
+    {
+        std::vector<uint8_t> short_cdl(data);
+        const size_t payload = append_first_region_cdl(short_cdl, expression);
+        assert_load_result(short_cdl, false, payload, payload + expression.size());
+    }
+
     const size_t riff_end = 8 + riff_size;
+    const size_t short_ptbl = find_chunk(data, 12, riff_end, "ptbl");
+    TEST_ASSERT(short_ptbl < data.size());
+    const uint32_t ptbl_size = read_u32(data, short_ptbl + 4);
+    TEST_ASSERT(ptbl_size >= 8);
+    for(uint32_t header_size : {0u, 4u})
+    {
+        // Keep the next RIFF sibling adjacent to the truncated header. Neither
+        // cbSize nor cCues may be borrowed from that sibling's bytes.
+        std::vector<uint8_t> short_header(data);
+        short_header.erase(short_header.begin() + short_ptbl + 8 + header_size,
+                           short_header.begin() + short_ptbl + 8 + ptbl_size);
+        write_u32(short_header, short_ptbl + 4, header_size);
+        write_u32(short_header, 4, riff_size - ptbl_size + header_size);
+        assert_load_result(short_header, false, short_ptbl + 8, short_ptbl + 8 + header_size);
+    }
+
+    /* An INFO visitor may return after INAM; the enclosing iterator must still
+     * advance past the whole LIST, including odd-sized unknown children. */
+    static const uint8_t padded_info[] = {
+        'L', 'I', 'S', 'T', 40, 0, 0, 0, 'I', 'N', 'F', 'O',
+        'J', 'U', 'N', 'K', 3, 0, 0, 0, 1, 2, 3, 0,
+        'I', 'N', 'A', 'M', 3, 0, 0, 0, 'o', 'k', 0, 0,
+        'J', 'U', 'N', 'K', 3, 0, 0, 0, 4, 5, 6, 0,
+        'J', 'U', 'N', 'K', 3, 0, 0, 0, 7, 8, 9, 0
+    };
+    std::vector<uint8_t> valid_padding(data.begin(), data.begin() + riff_end);
+    valid_padding.insert(valid_padding.end(), std::begin(padded_info), std::end(padded_info));
+    write_u32(valid_padding, 4, riff_size + sizeof(padded_info));
+    assert_load_result(valid_padding, true);
+    // A child's pad cannot be supplied by the enclosing LIST's own pad.
+    // Put INAM last so the INFO visitor must inspect the truncated child.
+    std::swap_ranges(valid_padding.begin() + riff_end + 24,
+                     valid_padding.begin() + riff_end + 36,
+                     valid_padding.begin() + riff_end + 36);
+    write_u32(valid_padding, riff_end + 4, 39);
+    assert_load_result(valid_padding, false);
+
     std::vector<uint8_t> malformed(data.begin(), data.begin() + riff_end);
     static const uint8_t invalid_info[] = {
         'L', 'I', 'S', 'T', 12, 0, 0, 0, 'I', 'N', 'F', 'O',
