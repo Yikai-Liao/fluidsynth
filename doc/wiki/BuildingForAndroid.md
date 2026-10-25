@@ -28,20 +28,28 @@ https://lists.nongnu.org/mailman/listinfo/fluid-dev
 The Android workflow builds API 24 shared libraries for `armeabi-v7a`,
 `arm64-v8a`, `x86` and `x86_64` with NDK `27.3.13750724`. On an x86_64 Linux
 host, install that NDK through the Android SDK manager, plus CMake, Ninja,
-pkg-config, curl and the tar/xz utilities. From the repository root, use a
+pkg-config, Git, curl, zip/unzip and the tar/xz utilities. From the repository root, use a
 separate checkout for each ABI:
 
 ```sh
 git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
 export ANDROID_API=24 ABI=x86_64
 export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.3.13750724"
+export VCPKG_ROOT="$PWD/build/android/vcpkg"
+git clone --depth=1 --branch 2026.10.16 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
 bash .github/scripts/android-build-and-package.sh build-dependencies
 bash .github/scripts/android-build-and-package.sh build-and-install
 bash .github/scripts/android-build-and-package.sh package
 ```
 
-The first operation downloads checksum-verified dependency releases and installs
-them under `build/android/prefix`. The second builds FluidSynth, its existing
+The first operation bootstraps the selected vcpkg release and installs the
+manifest in `doc/android/vcpkg/vcpkg.json` under `build/android/dependencies`.
+The manifest requests Oboe and libsndfile with its external codecs; vcpkg resolves
+Ogg, Vorbis, FLAC and Opus, verifies source archives and applies its maintained
+build fixes. Its release tag selects the dependency versions. To upgrade the
+catalog, update `VCPKG_VERSION` in the workflow and use the same tag locally.
+The Android triplets retain API 24, shared libraries and 16 KB ELF alignment
+instead of vcpkg's default static libraries and API 28. The second builds FluidSynth, its existing
 unit test executables and the Android asset loader, then installs FluidSynth.
 The `check` build target stages test data but does not execute tests when cross
 compiling. The final operation checks required features and library presence,
@@ -57,20 +65,23 @@ For `x86` or `x86_64`, install the SDK emulator, platform-tools and matching
 bash .github/scripts/android-run-emulator.sh build/android "$ABI"
 ```
 
-CI builds each ABI once. Two ARM jobs download the ARM test bundles and execute
-those Android/Bionic binaries on an ARM Linux host, without rebuilding them.
+CI builds each ABI once. For the ARM builds, the SDK Manager downloads and verifies the matching
+system images, and CI bundles their extracted userspace with the tests. Two ARM
+jobs download those bundles and execute the Android/Bionic binaries on an ARM Linux host, without rebuilding them.
 These jobs test the Android userspace libraries on the host kernel; they do not
 test Android framework services, audio devices or an Android guest kernel.
 
-CI caches installed dependencies before FluidSynth is installed, the emulator with its x86 SDK
-system images, and the extracted ARM runtime. It does not cache project builds or
-compiler output. Dependency cache keys include the host OS/architecture, target
-ABI, API and NDK; bump their `v1` revision when dependency versions, flags or
-installation policy change. Emulator or runtime image changes require the corresponding
-cache revision bump. Emulator cache keys include the host OS/architecture, API,
-image variant and ABI. Weekly scheduled builds bypass all three caches. The workflow uploads one library/header artifact per ABI;
-ARM test bundles transfer executables between jobs, and log artifacts retain
-build and test diagnostics.
+CI caches installed dependencies before FluidSynth is installed, the emulator
+with its x86 SDK system images, and the extracted ARM runtime. It does not cache
+project builds or compiler output. Dependency cache keys include the host
+OS/architecture, target ABI, API, NDK and vcpkg release; bump their `v2` revision
+when changing manifest features, triplets or installation policy. Emulator or
+runtime image changes require the corresponding cache revision bump. Emulator
+cache keys include the host OS/architecture, API, image variant and ABI. The ARM
+runtime contains Android target files, so its key only needs the API and ABI.
+Weekly scheduled builds bypass all three caches. The workflow uploads one
+library/header artifact per ABI; ARM bundles transfer the tests and userspace
+between jobs, and log artifacts retain build and test diagnostics.
 
 ## Prerequisites for the standalone toolchain guide
 

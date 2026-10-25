@@ -13,6 +13,7 @@ on:
       - '!.github/**'
       - '.github/workflows/android.yml'
       - '.github/scripts/android-*.sh'
+      - 'doc/android/vcpkg/**'
       - '!README.md'
   schedule:
     # Retain Azure's weekly build without dependency caches.
@@ -30,8 +31,9 @@ defaults:
     shell: bash
 
 env:
+  VCPKG_VERSION: '2026.10.16'
   NDK_VERSION: '27.3.13750724'
-  # The pinned ARM runtime images only support API 24.
+  # Run compatibility tests at the minimum supported API level.
   ANDROID_API: '24'
 
 jobs:
@@ -62,17 +64,26 @@ jobs:
         id: dependencies
         if: ${{ github.event_name != 'schedule' }}
         with:
-          path: build/android/prefix
-          # Bump v1 when changing dependency versions, build flags or installation policy.
-          key: android-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}
+          path: build/android/dependencies
+          # Bump v2 when changing dependency features, triplets or installation policy.
+          key: android-deps-v2-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}-vcpkg${{ env.VCPKG_VERSION }}
+      - name: Checkout vcpkg release
+        if: steps.dependencies.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: microsoft/vcpkg
+          ref: ${{ env.VCPKG_VERSION }}
+          path: build/android/vcpkg
       - name: Build dependencies
+        env:
+          VCPKG_ROOT: ${{ github.workspace }}/build/android/vcpkg
         if: steps.dependencies.outputs.cache-hit != 'true'
         run: bash .github/scripts/android-build-and-package.sh build-dependencies
       # Save before FluidSynth installs into the same prefix.
       - uses: actions/cache/save@v5
         if: ${{ github.event_name != 'schedule' && steps.dependencies.outputs.cache-hit != 'true' }}
         with:
-          path: build/android/prefix
+          path: build/android/dependencies
           key: ${{ steps.dependencies.outputs.cache-primary-key }}
       - name: Build and install FluidSynth, test executables and asset loader
         run: bash .github/scripts/android-build-and-package.sh build-and-install
@@ -106,18 +117,30 @@ jobs:
       - name: Run native tests in the emulator
         if: matrix.abi == 'x86' || matrix.abi == 'x86_64'
         run: bash .github/scripts/android-run-emulator.sh build/android "$ABI"
-      - name: Bundle ARM test executables, data and libraries
+      - name: Cache the ARM Android userspace
+        if: ${{ (matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a') && github.event_name != 'schedule' }}
+        id: runtime
+        uses: actions/cache@v5
+        with:
+          path: build/android/runtime
+          # Bump v2 when updating SDK system image revisions or extracted contents.
+          key: android-native-runtime-v2-api${{ env.ANDROID_API }}-${{ matrix.abi }}
+      - name: Install and extract the ARM Android userspace
+        if: ${{ (matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a') && steps.runtime.outputs.cache-hit != 'true' }}
+        run: bash .github/scripts/android-prepare-runtime.sh "$ABI" build/android/runtime
+      - name: Bundle ARM tests and Android userspace
         if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
         run: |
           bundle="$RUNNER_TEMP/android-tests"
           test_dir=build/android/build/fluidsynth/test
-          mkdir -p "$bundle/lib"
+          mkdir -p "$bundle/tests/lib"
           for executable in "$test_dir"/test_*; do
             [[ -f "$executable" && -x "$executable" ]] || continue
-            cp -a "$executable" "$bundle/"
+            cp -a "$executable" "$bundle/tests/"
           done
-          cp -a "$test_dir/sf2" "$test_dir/test" "$bundle/"
-          cp -a "build/android/package/lib/$ABI/." "$bundle/lib/"
+          cp -a "$test_dir/sf2" "$test_dir/test" "$bundle/tests/"
+          cp -a "build/android/package/lib/$ABI/." "$bundle/tests/lib/"
+          cp -a build/android/runtime "$bundle/"
           tar -C "$bundle" -czf "$RUNNER_TEMP/android-tests.tar.gz" .
       - uses: actions/upload-artifact@v7
         if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
@@ -161,20 +184,9 @@ jobs:
         with:
           name: android-tests-${{ matrix.abi }}
           path: ${{ runner.temp }}/android-tests
-      - name: Cache the pinned API 24 ARM userspace
-        id: runtime
-        uses: actions/cache@v5
-        if: ${{ github.event_name != 'schedule' }}
-        with:
-          path: ${{ runner.temp }}/android-runtime
-          # Bump v1 when changing pinned images or the extracted runtime contents.
-          key: android-native-runtime-v1-${{ runner.os }}-${{ runner.arch }}-api${{ env.ANDROID_API }}-${{ matrix.abi }}
-      - name: Extract the Android userspace
-        if: steps.runtime.outputs.cache-hit != 'true'
-        run: bash .github/scripts/android-prepare-runtime.sh "$ABI" "$RUNNER_TEMP/android-runtime"
       - name: Run native ARM Android binaries
         run: |
-          bash .github/scripts/android-run-native-tests.sh "$ABI" "$RUNNER_TEMP/android-runtime" \
+          bash .github/scripts/android-run-native-tests.sh "$ABI" \
             "$RUNNER_TEMP/android-tests/android-tests.tar.gz" "$RUNNER_TEMP/native-tests"
       - uses: actions/upload-artifact@v7
         if: always()
@@ -183,5 +195,5 @@ jobs:
           path: |
             ${{ runner.temp }}/native-tests/logs
             ${{ runner.temp }}/native-tests/results.txt
-            ${{ runner.temp }}/android-runtime/provenance.txt
+            ${{ runner.temp }}/native-tests/runtime/provenance.txt
           retention-days: 14

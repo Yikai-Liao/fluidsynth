@@ -4,10 +4,9 @@
 # guest. Reuse their kernel to test both ARM ABIs without CPU emulation; this path
 # does not exercise Android framework services or Android device drivers.
 set -euo pipefail
-abi=${1:?Usage: run-native-tests.sh <ABI> <runtime-directory> <test-bundle> <work-directory>}
-runtime=$(realpath "${2:?Specify a runtime directory}")
-bundle=$(realpath "${3:?Specify a test bundle}")
-work=${4:?Specify a work directory}
+abi=${1:?Usage: android-run-native-tests.sh <ABI> <test-bundle> <work-directory>}
+bundle=$(realpath "${2:?Specify a test bundle}")
+work=${3:?Specify a work directory}
 test "$(uname -m)" = aarch64
 case "$abi" in
     armeabi-v7a|arm64-v8a) ;;
@@ -19,6 +18,8 @@ if grep -l 'qemu-\(arm\|aarch64\)' /proc/sys/fs/binfmt_misc/* 2>/dev/null; then
 fi
 mkdir -p "$work"
 work=$(realpath "$work")
+tar -xzf "$bundle" -C "$work"
+runtime="$work/runtime"
 root="$work/root"
 # Android reserves UID/GID 2000 for shell. Mount and ownership setup use sudo;
 # execute tests as this unprivileged Android identity.
@@ -37,7 +38,7 @@ sudo mount --bind "$runtime/system" "$root/system"
 sudo mount -o remount,bind,ro "$root/system"
 sudo mount -t proc proc "$root/proc"
 sudo mount --bind /dev "$root/dev"
-tar -xzf "$bundle" -C "$root/data/local/tmp/fluidsynth-tests"
+cp -a "$work/tests/." "$root/data/local/tmp/fluidsynth-tests/"
 target="$root/data/local/tmp/fluidsynth-tests"
 sudo chown -R "$android_shell" "$root/data"
 uname -a

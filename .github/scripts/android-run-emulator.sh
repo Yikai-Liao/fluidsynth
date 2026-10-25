@@ -54,7 +54,7 @@ done
 # only its historical dependency list and does not include Opus or Vorbisfile.
 adb shell mkdir -p /data/local/tmp/fluidsynth_tests/lib
 adb push "$build_dir/package/lib/$abi/." /data/local/tmp/fluidsynth_tests/lib/
-export ANDROID_ABI_CMAKE="$abi" BUILD_DIR="$build_dir/build/fluidsynth" PREFIX="$build_dir/prefix"
+export ANDROID_ABI_CMAKE="$abi" BUILD_DIR="$build_dir/build/fluidsynth" PREFIX=$(sed -n 's/^CMAKE_INSTALL_PREFIX:PATH=//p' "$build_dir/build/fluidsynth/CMakeCache.txt")
 export NDK="$ANDROID_NDK_HOME" NDK_TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
 export ARCH=$([[ "$abi" == x86 ]] && echo i686 || echo x86_64) ANDROID_TARGET_ABI=
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
