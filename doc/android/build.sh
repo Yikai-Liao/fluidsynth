@@ -28,6 +28,8 @@ case "$abi" in
 esac
 build_type=${BUILD_TYPE:-RelWithDebInfo}
 work=${ANDROID_BUILD_DIR:-"$root/build/android/$abi-api$api-$build_type"}
+mkdir -p "$work"
+work=$(cd -- "$work" && pwd)
 prefix="$work/dependencies/$triplet"
 jobs=${CMAKE_BUILD_PARALLEL_LEVEL:-$(getconf _NPROCESSORS_ONLN)}
 export PKG_CONFIG_PATH= PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig"
