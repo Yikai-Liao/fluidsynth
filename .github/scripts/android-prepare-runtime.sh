@@ -13,24 +13,14 @@ image="$sdk/system-images/android-$api/default/$abi"
 "$sdk/cmdline-tools/latest/bin/sdkmanager" "system-images;android-$api;default;$abi"
 mkdir -p "$runtime"
 runtime=$(realpath "$runtime")
-work=$(mktemp -d "${RUNNER_TEMP:-/tmp}/android-runtime.XXXXXX")
-cleanup() {
-    local status=$?
-    if mountpoint -q "$work/image"; then sudo umount "$work/image"; fi
-    rm -rf "$work"
-    exit "$status"
-}
-trap cleanup EXIT
-mkdir "$work/image"
-sudo mount -o loop,ro "$image/system.img" "$work/image"
+# debugfs reads the ext4 image directly, without root mounts or cleanup traps.
 mkdir -p "$runtime/system"
-for directory in bin lib lib64 etc usr; do
-    if [[ -d "$work/image/$directory" ]]; then
-        sudo cp -a "$work/image/$directory" "$runtime/system/"
-    fi
+directories=(bin lib etc usr)
+if [[ "$abi" == arm64-v8a ]]; then directories+=(lib64); fi
+for directory in "${directories[@]}"; do
+    debugfs -R "rdump /$directory $runtime/system" "$image/system.img"
 done
-sudo cp "$work/image/build.prop" "$runtime/system/"
-sudo chown -R "$(id -u):$(id -g)" "$runtime"
+debugfs -R "dump /build.prop $runtime/system/build.prop" "$image/system.img"
 grep -E '^ro\.(build.version.sdk|product.cpu.abi)=' "$runtime/system/build.prop"
 grep -qx "ro.build.version.sdk=$api" "$runtime/system/build.prop"
 grep -qx "ro.product.cpu.abi=$abi" "$runtime/system/build.prop"
