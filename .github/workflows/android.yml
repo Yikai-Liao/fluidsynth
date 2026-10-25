@@ -123,8 +123,8 @@ jobs:
         uses: actions/cache@v5
         with:
           path: build/android/runtime
-          # Bump v2 when updating SDK system image revisions or extracted contents.
-          key: android-native-runtime-v2-api${{ env.ANDROID_API }}-${{ matrix.abi }}
+          # Bump v3 when updating SDK system image revisions or extracted contents.
+          key: android-native-runtime-v3-api${{ env.ANDROID_API }}-${{ matrix.abi }}
       - name: Install and extract the ARM Android userspace
         if: ${{ (matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a') && steps.runtime.outputs.cache-hit != 'true' }}
         run: bash .github/scripts/android-prepare-runtime.sh "$ABI" build/android/runtime
