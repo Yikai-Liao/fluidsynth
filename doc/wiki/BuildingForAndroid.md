@@ -27,9 +27,9 @@ https://lists.nongnu.org/mailman/listinfo/fluid-dev
 
 The Android workflow builds API 24 shared libraries for `armeabi-v7a`,
 `arm64-v8a`, `x86` and `x86_64` with NDK `27.3.13750724`. On an x86_64 Linux
-host, install that NDK through the Android SDK manager, plus CMake, Ninja, pkg-
-config, Git, curl, zip/unzip and the tar/xz utilities. From the repository root,
-use a separate checkout for each ABI:
+host, install that NDK through the Android SDK manager, plus CMake, Ninja,
+pkg-config, Git, curl, zip/unzip and the tar/xz utilities. From the repository
+root, use a separate checkout for each ABI:
 
 ```sh
 git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
@@ -66,12 +66,13 @@ For `x86` or `x86_64`, install the SDK emulator, platform-tools and matching
 bash .github/scripts/android-run-emulator.sh build/android "$ABI"
 ```
 
-CI builds each ABI once. For the ARM builds, the SDK Manager downloads and
-verifies the matching system images, and CI bundles their extracted userspace
-with the tests. Two ARM jobs download those bundles and execute the
-Android/Bionic binaries on an ARM Linux host, without rebuilding them. These
-jobs test the Android userspace libraries on the host kernel; they do not test
-Android framework services, audio devices or an Android guest kernel.
+CI builds each ABI once. The ARM runtime helper also requires `debugfs` from
+e2fsprogs. For the ARM builds, the SDK Manager downloads and verifies the
+matching system images, and CI bundles their extracted userspace with the tests.
+Two ARM jobs download those bundles and execute the Android/Bionic binaries on
+an ARM Linux host, without rebuilding them. These jobs test the Android
+userspace libraries on the host kernel; they do not test Android framework
+services, audio devices or an Android guest kernel.
 
 CI caches installed dependencies before FluidSynth is installed, the emulator
 with its x86 SDK system images, and the extracted ARM runtime. It does not cache

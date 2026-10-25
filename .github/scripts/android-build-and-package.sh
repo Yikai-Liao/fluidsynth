@@ -16,6 +16,7 @@ fi
 root=$(git rev-parse --show-toplevel)
 work="$root/build/android"
 ndk=${ANDROID_NDK_HOME:?Set ANDROID_NDK_HOME}
+toolchain="$ndk/toolchains/llvm/prebuilt/linux-x86_64"
 abi=${ABI:?Set ABI}
 case "$abi" in
     armeabi-v7a) triple=arm-linux-androideabi; triplet=arm-android-shared ;;
@@ -96,7 +97,6 @@ package_libraries() {
     for feature in OBOE_SUPPORT OPENSLES_SUPPORT LIBSNDFILE_SUPPORT LIBSNDFILE_HASVORBIS; do
         grep -qx "#define $feature 1" "$work/build/fluidsynth/config.h"
     done
-    local toolchain="$ndk/toolchains/llvm/prebuilt/linux-x86_64"
     cp "$toolchain/sysroot/usr/lib/$triple/libc++_shared.so" "$prefix/lib/"
     local package="$work/package" library target
     mkdir -p "$package/lib/$abi" "$package/include"

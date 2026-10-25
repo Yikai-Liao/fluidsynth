@@ -13,7 +13,7 @@ image="$sdk/system-images/android-$api/default/$abi"
 "$sdk/cmdline-tools/latest/bin/sdkmanager" "system-images;android-$api;default;$abi"
 mkdir -p "$runtime"
 runtime=$(realpath "$runtime")
-# debugfs reads the ext4 image directly, without root mounts or cleanup traps.
+# Copy the Bionic userspace directly from the SDK's ext4 image.
 mkdir -p "$runtime/system"
 directories=(bin lib etc usr)
 if [[ "$abi" == arm64-v8a ]]; then directories+=(lib64); fi
