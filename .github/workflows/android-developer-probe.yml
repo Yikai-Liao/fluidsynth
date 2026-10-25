@@ -1,5 +1,7 @@
 name: Android developer build probe
 on:
+  push:
+    branches: [ci/android-developer-probe-20261026]
   workflow_dispatch:
 permissions:
   contents: read
