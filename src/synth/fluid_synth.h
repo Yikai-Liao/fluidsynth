@@ -324,6 +324,12 @@ int fluid_synth_noteoff_monopoly(fluid_synth_t *synth, int chan, int key, char M
 fluid_voice_t *
 fluid_synth_alloc_voice_LOCAL(fluid_synth_t *synth, fluid_sample_t *sample, int chan, int key, int vel, fluid_zone_range_t *zone_range);
 
+/* Original key identity and optional preset mapping are installed atomically. */
+fluid_voice_t *fluid_synth_alloc_voice_mapped(fluid_synth_t *synth,
+        fluid_sample_t *sample, int chan, int key, int vel,
+        fluid_zone_range_t *zone_range, fluid_voice_note_resolver_t resolver,
+        const void *context);
+
 void fluid_synth_release_voice_on_same_note_LOCAL(fluid_synth_t *synth, int chan, int key);
 
 #ifdef __cplusplus

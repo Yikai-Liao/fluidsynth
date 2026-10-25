@@ -276,6 +276,9 @@ new_fluid_voice(fluid_rvoice_eventhandler_t *handler, fluid_real_t output_rate, 
     voice->status = FLUID_VOICE_CLEAN;
     voice->chan = NO_CHANNEL;
     voice->key = 0;
+    voice->default_actual_key = 0;
+    voice->note_resolver = NULL;
+    voice->note_context = NULL;
     voice->vel = 0;
     voice->eventhandler = handler;
     voice->channel = NULL;
@@ -321,7 +324,8 @@ int
 fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
                  fluid_zone_range_t *inst_zone_range,
                  fluid_channel_t *channel, int key, int vel, unsigned int id,
-                 unsigned int start_time, fluid_real_t gain)
+                 unsigned int start_time, fluid_real_t gain,
+                 fluid_voice_note_resolver_t resolver, const void *context)
 {
     /* Note: The voice parameters will be initialized later, when the
      * generators have been retrieved from the sound font. Here, only
@@ -355,6 +359,9 @@ fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
     voice->key = (unsigned char) key;
     voice->vel = (unsigned char) vel;
     voice->channel = channel;
+    voice->note_resolver = resolver;
+    voice->note_context = context;
+    voice->default_actual_key = fluid_voice_resolve_note(voice, key).default_actual_key;
     voice->mod_count = 0;
     voice->start_time = start_time;
     voice->has_noteoff = 0;
@@ -565,6 +572,19 @@ fluid_real_t fluid_voice_calculate_pitch(fluid_voice_t *voice, int key)
     }
 
     return pitch;
+}
+
+fluid_voice_note_t
+fluid_voice_resolve_note(const fluid_voice_t *voice, int key)
+{
+    fluid_voice_note_t note = { key, key };
+    if(voice->note_resolver != NULL)
+    {
+        note = voice->note_resolver(voice->note_context, voice->channel, key);
+        /* Selection may be outside MIDI range; playback indexes MIDI tables. */
+        fluid_clip(note.default_actual_key, 0, 127);
+    }
+    return note;
 }
 
 void
@@ -1328,8 +1348,12 @@ void fluid_voice_update_portamento(fluid_voice_t *voice, int fromkey, int tokey)
 {
     fluid_channel_t *channel = voice->channel;
 
+    /* The detector stores MIDI identity; resolve the glide origin through the
+     * same voice-owned preset mapping used for the target's playback key. */
+    int playback_fromkey = fluid_voice_resolve_note(voice, fromkey).default_actual_key;
+
     /* calculates pitch offset */
-    fluid_real_t PitchBeg = fluid_voice_calculate_pitch(voice, fromkey);
+    fluid_real_t PitchBeg = fluid_voice_calculate_pitch(voice, playback_fromkey);
     fluid_real_t PitchEnd = fluid_voice_calculate_pitch(voice, tokey);
     fluid_real_t pitchoffset = PitchBeg - PitchEnd;
     unsigned int countinc;
@@ -1337,7 +1361,7 @@ void fluid_voice_update_portamento(fluid_voice_t *voice, int fromkey, int tokey)
 
     /* Calculates increment countinc */
     /* Increment is function of PortamentoTime (ms)*/
-    fluid_real_t ms = fluid_channel_portamentotime_with_mode(channel, tm, channel->synth->portamento_time_has_seen_lsb, fromkey, tokey);
+    fluid_real_t ms = fluid_channel_portamentotime_with_mode(channel, tm, channel->synth->portamento_time_has_seen_lsb, playback_fromkey, tokey);
 
     countinc = (unsigned int)(((fluid_real_t)voice->output_rate * 0.001f * ms) /
                                             (fluid_real_t)FLUID_BUFSIZE + 0.5f);
@@ -1359,12 +1383,18 @@ void fluid_voice_update_portamento(fluid_voice_t *voice, int fromkey, int tokey)
 void fluid_voice_update_multi_retrigger_attack(fluid_voice_t *voice,
         int tokey, int vel)
 {
-    voice->key = tokey;  /* new note */
+    voice->key = tokey;  /* new MIDI note identity */
+    voice->default_actual_key = fluid_voice_resolve_note(voice, tokey).default_actual_key;
     voice->vel = vel; /* new velocity */
     /* Updates generators dependent of velocity */
     /* Modulates GEN_ATTENUATION (and others ) before calling
        fluid_rvoice_multi_retrigger_attack().*/
     fluid_voice_modulate(voice, FALSE, FLUID_MOD_VELOCITY);
+    if(voice->note_resolver != NULL)
+    {
+        fluid_voice_modulate(voice, FALSE, FLUID_MOD_KEY);
+        fluid_voice_modulate(voice, FALSE, FLUID_MOD_KEYPRESSURE);
+    }
 
     /* Updates generator dependent of voice->key */
     fluid_voice_update_param(voice, GEN_KEYTOMODENVHOLD);
@@ -1518,6 +1548,8 @@ fluid_voice_stop(fluid_voice_t *voice)
     fluid_profile(FLUID_PROF_VOICE_RELEASE, voice->ref, 0, 0);
 
     voice->chan = NO_CHANNEL;
+    voice->note_resolver = NULL;
+    voice->note_context = NULL;
 
     /* Decrement the reference count of the sample, to indicate
        that this sample isn't owned by the rvoice anymore.
@@ -1772,7 +1804,8 @@ int fluid_voice_get_channel(const fluid_voice_t *voice)
  * @return The MIDI key this voice is playing at
  *
  * If the voice was started from an instrument which uses a fixed key generator, it returns that.
- * Otherwise returns the same value as \c fluid_voice_get_key.
+ * Otherwise returns the preset's default playback key, normally the original
+ * note-on key returned by \c fluid_voice_get_key.
  *
  * @note The result of this function is only valid if the voice is playing.
  *
@@ -1788,7 +1821,7 @@ int fluid_voice_get_actual_key(const fluid_voice_t *voice)
     }
     else
     {
-        return fluid_voice_get_key(voice);
+        return voice->default_actual_key;
     }
 }
 

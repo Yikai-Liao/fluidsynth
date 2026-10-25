@@ -3340,15 +3340,8 @@ static int fluid_dls_preset_get_num(fluid_preset_t *preset) noexcept
     return static_cast<const fluid_dls_instrument_fluid_data *>(fluid_preset_get_data(preset))->pcnum;
 }
 
-// Selection is allowed outside MIDI range (and may select no region), whereas
-// the actual voice key always indexes 128-note runtime tables.
-struct fluid_dls_note_keys
-{
-    int selection_key;
-    int voice_key;
-};
-
-static fluid_dls_note_keys fluid_dls_resolve_note_keys(const fluid_dls_instrument &instrument,
+// Selection may miss every region; playback remains bounded to MIDI tables.
+static fluid_voice_note_t fluid_dls_resolve_note_keys(const fluid_dls_instrument &instrument,
                                          fluid_channel_t *channel, int key)
 {
     // Things affect region selection process:
@@ -3398,11 +3391,22 @@ static fluid_dls_note_keys fluid_dls_resolve_note_keys(const fluid_dls_instrumen
     return { selection_key, voice_key };
 }
 
+static fluid_voice_note_t fluid_dls_resolve_voice_note(const void *context,
+        fluid_channel_t *channel, int key)
+{
+    return fluid_dls_resolve_note_keys(
+               *static_cast<const fluid_dls_instrument *>(context), channel, key);
+}
+
 static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth, int chan, int key, int vel) noexcept
 {
     auto *dlspreset = static_cast<fluid_dls_instrument_fluid_data *>(fluid_preset_get_data(preset))->instrument;
 
     const auto keys = fluid_dls_resolve_note_keys(*dlspreset, synth->channel[chan], key);
+    const bool mapped = dlspreset->keynum_scale != 1.0
+                        || (synth->channel[chan]->channel_type == CHANNEL_TYPE_DRUM
+                            && dlspreset->drum_note_aliasing != nullptr);
+    const auto resolver = mapped ? fluid_dls_resolve_voice_note : nullptr;
 
     for(auto &region : dlspreset->regions)
     {
@@ -3413,8 +3417,11 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
             continue;
         }
 
-        auto *voice = fluid_synth_alloc_voice_LOCAL(
-                          synth, sample, chan, keys.voice_key, vel, &region.range);
+        // The instrument remains alive while the voice holds its sample:
+        // fluid_dls_sfont_delete refuses unloading samples with live references.
+        auto *voice = fluid_synth_alloc_voice_mapped(
+                          synth, sample, chan, key, vel, &region.range,
+                          resolver, mapped ? dlspreset : nullptr);
 
         if(voice == nullptr)
         {

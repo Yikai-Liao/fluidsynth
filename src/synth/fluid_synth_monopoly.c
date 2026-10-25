@@ -686,10 +686,13 @@ int fluid_synth_noteon_monopoly_legato(fluid_synth_t *synth, int chan,
                     fluid_voice_get_key(voice) == fromkey)
             {
                 fluid_zone_range_t *zone_range = voice->zone_range;
+                int voice_zone_key = voice->note_resolver != NULL
+                                     ? fluid_voice_resolve_note(voice, tokey).selection_key
+                                     : zone_key;
 
                 /* Ignores voice when there is no instrument zone (i.e no zone_range). Otherwise
                    checks if tokey is inside the range of the running voice */
-                if(zone_range && fluid_zone_inside_range(zone_range, zone_key, vel))
+                if(zone_range && fluid_zone_inside_range(zone_range, voice_zone_key, vel))
                 {
                     switch(legatomode)
                     {
@@ -707,7 +710,9 @@ int fluid_synth_noteon_monopoly_legato(fluid_synth_t *synth, int chan,
                             /* Sends portamento parameters to the voice dsp */
                             fluid_voice_update_portamento(voice,
                                                           synth->fromkey_portamento,
-                                                          tokey);
+                                                          voice->note_resolver != NULL
+                                                          ? fluid_voice_get_actual_key(voice)
+                                                          : tokey);
                         }
 
                         /* The voice is now used to play tokey in legato manner */

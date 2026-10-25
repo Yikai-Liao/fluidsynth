@@ -518,6 +518,452 @@ static void assert_top_level_cdl(const std::vector<uint8_t> &data)
     TEST_ASSERT(std::remove(path) == 0);
 }
 
+static size_t assert_dls_held_keys(fluid_synth_t *synth, int key, int actual_key,
+                                   bool sustained = false)
+{
+    fluid_voice_t *voices[512] = {};
+    fluid_synth_get_voicelist(synth, voices, 512, -1);
+    size_t count = 0;
+    for(fluid_voice_t *voice : voices)
+    {
+        if(voice != nullptr && (sustained ? fluid_voice_is_sustained(voice)
+                                         : fluid_voice_is_on(voice)))
+        {
+            TEST_ASSERT(fluid_voice_get_key(voice) == key);
+            TEST_ASSERT(fluid_voice_get_actual_key(voice) == actual_key);
+            ++count;
+        }
+    }
+    return count;
+}
+
+static void assert_dls_note_lifecycle(fluid_synth_t *synth, int channel, int actual_key)
+{
+    TEST_SUCCESS(fluid_synth_noteon(synth, channel, 60, 100));
+    render_dls_frames(synth, 512);
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, actual_key) > 0);
+    TEST_SUCCESS(fluid_synth_noteoff(synth, channel, 60));
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, actual_key) == 0);
+    render_dls_frames(synth, 44100 * 5);
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+
+    TEST_SUCCESS(fluid_synth_cc(synth, channel, 64, 127));
+    TEST_SUCCESS(fluid_synth_noteon(synth, channel, 60, 100));
+    render_dls_frames(synth, 512);
+    const size_t held = assert_dls_held_keys(synth, 60, actual_key);
+    TEST_ASSERT(held > 0);
+    TEST_SUCCESS(fluid_synth_noteoff(synth, channel, 60));
+    render_dls_frames(synth, 512);
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, actual_key, true) == held);
+    TEST_SUCCESS(fluid_synth_cc(synth, channel, 64, 0));
+    render_dls_frames(synth, 44100 * 5);
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
+static void assert_dls_mono_lifecycle(fluid_synth_t *synth, int channel,
+                                      int actual_60, int actual_64)
+{
+    TEST_SUCCESS(fluid_synth_cc(synth, channel, 126, 0));
+    TEST_SUCCESS(fluid_synth_set_legato_mode(synth, channel,
+                 FLUID_CHANNEL_LEGATO_MODE_MULTI_RETRIGGER));
+    TEST_SUCCESS(fluid_synth_noteon(synth, channel, 60, 100));
+    render_dls_frames(synth, 512);
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, actual_60) > 0);
+    TEST_SUCCESS(fluid_synth_noteon(synth, channel, 64, 100));
+    render_dls_frames(synth, 512);
+    TEST_ASSERT(assert_dls_held_keys(synth, 64, actual_64) > 0);
+    TEST_SUCCESS(fluid_synth_noteoff(synth, channel, 64));
+    render_dls_frames(synth, 512);
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, actual_60) > 0);
+    TEST_SUCCESS(fluid_synth_noteoff(synth, channel, 60));
+    render_dls_frames(synth, 44100 * 5);
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
+/* Observe real DSP output as well as voice metadata, without effects tails. */
+static void assert_dls_steal_audio(fluid_synth_t *synth)
+{
+    float left[512] = {}, right[512] = {};
+    TEST_SUCCESS(fluid_synth_write_float(synth, 512, left, 0, 1, right, 0, 1));
+    double energy = 0;
+    for(float sample : left)
+    {
+        TEST_ASSERT(std::isfinite(sample));
+        energy += sample * sample;
+    }
+    TEST_ASSERT(energy > 1e-8);
+}
+
+/* Two active layers fill polyphony: no stopped voice is available. Each
+ * transition must replace active working state while the old render voice
+ * retains its sample until the queued stop has actually been rendered. */
+static void assert_dls_active_steal(fluid_synth_t *synth)
+{
+    TEST_SUCCESS(fluid_synth_set_polyphony(synth, 2));
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 127, 0));
+    std::vector<short> pcm(8192);
+    for(size_t i = 0; i < pcm.size(); ++i)
+    {
+        pcm[i] = (i % 64 < 32) ? 8000 : -8000;
+    }
+    fluid_sample_t *ordinary_sample = new_fluid_sample();
+    TEST_ASSERT(ordinary_sample != nullptr);
+    TEST_SUCCESS(fluid_sample_set_sound_data(ordinary_sample, pcm.data(), nullptr,
+                 static_cast<unsigned int>(pcm.size()), 44100, 1));
+    TEST_SUCCESS(fluid_sample_set_pitch(ordinary_sample, 67, 0));
+
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    assert_dls_steal_audio(synth);
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, 30) == 2);
+    fluid_voice_t *mapped[2] = {};
+    fluid_synth_get_voicelist(synth, mapped, 2, -1);
+    const void *context = mapped[0]->note_context;
+    TEST_ASSERT(context != nullptr);
+    for(auto *voice : mapped)
+    {
+        TEST_ASSERT(voice != nullptr);
+        TEST_ASSERT(fluid_voice_is_on(voice));
+        TEST_ASSERT(voice->sample != nullptr);
+        TEST_ASSERT(!voice->can_access_rvoice);
+        TEST_ASSERT(voice->can_access_overflow_rvoice);
+        TEST_ASSERT(voice->note_resolver != nullptr);
+        TEST_ASSERT(voice->note_context == context);
+    }
+
+    fluid_voice_t *ordinary[2] = {};
+    for(int i = 0; i < 2; ++i)
+    {
+        ordinary[i] = fluid_synth_alloc_voice(synth, ordinary_sample, 0, 67, 100);
+        TEST_ASSERT(ordinary[i] != nullptr);
+        TEST_ASSERT(std::find(mapped, mapped + 2, ordinary[i]) != mapped + 2);
+        TEST_ASSERT(ordinary[i]->sample == ordinary_sample);
+        TEST_ASSERT(ordinary[i]->overflow_sample != nullptr);
+        TEST_ASSERT(ordinary[i]->overflow_sample != ordinary_sample);
+        TEST_ASSERT(!ordinary[i]->can_access_overflow_rvoice);
+        TEST_ASSERT(ordinary[i]->note_resolver == nullptr);
+        TEST_ASSERT(ordinary[i]->note_context == nullptr);
+        TEST_ASSERT(ordinary[i]->default_actual_key == 67);
+        fluid_synth_start_voice(synth, ordinary[i]);
+    }
+    TEST_ASSERT(ordinary[0] != ordinary[1]);
+    TEST_ASSERT(ordinary_sample->refcount == 2);
+    assert_dls_steal_audio(synth);
+    TEST_ASSERT(assert_dls_held_keys(synth, 67, 67) == 2);
+    for(auto *voice : ordinary)
+    {
+        TEST_ASSERT(fluid_voice_is_on(voice));
+        TEST_ASSERT(!voice->can_access_rvoice);
+        TEST_ASSERT(voice->can_access_overflow_rvoice);
+        TEST_ASSERT(voice->overflow_sample == nullptr);
+    }
+
+    /* The new mapped note now steals both still-active ordinary allocations.
+     * Their sample must remain alive in overflow until the next render. */
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 64, 100));
+    TEST_ASSERT(assert_dls_held_keys(synth, 64, 32) == 2);
+    TEST_ASSERT(ordinary_sample->refcount == 2);
+    for(auto *voice : ordinary)
+    {
+        TEST_ASSERT(voice->sample != ordinary_sample);
+        TEST_ASSERT(voice->overflow_sample == ordinary_sample);
+        TEST_ASSERT(voice->note_resolver != nullptr);
+        TEST_ASSERT(voice->note_context == context);
+        TEST_ASSERT(voice->default_actual_key == 32);
+    }
+    assert_dls_steal_audio(synth);
+    /* A synth API entry reconciles renderer completion before inspecting refs. */
+    TEST_ASSERT(assert_dls_held_keys(synth, 64, 32) == 2);
+    TEST_ASSERT(ordinary_sample->refcount == 0);
+    TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 64));
+    render_dls_frames(synth, 44100 * 5);
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+    for(auto *voice : ordinary)
+    {
+        TEST_ASSERT(voice->sample == nullptr);
+        TEST_ASSERT(voice->overflow_sample == nullptr);
+        TEST_ASSERT(voice->note_resolver == nullptr);
+        TEST_ASSERT(voice->note_context == nullptr);
+    }
+    TEST_ASSERT(ordinary_sample->refcount == 0);
+    delete_fluid_sample(ordinary_sample);
+}
+
+/* Exactly one selected region receives CC1; the sibling is a zero-delta control. */
+static void assert_region_modulation_delta(const std::vector<fluid_voice_t *> &held,
+                                           const std::vector<fluid_real_t> &initial,
+                                           double expected_delta)
+{
+    TEST_ASSERT(held.size() == 2);
+    std::vector<double> observed;
+    for(size_t i = 0; i < held.size(); ++i)
+    {
+        TEST_ASSERT(fluid_voice_is_on(held[i]));
+        observed.push_back(held[i]->gen[GEN_FINETUNE].mod - initial[i]);
+    }
+    std::sort(observed.begin(), observed.end());
+    TEST_ASSERT(std::fabs(observed[0]) < 0.001);
+    TEST_ASSERT(std::fabs(observed[1] - expected_delta) < 0.001);
+}
+
+/* DLS 2.2 section 1.6.2 sums scaled connections; section 1.6.4 normalizes
+ * unipolar CC1 as CC1/128. A 1200-cent scale therefore adds exactly 600 cents
+ * at CC1=64, independently of the default playback-key mapping. */
+static void assert_dls_articulation_modulator(fluid_synth_t *synth)
+{
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 126, 0));
+    TEST_SUCCESS(fluid_synth_set_legato_mode(synth, 0,
+                 FLUID_CHANNEL_LEGATO_MODE_RETRIGGER));
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 1, 0));
+    struct Step { int key; bool note_on; };
+    const Step steps[] = {{60, true}, {64, true}, {60, false}};
+    for(const auto &step : steps)
+    {
+        const int key = step.key;
+        if(step.note_on)
+        {
+            TEST_SUCCESS(fluid_synth_noteon(synth, 0, key, 100));
+        }
+        else
+        {
+            TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 64));
+        }
+        render_dls_frames(synth, 512);
+        TEST_ASSERT(assert_dls_held_keys(synth, key, key / 2) > 0);
+        fluid_voice_t *voices[512] = {};
+        fluid_synth_get_voicelist(synth, voices, 512, -1);
+        std::vector<fluid_voice_t *> held;
+        std::vector<fluid_real_t> initial;
+        for(auto *voice : voices)
+        {
+            if(voice != nullptr && fluid_voice_is_on(voice))
+            {
+                held.push_back(voice);
+                initial.push_back(voice->gen[GEN_FINETUNE].mod);
+            }
+        }
+        /* Exercise both live modulation and return to the original amount on
+         * freshly allocated and mono-retriggered mapped voices. */
+        for(int cc : {64, 0})
+        {
+            TEST_SUCCESS(fluid_synth_cc(synth, 0, 1, cc));
+            render_dls_frames(synth, 512);
+            TEST_ASSERT(assert_dls_held_keys(synth, key, key / 2) == held.size());
+            assert_region_modulation_delta(held, initial, cc * (1200.0 / 128.0));
+        }
+    }
+    TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
+    render_dls_frames(synth, 512);
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
+/* Mode 0 releases the prior allocation and starts a fresh mapped voice. */
+static void assert_dls_retrigger_lifecycle(fluid_synth_t *synth)
+{
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 126, 0));
+    TEST_SUCCESS(fluid_synth_set_legato_mode(synth, 0,
+                 FLUID_CHANNEL_LEGATO_MODE_RETRIGGER));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    render_dls_frames(synth, 512);
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, 30) > 0);
+    fluid_voice_t *original[512] = {};
+    fluid_synth_get_voicelist(synth, original, 512, -1);
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 64, 100));
+    TEST_ASSERT(assert_dls_held_keys(synth, 64, 32) > 0);
+    for(auto *voice : original)
+    {
+        if(voice != nullptr)
+        {
+            TEST_ASSERT(!fluid_voice_is_on(voice));
+            TEST_ASSERT(fluid_voice_get_key(voice) == 60);
+            TEST_ASSERT(fluid_voice_get_actual_key(voice) == 30);
+        }
+    }
+    render_dls_frames(synth, 512);
+    fluid_voice_t *retriggered[512] = {};
+    fluid_synth_get_voicelist(synth, retriggered, 512, -1);
+    TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 64));
+    TEST_ASSERT(assert_dls_held_keys(synth, 60, 30) > 0);
+    for(auto *voice : retriggered)
+    {
+        if(voice != nullptr && fluid_voice_get_key(voice) == 64)
+        {
+            TEST_ASSERT(!fluid_voice_is_on(voice));
+            TEST_ASSERT(fluid_voice_get_actual_key(voice) == 32);
+        }
+    }
+    TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 60));
+    render_dls_frames(synth, 44100 * 5);
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 127, 0));
+}
+
+/* set_gen supplies an offset: the fixture's KEYNUM base remains -1.
+ * These assertions check the public effective-key contract, not realtime pitch
+ * changes: KEYNUM is documented as a non-realtime generator. */
+static void assert_dls_keynum_overrides(fluid_synth_t *synth, int fallback_key)
+{
+    for(float initial_offset : { 0.0f, 49.0f, -1.0f })
+    {
+        TEST_SUCCESS(fluid_synth_set_gen(synth, 0, GEN_KEYNUM, initial_offset));
+        TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+        render_dls_frames(synth, 512);
+        const int initial_key = initial_offset == 49.0f ? 48 : fallback_key;
+        TEST_ASSERT(assert_dls_held_keys(synth, 60, initial_key) > 0);
+
+        fluid_voice_t *voices[512] = {};
+        fluid_synth_get_voicelist(synth, voices, 512, -1);
+        for(fluid_voice_t *voice : voices)
+        {
+            if(voice != nullptr && fluid_voice_is_on(voice))
+            {
+                TEST_ASSERT(fluid_voice_gen_get(voice, GEN_KEYNUM) == -1.0f);
+            }
+        }
+
+        /* Positive effective override, zero key, negative fallback, reset. */
+        for(float offset : { 65.0f, 1.0f, -1.0f, 0.0f })
+        {
+            TEST_SUCCESS(fluid_synth_set_gen(synth, 0, GEN_KEYNUM, offset));
+            const int expected = offset >= 1.0f ? static_cast<int>(offset - 1.0f)
+                                               : fallback_key;
+            TEST_ASSERT(assert_dls_held_keys(synth, 60, expected) > 0);
+        }
+        TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 60));
+        render_dls_frames(synth, 44100 * 5);
+        TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+    }
+}
+
+static void assert_dls_pressure_and_reuse(fluid_synth_t *synth)
+{
+    TEST_SUCCESS(fluid_synth_set_legato_mode(synth, 0,
+                 FLUID_CHANNEL_LEGATO_MODE_MULTI_RETRIGGER));
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 126, 0));
+    TEST_SUCCESS(fluid_synth_key_pressure(synth, 0, 60, 0));
+    TEST_SUCCESS(fluid_synth_key_pressure(synth, 0, 64, 64));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    render_dls_frames(synth, 512);
+    fluid_mod_t *pressure = new_fluid_mod();
+    TEST_ASSERT(pressure != nullptr);
+    fluid_mod_set_source1(pressure, FLUID_MOD_KEYPRESSURE,
+                         FLUID_MOD_GC | FLUID_MOD_LINEAR | FLUID_MOD_UNIPOLAR
+                         | FLUID_MOD_POSITIVE);
+    fluid_mod_set_source2(pressure, FLUID_MOD_NONE, 0);
+    fluid_mod_set_dest(pressure, GEN_COARSETUNE);
+    fluid_mod_set_amount(pressure, 128);
+    fluid_voice_t *voices[512] = {};
+    fluid_synth_get_voicelist(synth, voices, 512, -1);
+    std::vector<fluid_voice_t *> held;
+    std::vector<fluid_real_t> before;
+    for(fluid_voice_t *voice : voices)
+    {
+        if(voice != nullptr && fluid_voice_is_on(voice))
+        {
+            fluid_voice_add_mod(voice, pressure, FLUID_VOICE_OVERWRITE);
+            held.push_back(voice);
+            before.push_back(voice->gen[GEN_COARSETUNE].mod);
+        }
+    }
+    TEST_ASSERT(!held.empty());
+    delete_fluid_mod(pressure);
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 64, 100));
+    render_dls_frames(synth, 512);
+    for(size_t i = 0; i < held.size(); ++i)
+    {
+        TEST_ASSERT(fluid_voice_is_on(held[i]));
+        TEST_ASSERT(fluid_voice_get_key(held[i]) == 64);
+        TEST_ASSERT(fluid_voice_get_actual_key(held[i]) == 32);
+        TEST_ASSERT(std::fabs(held[i]->gen[GEN_COARSETUNE].mod - before[i] - 64.0) < 0.001);
+    }
+    TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
+    render_dls_frames(synth, 512);
+
+    /* The fixture has two layers: keep both slots, then reuse each normally. */
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 127, 0));
+    TEST_SUCCESS(fluid_synth_set_polyphony(synth, 2));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    render_dls_frames(synth, 512);
+    fluid_voice_t *mapped[2] = {};
+    fluid_synth_get_voicelist(synth, mapped, 2, -1);
+    for(fluid_voice_t *voice : mapped)
+    {
+        TEST_ASSERT(voice != nullptr && voice->note_resolver != nullptr);
+    }
+    fluid_sample_t *sample = mapped[0]->sample;
+    TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
+    render_dls_frames(synth, 512);
+    fluid_voice_t *ordinary[2] = {};
+    for(int i = 0; i < 2; ++i)
+    {
+        ordinary[i] = fluid_synth_alloc_voice(synth, sample, 0, 67 + i, 100);
+        TEST_ASSERT(ordinary[i] != nullptr);
+        TEST_ASSERT(ordinary[i] == mapped[0] || ordinary[i] == mapped[1]);
+        TEST_ASSERT(ordinary[i]->note_resolver == nullptr && ordinary[i]->note_context == nullptr);
+        TEST_ASSERT(ordinary[i]->default_actual_key == 67 + i);
+        TEST_ASSERT(fluid_voice_get_key(ordinary[i]) == 67 + i);
+        TEST_ASSERT(fluid_voice_get_actual_key(ordinary[i]) == 67 + i);
+        fluid_synth_start_voice(synth, ordinary[i]);
+    }
+    TEST_ASSERT(ordinary[0] != ordinary[1]);
+    TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 67));
+    TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 68));
+    render_dls_frames(synth, 44100 * 5);
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
+/* Metadata alone must not install a playback-key resolver on identity presets. */
+static void assert_unmapped_preset_paths(const std::vector<uint8_t> &data, size_t insh,
+                                         const std::vector<uint8_t> &alias_chunk, const char *path)
+{
+    const size_t riff_end = 8 + read_u32(data, 4);
+    /* A drum without aliases and a melodic preset in an aliased bank both
+     * keep the identity path. Bank metadata must not enable mapping alone. */
+    for(bool drums : { true, false })
+    {
+        std::vector<uint8_t> unmapped(data);
+        if(drums)
+        {
+            write_u32(unmapped, insh + 12, 0x80000000u);
+        }
+        else
+        {
+            unmapped.insert(unmapped.begin() + riff_end,
+                            alias_chunk.begin(), alias_chunk.end());
+            write_u32(unmapped, 4, read_u32(data, 4) + alias_chunk.size());
+        }
+        write_dls_file(path, unmapped);
+        fluid_settings_t *settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        fluid_synth_t *synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int unmapped_sfont = fluid_synth_sfload(synth, path, 1);
+        TEST_ASSERT(unmapped_sfont >= 0);
+        TEST_SUCCESS(fluid_synth_set_channel_type(synth, 0,
+                     drums ? CHANNEL_TYPE_DRUM : CHANNEL_TYPE_MELODIC));
+        TEST_SUCCESS(fluid_synth_program_select(synth, 0, unmapped_sfont,
+                     drums ? 128 : 0, 0));
+        TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+        render_dls_frames(synth, 512);
+        TEST_ASSERT(assert_dls_held_keys(synth, 60, 60) > 0);
+        fluid_voice_t *identity_voices[512] = {};
+        fluid_synth_get_voicelist(synth, identity_voices, 512, -1);
+        for(auto *voice : identity_voices)
+        {
+            if(voice != nullptr && fluid_voice_is_on(voice))
+            {
+                TEST_ASSERT(voice->note_resolver == nullptr);
+                TEST_ASSERT(voice->note_context == nullptr);
+            }
+        }
+        TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 60));
+        render_dls_frames(synth, 44100 * 5);
+        TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+        assert_dls_mono_lifecycle(synth, 0, 60, 64);
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+    }
+}
+
 /* Observe the actual read callback, not only the eventual load result:
  * rejecting after reading a sibling or padding is too late. */
 static fluid_sfloader_callback_read_t observed_read;
@@ -1385,6 +1831,134 @@ int main(void)
 
     const size_t insh_end = insh + 8 + read_u32(large_keynum_scale, insh + 4)
                             + (read_u32(large_keynum_scale, insh + 4) & 1u);
+    /* Keep the existing two-LART activation semantics in this engine stage.
+     * The empty second LART activates the scale without adding connections.
+     * Use ordinary notes and a scale of 0.5, without custom tuning or clamps. */
+    {
+        std::vector<uint8_t> single_keynum_scale(data);
+        std::vector<uint8_t> single_keynum_art(keynum_art);
+        write_u32(single_keynum_art, 36, 419430400u); // 0.5 * 12800 * 65536
+        std::vector<uint8_t> activation_lart(12, 0);
+        std::memcpy(activation_lart.data(), "LIST", 4);
+        write_u32(activation_lart, 4, 4);
+        std::memcpy(activation_lart.data() + 8, "lart", 4);
+        single_keynum_art.insert(single_keynum_art.end(),
+                                 activation_lart.begin(), activation_lart.end());
+        single_keynum_scale.insert(single_keynum_scale.begin() + insh_end,
+                                    single_keynum_art.begin(), single_keynum_art.end());
+        for(size_t size_field : { instrument + 4, lins + 4, size_t{4} })
+        {
+            write_u32(single_keynum_scale, size_field,
+                      read_u32(data, size_field) + single_keynum_art.size());
+        }
+
+        const char *single_keynum_path = "test_dls_single_keynum_scale_tmp.dls";
+        write_dls_file(single_keynum_path, single_keynum_scale);
+        settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int single_keynum_sfont = fluid_synth_sfload(synth, single_keynum_path, 1);
+        TEST_ASSERT(single_keynum_sfont >= 0);
+        TEST_SUCCESS(fluid_synth_program_select(synth, 0, single_keynum_sfont, 0, 0));
+        assert_dls_keynum_overrides(synth, 30);
+        assert_dls_note_lifecycle(synth, 0, 30);
+
+        /* Mono retrigger must resolve the new note, not reuse stale KEYNUM. */
+        assert_dls_mono_lifecycle(synth, 0, 30, 32);
+        assert_dls_retrigger_lifecycle(synth);
+        assert_dls_pressure_and_reuse(synth);
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+
+
+        /* Active stealing has its own synth: no prior mode or stopped slots. */
+        write_dls_file(single_keynum_path, single_keynum_scale);
+        settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
+        synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int stealing_sfont = fluid_synth_sfload(synth, single_keynum_path, 1);
+        TEST_ASSERT(stealing_sfont >= 0);
+        TEST_SUCCESS(fluid_synth_program_select(synth, 0, stealing_sfont, 0, 0));
+        assert_dls_active_steal(synth);
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+
+        /* Region-owned articulation takes precedence over instrument mods.
+         * Add CC1 only to the first region; the sibling is an unchanged control. */
+        std::vector<uint8_t> modulated_keynum_scale(single_keynum_scale);
+        std::vector<uint8_t> applicable_cdl(6, 0);
+        write_u16(applicable_cdl, 0, 0x0010); // CONST true
+        write_u32(applicable_cdl, 2, 1);
+        const size_t mod_art = append_conditional_region_articulation(
+                                  modulated_keynum_scale, applicable_cdl, false);
+        write_u16(modulated_keynum_scale, mod_art + 16, 0x0081); // CC1
+        write_u16(modulated_keynum_scale, mod_art + 20, 3); // pitch in cents
+        write_u32(modulated_keynum_scale, mod_art + 24, 1200u * 65536u);
+        write_dls_file(single_keynum_path, modulated_keynum_scale);
+        settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int modulated_sfont = fluid_synth_sfload(synth, single_keynum_path, 1);
+        TEST_ASSERT(modulated_sfont >= 0);
+        TEST_SUCCESS(fluid_synth_program_select(synth, 0, modulated_sfont, 0, 0));
+        assert_dls_articulation_modulator(synth);
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+
+        /* Ordinary identity mapping keeps both keys equal and releases normally. */
+        write_dls_file(single_keynum_path, data);
+        settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int identity_sfont = fluid_synth_sfload(synth, single_keynum_path, 1);
+        TEST_ASSERT(identity_sfont >= 0);
+        TEST_SUCCESS(fluid_synth_program_select(synth, 0, identity_sfont, 0, 0));
+        assert_dls_keynum_overrides(synth, 60);
+        assert_dls_note_lifecycle(synth, 0, 60);
+        assert_dls_mono_lifecycle(synth, 0, 60, 64);
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+
+        /* Valid PGAL drum alias: only ordinary note 60 maps to note 30. */
+        std::vector<uint8_t> aliased_drum(data);
+        write_u32(aliased_drum, insh + 12, 0x80000000u);
+        std::vector<uint8_t> alias_chunk(144, 0);
+        std::memcpy(alias_chunk.data(), "pgal", 4);
+        write_u32(alias_chunk, 4, 136); // Version, 128 aliases, zero instrument aliases
+        for(size_t note = 0; note < 128; ++note)
+        {
+            alias_chunk[12 + note] = static_cast<uint8_t>(note);
+        }
+        alias_chunk[12 + 60] = 30;
+        aliased_drum.insert(aliased_drum.begin() + riff_end,
+                            alias_chunk.begin(), alias_chunk.end());
+        write_u32(aliased_drum, 4, read_u32(data, 4) + alias_chunk.size());
+        write_dls_file(single_keynum_path, aliased_drum);
+        settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int alias_sfont = fluid_synth_sfload(synth, single_keynum_path, 1);
+        TEST_ASSERT(alias_sfont >= 0);
+        /* Use the basic channel so mono-mode CC126 is valid for this drum test. */
+        TEST_SUCCESS(fluid_synth_set_channel_type(synth, 0, CHANNEL_TYPE_DRUM));
+        TEST_SUCCESS(fluid_synth_program_select(synth, 0, alias_sfont, 128, 0));
+        assert_dls_note_lifecycle(synth, 0, 30);
+        assert_dls_mono_lifecycle(synth, 0, 30, 64);
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+
+        assert_unmapped_preset_paths(data, insh, alias_chunk, single_keynum_path);
+
+        TEST_ASSERT(std::remove(single_keynum_path) == 0);
+    }
+
     std::vector<uint8_t> keynum_arts(keynum_art);
     keynum_arts.insert(keynum_arts.end(), keynum_art.begin(), keynum_art.end());
     large_keynum_scale.insert(large_keynum_scale.begin() + insh_end,
@@ -1424,6 +1998,7 @@ int main(void)
     {
         if(voice != nullptr && fluid_voice_is_playing(voice))
         {
+            TEST_ASSERT(fluid_voice_get_key(voice) == 60);
             TEST_ASSERT(fluid_voice_get_actual_key(voice) == 127);
             melodic_voice_count++;
         }
@@ -1469,6 +2044,7 @@ int main(void)
     fluid_voice_t *drum_voices[512] = {};
     fluid_synth_get_voicelist(synth, drum_voices, 512, -1);
     TEST_ASSERT(drum_voices[0] != nullptr);
+    TEST_ASSERT(fluid_voice_get_key(drum_voices[0]) == 60);
     TEST_ASSERT(fluid_voice_get_actual_key(drum_voices[0]) == 127);
     TEST_SUCCESS(fluid_synth_write_float(synth, 256, audio, 0, 2, audio, 1, 2));
     delete_fluid_synth(synth);
