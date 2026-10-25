@@ -13,6 +13,8 @@ on:
       - '!.github/**'
       - '.github/workflows/android.yml'
       - '.github/scripts/android-*.sh'
+      - 'test/android-test-launcher.sh'
+      - 'test/run-android-tests.sh'
       - 'doc/android/vcpkg/**'
       - '!README.md'
   schedule:
@@ -40,6 +42,7 @@ jobs:
   build-test:
     env:
       ABI: ${{ matrix.abi }}
+      ANDROID_BUILD_DIR: ${{ github.workspace }}/build/android
     name: Build and test ${{ matrix.abi }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -65,8 +68,8 @@ jobs:
         if: ${{ github.event_name != 'schedule' }}
         with:
           path: build/android/dependencies
-          # Bump v2 when changing dependency features, triplets or installation policy.
-          key: android-deps-v2-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}-vcpkg${{ env.VCPKG_VERSION }}
+          # Bump v3 when changing dependency features, triplets or installation policy.
+          key: android-deps-v3-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}-vcpkg${{ env.VCPKG_VERSION }}
       - name: Checkout vcpkg release
         if: steps.dependencies.outputs.cache-hit != 'true'
         uses: actions/checkout@v7
@@ -78,7 +81,7 @@ jobs:
         env:
           VCPKG_ROOT: ${{ github.workspace }}/build/android/vcpkg
         if: steps.dependencies.outputs.cache-hit != 'true'
-        run: bash .github/scripts/android-build-and-package.sh build-dependencies
+        run: bash doc/android/build.sh build-dependencies
       # Save before FluidSynth installs into the same prefix.
       - uses: actions/cache/save@v5
         if: ${{ github.event_name != 'schedule' && steps.dependencies.outputs.cache-hit != 'true' }}
@@ -86,9 +89,9 @@ jobs:
           path: build/android/dependencies
           key: ${{ steps.dependencies.outputs.cache-primary-key }}
       - name: Build and install FluidSynth, test executables and asset loader
-        run: bash .github/scripts/android-build-and-package.sh build-and-install
+        run: bash doc/android/build.sh build-and-install
       - name: Verify and package shared libraries and headers
-        run: bash .github/scripts/android-build-and-package.sh package
+        run: bash doc/android/build.sh package
       - name: Cache the emulator and API 24 system image
         uses: actions/cache@v5
         if: ${{ (matrix.abi == 'x86' || matrix.abi == 'x86_64') && github.event_name != 'schedule' }}
@@ -130,18 +133,7 @@ jobs:
         run: bash .github/scripts/android-prepare-runtime.sh "$ABI" build/android/runtime
       - name: Bundle ARM tests and Android userspace
         if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
-        run: |
-          bundle="$RUNNER_TEMP/android-tests"
-          test_dir=build/android/build/fluidsynth/test
-          mkdir -p "$bundle/tests/lib"
-          for executable in "$test_dir"/test_*; do
-            [[ -f "$executable" && -x "$executable" ]] || continue
-            cp -a "$executable" "$bundle/tests/"
-          done
-          cp -a "$test_dir/sf2" "$test_dir/test" "$bundle/tests/"
-          cp -a "build/android/package/lib/$ABI/." "$bundle/tests/lib/"
-          cp -a build/android/runtime "$bundle/"
-          tar -C "$bundle" -czf "$RUNNER_TEMP/android-tests.tar.gz" .
+        run: tar -C build/android -czf "$RUNNER_TEMP/android-tests.tar.gz" tests runtime
       - uses: actions/upload-artifact@v7
         if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
         with:
@@ -162,6 +154,8 @@ jobs:
           name: android-logs-${{ matrix.abi }}
           path: |
             build/android/logs
+            build/android/tests/Testing
+            build/android/tests/android-tests.xml
             build/android/build/**/CMakeFiles/CMakeConfigureLog.yaml
             build/android/vcpkg/buildtrees/**/*.log
           retention-days: 14
@@ -195,6 +189,7 @@ jobs:
           name: android-native-logs-${{ matrix.abi }}
           path: |
             ${{ runner.temp }}/native-tests/logs
-            ${{ runner.temp }}/native-tests/results.txt
+            ${{ runner.temp }}/native-tests/tests/Testing
+            ${{ runner.temp }}/native-tests/tests/android-tests.xml
             ${{ runner.temp }}/native-tests/runtime/provenance.txt
           retention-days: 14

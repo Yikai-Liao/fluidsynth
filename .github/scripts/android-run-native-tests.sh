@@ -46,23 +46,5 @@ lscpu
 cat "$runtime/provenance.txt"
 grep -E '^ro\.(build.version.sdk|product.cpu.abi)=' "$runtime/system/build.prop"
 printf 'Execution: native %s CPU, Android API 24 Bionic, host Linux kernel\n' "$abi"
-passed=0
-failed=0
-for executable in "$target"/test_*; do
-    [[ -f "$executable" && -x "$executable" ]] || continue
-    name=${executable##*/}
-    file "$executable"
-    if timeout --kill-after=5 60 sudo chroot --userspec="$android_shell" "$root" /system/bin/sh -c \
-        'cd /data/local/tmp/fluidsynth-tests && export LD_LIBRARY_PATH=/data/local/tmp/fluidsynth-tests/lib:/system/lib64:/system/lib && exec "./$1"' sh "$name" \
-        > "$work/logs/$name.log" 2>&1; then
-        echo "PASS $name"
-        passed=$((passed + 1))
-    else
-        echo "FAIL $name"
-        cat "$work/logs/$name.log"
-        failed=$((failed + 1))
-    fi
-done
-printf 'ABI: %s\nPassed: %s\nFailed: %s\n' "$abi" "$passed" "$failed" | tee "$work/results.txt"
-test "$passed" -gt 0
-test "$failed" -eq 0
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+ANDROID_TEST_CHROOT="$root" bash "$script_dir/../../test/run-android-tests.sh" "$work/tests"

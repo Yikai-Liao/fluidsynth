@@ -23,68 +23,93 @@ If you just want to use fluidsynth on Android without going through all the comp
 If you have questions or need support, contact our mailing list:
 https://lists.nongnu.org/mailman/listinfo/fluid-dev
 
-## Reproduce the GitHub Actions build
+## Build with the Android NDK and vcpkg
 
-The Android workflow builds API 24 shared libraries for `armeabi-v7a`,
-`arm64-v8a`, `x86` and `x86_64` with NDK `27.3.13750724`. On an x86_64 Linux
-host, install that NDK through the Android SDK manager, plus CMake, Ninja,
-pkg-config, Git, curl, zip/unzip and the tar/xz utilities. From the repository
-root, use a separate checkout for each ABI:
+The project uses the NDK's `android.toolchain.cmake`. The optional helper below
+builds a shared-library SDK with Oboe, OpenSL ES, libsndfile and its external
+codecs. CI calls the same helper. It does not change the default build of other
+platforms or require vcpkg for their development.
+
+Install CMake, Ninja, pkg-config, Git, curl and zip/unzip on your build host, and
+install an NDK through the Android SDK manager. CI currently uses NDK
+`27.3.13750724` and vcpkg `2026.10.16`. From a source checkout:
 
 ```sh
 git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
-export ANDROID_API=24 ABI=x86_64
 export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.3.13750724"
-export VCPKG_ROOT="$PWD/build/android/vcpkg"
+export VCPKG_ROOT="$PWD/build/vcpkg"
 git clone --depth=1 --branch 2026.10.16 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
-bash .github/scripts/android-build-and-package.sh build-dependencies
-bash .github/scripts/android-build-and-package.sh build-and-install
-bash .github/scripts/android-build-and-package.sh package
+export ABI=arm64-v8a ANDROID_API=24 BUILD_TYPE=RelWithDebInfo
+bash doc/android/build.sh build-dependencies
+bash doc/android/build.sh build-and-install
+bash doc/android/build.sh package
 ```
 
-The first operation bootstraps the selected vcpkg release and installs the
-manifest in `doc/android/vcpkg/vcpkg.json` under `build/android/dependencies`.
-The manifest requests Oboe and libsndfile with its external codecs; vcpkg
-resolves Ogg, Vorbis, FLAC and Opus, verifies source archives and applies its
-maintained build fixes. Its release tag selects the dependency versions. To
-upgrade the catalog, update `VCPKG_VERSION` in the workflow and use the same tag
-locally. The Android triplets retain API 24, shared libraries and 16 KB ELF
-alignment instead of vcpkg's default static libraries and API 28. The second
-builds FluidSynth, its existing unit test executables and the Android asset
-loader, then installs FluidSynth. The `check` build target stages test data but
-does not execute tests when cross compiling. The final operation checks required
-features and library presence, checks every ELF LOAD segment for 16 KB
-alignment, and copies shared libraries and FluidSynth headers into
-`build/android/package`. The NDK's 32-bit C++ runtime is exempt from the
-alignment check; its 64-bit runtimes are checked.
+Use `armeabi-v7a`, `arm64-v8a`, `x86` or `x86_64`. `ANDROID_API` defaults to 24
+and must be at least 24; it is the minimum API of the native libraries and must
+not exceed the application's `minSdk`. `BUILD_TYPE` accepts the normal CMake
+build types, including `Debug`. The default build directory separates ABI, API
+and build type under `build/android`; `ANDROID_BUILD_DIR` can select another
+build directory. Use a separate directory when changing NDK versions.
 
-For `x86` or `x86_64`, install the SDK emulator, platform-tools and matching
-`system-images;android-24;default;<ABI>` package, grant your user access to
-`/dev/kvm`, then run the existing Android unit tests with:
+The vcpkg manifest in `doc/android/vcpkg` requests Oboe and libsndfile with
+external codecs. vcpkg selects and verifies the source releases, builds their
+transitive dependencies and applies its maintained fixes. The small Android
+triplets select shared libraries, the requested API and 16 KB ELF alignment.
+To update dependencies, select a newer vcpkg release; no download hashes are
+maintained in this project. CI selects its release with `VCPKG_VERSION`.
+
+The helper installs headers, libraries and the existing `FluidSynthConfig.cmake`
+package under `<build>/dependencies/<triplet>`. The asset-loader example uses
+`find_package(FluidSynth CONFIG REQUIRED COMPONENTS shared)` and
+`FluidSynth::libfluidsynth`, which is also the interface available to an Android
+application's CMake project. For a Gradle `externalNativeBuild` project, let the
+Android Gradle Plugin supply the NDK toolchain, ABI and minimum API; point CMake
+at the matching installed package rather than copying the helper's toolchain
+arguments into Gradle. Use a consistent NDK and `c++_shared` across shared
+libraries; package one copy of `libc++_shared.so` with the application.
+
+The `package` operation checks required features, shared-library presence and
+every ELF LOAD segment. It writes headers and shared libraries to
+`<build>/package/include` and `<build>/package/lib/<ABI>`. The NDK's 32-bit C++
+runtime retains its 4 KB alignment exemption; 64-bit runtimes are checked for
+16 KB alignment. Application/APK packaging and device compatibility tests remain
+the consuming application's responsibility.
+
+### Run Android unit tests
+
+`build-and-install` builds the existing unit test executables. The `check` target
+still does not execute cross-compiled tests automatically. `package` stages the
+executables, test data, libraries and CMake-generated CTest definitions together
+under `<build>/tests`. The test launcher maps CTest's executable paths into the
+Android test directory, so this directory can be moved to another host.
+
+For a connected device or an already running emulator:
 
 ```sh
-bash .github/scripts/android-run-emulator.sh build/android "$ABI"
+export PATH="$ANDROID_HOME/platform-tools:$PATH"
+# Set ANDROID_SERIAL if more than one device is attached.
+bash test/run-android-tests.sh "build/android/$ABI-api$ANDROID_API-$BUILD_TYPE/tests"
 ```
 
-CI builds each ABI once. The ARM runtime helper also requires `debugfs` from
-e2fsprogs. For the ARM builds, the SDK Manager downloads and verifies the
-matching system images, and CI bundles their extracted userspace with the tests.
-Two ARM jobs download those bundles and execute the Android/Bionic binaries on
-an ARM Linux host, without rebuilding them. These jobs test the Android
-userspace libraries on the host kernel; they do not test Android framework
-services, audio devices or an Android guest kernel.
+CTest owns test selection, timeout, failure output and the JUnit report. ADB only
+stages and launches the suite. The launcher is also usable with ordinary NDK
+CMake builds by setting
+`-DCMAKE_CROSSCOMPILING_EMULATOR=android-test-launcher.sh` and putting `test/`
+on `PATH`. Host-side soundfont dump comparisons are not registered for Android;
+the Android unit-test suite retains the existing 44 tests in CI's configuration.
 
-CI caches installed dependencies before FluidSynth is installed, the emulator
-with its x86 SDK system images, and the extracted ARM runtime. It does not cache
-project builds or compiler output. Dependency cache keys include the host
-OS/architecture, target ABI, API, NDK and vcpkg release; bump their `v2`
-revision when changing manifest features, triplets or installation policy.
-Emulator or runtime image changes require the corresponding cache revision bump.
-Emulator cache keys include the host OS/architecture, API, image variant and
-ABI. The ARM runtime contains Android target files, so its key only needs the
-API and ABI. Weekly scheduled builds bypass all three caches. The workflow
-uploads one library/header artifact per ABI; ARM bundles transfer the tests and
-userspace between jobs, and log artifacts retain build and test diagnostics.
+CI runs x86 and x86_64 on API 24 KVM emulators. For the two ARM ABIs, SDK Manager
+verifies a system image and `debugfs` (e2fsprogs) extracts its Bionic userspace.
+ARM runners consume the built tests and userspace together. These tests use the
+host Linux kernel and do not exercise Android framework services, audio devices
+or an Android guest kernel. No device connection is required to build the SDK.
+
+CI caches installed dependencies, emulator/system images and extracted ARM
+userspace. Dependency keys include the host, ABI, API, NDK and vcpkg release;
+update their revision when changing manifest features, triplets or installation
+policy. Weekly scheduled builds bypass caches. Tests and the SDK are each built
+once per ABI. Log artifacts include CTest output and JUnit reports.
 
 ## Prerequisites for the standalone toolchain guide
 

@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# Build Android dependencies and project targets, or verify and package their libraries.
+# Build FluidSynth and its Android dependencies, or stage shared libraries and tests.
 set -Eeuo pipefail
 current_phase=setup
-trap 'status=$?; printf "::error::Android %s failed (exit %s)\n" "$current_phase" "$status" >&2; exit "$status"' ERR
-phase=${1:?Usage: android-build-and-package.sh <build-dependencies|build-and-install|package>}
+trap 'status=$?; printf "Android %s failed (exit %s)\n" "$current_phase" "$status" >&2; exit "$status"' ERR
+phase=${1:?Usage: build.sh <build-dependencies|build-and-install|package>}
 case "$phase" in
     build-dependencies|build-and-install|package) ;;
     *) echo "Unknown Android build operation: $phase" >&2; exit 2 ;;
 esac
-api=${ANDROID_API:?Set ANDROID_API to 24}
-if [[ "$api" != 24 ]]; then
-    echo 'Android CI builds and tests the minimum supported API 24.' >&2
+export ANDROID_API=${ANDROID_API:-24}
+api=$ANDROID_API
+if [[ ! "$api" =~ ^[0-9]+$ ]] || (( api < 24 )); then
+    echo 'Android builds require API 24 or newer.' >&2
     exit 2
 fi
-root=$(git rev-parse --show-toplevel)
-work="$root/build/android"
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 ndk=${ANDROID_NDK_HOME:?Set ANDROID_NDK_HOME}
-toolchain="$ndk/toolchains/llvm/prebuilt/linux-x86_64"
+toolchains=("$ndk"/toolchains/llvm/prebuilt/*)
+toolchain=${toolchains[0]}
 abi=${ABI:?Set ABI}
 case "$abi" in
     armeabi-v7a) triple=arm-linux-androideabi; triplet=arm-android-shared ;;
@@ -25,12 +26,14 @@ case "$abi" in
     x86_64) triple=x86_64-linux-android; triplet=x64-android-shared ;;
     *) echo "Unknown Android ABI: $abi" >&2; exit 1 ;;
 esac
+build_type=${BUILD_TYPE:-RelWithDebInfo}
+work=${ANDROID_BUILD_DIR:-"$root/build/android/$abi-api$api-$build_type"}
 prefix="$work/dependencies/$triplet"
-jobs=$(nproc)
+jobs=${CMAKE_BUILD_PARALLEL_LEVEL:-$(getconf _NPROCESSORS_ONLN)}
 export PKG_CONFIG_PATH= PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig"
 args=(-G Ninja "-DCMAKE_TOOLCHAIN_FILE=$ndk/build/cmake/android.toolchain.cmake"
     "-DANDROID_ABI=$abi" "-DANDROID_PLATFORM=android-$api"
-    -DANDROID_STL=c++_shared -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    -DANDROID_STL=c++_shared "-DCMAKE_BUILD_TYPE=$build_type"
     "-DCMAKE_INSTALL_PREFIX=$prefix" -DCMAKE_INSTALL_LIBDIR=lib
     "-DCMAKE_PREFIX_PATH=$prefix" "-DCMAKE_FIND_ROOT_PATH=$prefix"
     -DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384
@@ -40,9 +43,8 @@ run_phase() {
     local label=$1
     shift
     current_phase=$label
-    printf '::group::%s\n' "$label"
+    printf '%s\n' "$label"
     "$@"
-    printf '::endgroup::\n'
 }
 
 build_dependencies() {
@@ -59,15 +61,12 @@ build_dependencies() {
 build_and_install() {
     run_phase configure-fluidsynth cmake -S "$root" -B "$work/build/fluidsynth" "${args[@]}" \
         -Denable-opensles=ON -Denable-floats=ON -Denable-oboe=ON \
-        -Denable-dbus=OFF -Denable-oss=OFF -Denable-openmp=OFF
+        -Denable-dbus=OFF -Denable-oss=OFF -Denable-openmp=OFF \
+        -DCMAKE_CROSSCOMPILING_EMULATOR=android-test-launcher.sh
     run_phase build-fluidsynth cmake --build "$work/build/fluidsynth" --parallel "$jobs"
     run_phase build-tests cmake --build "$work/build/fluidsynth" --target check --parallel "$jobs"
     run_phase install-fluidsynth cmake --install "$work/build/fluidsynth"
-    # Supply the installed library search path without changing the asset loader's
-    # existing CMake configuration, which also appends its legacy dist/ path.
-    run_phase configure-assetloader cmake -S "$root/doc/android/fluidsynth-assetloader" -B "$work/build/assetloader" "${args[@]}" \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        "-DCMAKE_SHARED_LINKER_FLAGS=-L$prefix/lib -Wl,-z,max-page-size=16384"
+    run_phase configure-assetloader cmake -S "$root/doc/android/fluidsynth-assetloader" -B "$work/build/assetloader" "${args[@]}"
     run_phase build-assetloader cmake --build "$work/build/assetloader" --parallel "$jobs"
 }
 
@@ -81,12 +80,12 @@ check_load_alignment() {
         /LOAD.*align 2\*\*/ {
             count++; split($0, a, "align 2\\*\\*")
             if (a[2]+0 < 14) {
-                printf "::error::%s: LOAD alignment below 2**14: %s\n", library, $0 > "/dev/stderr"
+                printf "%s: LOAD alignment below 2**14: %s\n", library, $0 > "/dev/stderr"
                 bad=1
             }
         }
         END {
-            if (!count) printf "::error::%s: no LOAD segment alignment found\n", library > "/dev/stderr"
+            if (!count) printf "%s: no LOAD segment alignment found\n", library > "/dev/stderr"
             exit (!count || bad)
         }'
 }
@@ -109,6 +108,14 @@ package_libraries() {
     done
     current_phase=package-headers
     cp -a "$prefix/include/fluidsynth.h" "$prefix/include/fluidsynth" "$package/include/"
+    local tests="$work/build/fluidsynth/test" executable
+    mkdir -p "$work/tests/lib"
+    for executable in "$tests"/test_*; do
+        [[ -f "$executable" && -x "$executable" ]] || continue
+        cp -a "$executable" "$work/tests/"
+    done
+    cp -a "$tests/sf2" "$tests/test" "$tests/CTestTestfile.cmake" "$work/tests/"
+    cp -a "$package/lib/$abi/." "$work/tests/lib/"
 }
 
 case "$phase" in
