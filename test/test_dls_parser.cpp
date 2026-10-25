@@ -1831,19 +1831,12 @@ int main(void)
 
     const size_t insh_end = insh + 8 + read_u32(large_keynum_scale, insh + 4)
                             + (read_u32(large_keynum_scale, insh + 4) & 1u);
-    /* Keep the existing two-LART activation semantics in this engine stage.
-     * The empty second LART activates the scale without adding connections.
+    /* A single instrument LART must project its final key-number scale.
      * Use ordinary notes and a scale of 0.5, without custom tuning or clamps. */
     {
         std::vector<uint8_t> single_keynum_scale(data);
         std::vector<uint8_t> single_keynum_art(keynum_art);
         write_u32(single_keynum_art, 36, 419430400u); // 0.5 * 12800 * 65536
-        std::vector<uint8_t> activation_lart(12, 0);
-        std::memcpy(activation_lart.data(), "LIST", 4);
-        write_u32(activation_lart, 4, 4);
-        std::memcpy(activation_lart.data() + 8, "lart", 4);
-        single_keynum_art.insert(single_keynum_art.end(),
-                                 activation_lart.begin(), activation_lart.end());
         single_keynum_scale.insert(single_keynum_scale.begin() + insh_end,
                                     single_keynum_art.begin(), single_keynum_art.end());
         for(size_t size_field : { instrument + 4, lins + 4, size_t{4} })

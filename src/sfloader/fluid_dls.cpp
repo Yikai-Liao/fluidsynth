@@ -617,10 +617,11 @@ struct fluid_dls_font
     // lins
     inline void parse_lins(fluid_dls_chunk chunk);
     inline void parse_ins(fluid_dls_chunk chunk, fluid_dls_instrument &instrument);
-    inline bool parse_lart(fluid_dls_chunk chunk, fluid_dls_articulation &articulation);
+    inline bool list_applicable(fluid_dls_chunk chunk);
+    inline size_t merge_articulation(fluid_dls_chunk chunk, size_t index);
     inline void parse_art(fluid_dls_chunk chunk, fluid_dls_articulation &articulation);
     inline void parse_lrgn(fluid_dls_chunk chunk, fluid_dls_instrument &instrument);
-    inline bool parse_rgn(fluid_dls_chunk chunk, fluid_dls_region &region);
+    inline void parse_rgn(fluid_dls_chunk chunk, fluid_dls_instrument &instrument);
 
     // pgal
     // see PGAL_FCC
@@ -2554,22 +2555,7 @@ inline void fluid_dls_font::parse_ins(fluid_dls_chunk chunk, fluid_dls_instrumen
 
         case LART_FCC:
         case LAR2_FCC:
-            if(articulation_index == static_cast<size_t>(-1))
-            {
-                articulation_index = articulations.size();
-
-                if(!parse_lart(subchunk, articulations.emplace_back()))  // bypassed by cdl
-                {
-                    FLUID_LOG(FLUID_DBG, "A instrument lart chunk is bypassed by cdl");
-                    articulations.pop_back();
-                    articulation_index = static_cast<size_t>(-1);
-                }
-
-                break;
-            }
-
-            parse_lart(subchunk, articulations[articulation_index]);
-            instrument.keynum_scale = articulations[articulation_index].keynum_scale;
+            articulation_index = merge_articulation(subchunk, articulation_index);
             break;
 
         case LRGN_FCC:
@@ -2584,6 +2570,11 @@ inline void fluid_dls_font::parse_ins(fluid_dls_chunk chunk, fluid_dls_instrumen
         }
     });
 
+    if(articulation_index != static_cast<size_t>(-1))
+    {
+        instrument.keynum_scale = articulations[articulation_index].keynum_scale;
+    }
+
     for(auto &region : instrument.regions)
     {
         if(region.artindex == static_cast<uint32_t>(-1))
@@ -2593,25 +2584,58 @@ inline void fluid_dls_font::parse_ins(fluid_dls_chunk chunk, fluid_dls_instrumen
     }
 }
 
-inline bool fluid_dls_font::parse_lart(fluid_dls_chunk chunk, fluid_dls_articulation &articulation)
+inline bool fluid_dls_font::list_applicable(fluid_dls_chunk chunk)
 {
-    bool applicable = true;
-
-    // DLS 2.2 section 2.6 allows CDL after ART. Check conditions before
-    // modifying an articulation shared with earlier lists at this level.
-    visit_subchunks(chunk, 0, [&](fluid_dls_chunk subchunk)
+    if(chunk.headersize != 12)
     {
-        auto reader = subchunk.data;
-        if(applicable && subchunk.id == CDL_FCC)
-        {
-            applicable = execute_cdls(reader);
-        }
-    });
-
-    if(!applicable)
-    {
-        return false;
+        throw std::runtime_error{ "Expected a conditional DLS LIST" };
     }
+
+    bool applicable = true;
+    auto reader = chunk.data;
+    while(reader.remaining() != 0)
+    {
+        auto child = fluid_dls_read_chunk(reader);
+        if(applicable && child.id == CDL_FCC)
+        {
+            try
+            {
+                applicable = execute_cdls(child.data);
+            }
+            catch(...)
+            {
+                std::throw_with_nested(std::runtime_error{string_format(
+                    "CDL ofs=0x%llx in LIST '" FMT_4CC_SPEC "' ofs=0x%llx",
+                    static_cast<unsigned long long>(child.offset), FMT_4CC_ARG(chunk.id),
+                    static_cast<unsigned long long>(chunk.offset))});
+            }
+            // Preserve region short-circuiting; articulation lists retain their
+            // full framing scan, without evaluating later CDL after false.
+            if(!applicable && (chunk.id == RGN_FCC || chunk.id == RGN2_FCC))
+            {
+                return false;
+            }
+        }
+    }
+    return applicable;
+}
+
+inline size_t fluid_dls_font::merge_articulation(fluid_dls_chunk chunk, size_t index)
+{
+    // DLS 2.2 section 2.6 permits CDL after ART in articulation lists.
+    // Allocate and mutate only after the list applies.
+    if(!list_applicable(chunk))
+    {
+        FLUID_LOG(FLUID_DBG, "An articulation list is bypassed by cdl");
+        return index;
+    }
+
+    if(index == static_cast<size_t>(-1))
+    {
+        index = articulations.size();
+        articulations.emplace_back();
+    }
+    auto &articulation = articulations[index];
 
     visit_subchunks(chunk, 0, [&](fluid_dls_chunk subchunk)
     {
@@ -2634,7 +2658,7 @@ inline bool fluid_dls_font::parse_lart(fluid_dls_chunk chunk, fluid_dls_articula
         parse_art(subchunk, articulation);
     });
 
-    return true;
+    return index;
 }
 
 inline void fluid_dls_font::parse_art(fluid_dls_chunk chunk, fluid_dls_articulation &articulation)
@@ -2724,17 +2748,8 @@ inline void fluid_dls_font::parse_lrgn(fluid_dls_chunk chunk, fluid_dls_instrume
         {
         case RGN_FCC:
         case RGN2_FCC:
-        {
-            auto &region = instrument.regions.emplace_back();
-
-            if(!parse_rgn(subchunk, region))  // bypassed by cdl
-            {
-                FLUID_LOG(FLUID_DBG, "Region ofs=0x%llx is bypassed by cdl", pos);
-                instrument.regions.pop_back();
-            }
-
+            parse_rgn(subchunk, instrument);
             break;
-        }
 
         case CRS1_FCC:
         case CRS2_FCC:
@@ -2751,144 +2766,116 @@ inline void fluid_dls_font::parse_lrgn(fluid_dls_chunk chunk, fluid_dls_instrume
     });
 }
 
-inline bool fluid_dls_font::parse_rgn(fluid_dls_chunk chunk, fluid_dls_region &region)
+inline void fluid_dls_font::parse_rgn(fluid_dls_chunk chunk, fluid_dls_instrument &instrument)
 {
     static int self_exclusive_class [[maybe_unused]] = 65536; // exclusive number for self-exclusive regions
     size_t articulation_index = -1;
 
-    bool bypassed{};
-
-    try
+    // A false region guard suppresses all of its semantic work, including
+    // nested articulation. Stop at false as before, but do not mutate first.
+    if(!list_applicable(chunk))
     {
-        visit_subchunks(chunk, 0, [&](fluid_dls_chunk subchunk)
-        {
-            const auto pos = subchunk.offset;
-            auto reader = subchunk.data;
-            switch(subchunk.id)
-            {
-            case INFO_FCC:
-            case CRS1_FCC:
-            case CRS2_FCC:
-                break;
-
-            case WLNK_FCC:
-                if(subchunk.data.size() < 12)
-                {
-                    throw std::runtime_error{ "DLS wlnk chunk is too small" };
-                }
-
-                reader.skip(8); // fluidsynth does not implement phase-locking and multichannel output
-                region.sampleindex = reader.read_u32();
-
-                if(region.sampleindex >= samples.size())
-                {
-                    throw std::runtime_error{ string_format("Sample index %u is out of range",
-                                                            static_cast<unsigned>(region.sampleindex)) };
-                }
-
-                break;
-
-            case CDL_FCC:
-                if(!execute_cdls(reader))
-                {
-                    bypassed = true;
-                    throw std::exception{};
-                }
-
-                break;
-
-            case LART_FCC:
-            case LAR2_FCC:
-                if(articulation_index == static_cast<size_t>(-1))
-                {
-                    articulation_index = articulations.size();
-
-                    if(!parse_lart(subchunk, articulations.emplace_back()))
-                    {
-                        FLUID_LOG(FLUID_DBG, "A region lart chunk is bypassed by cdl");
-                        articulations.pop_back();
-                        articulation_index = static_cast<size_t>(-1);
-                    }
-
-                    break;
-                }
-
-                parse_lart(subchunk, articulations[articulation_index]);
-
-                if(articulations[articulation_index].keynum_scale != 1.0f)
-                {
-                    FLUID_LOG(FLUID_WARN, "Key Number Generator is not allowed in region articulation, ignoring");
-                }
-
-                break;
-
-            case RGNH_FCC:
-            {
-                if(subchunk.data.size() < 12)
-                {
-                    throw std::runtime_error{ "DLS rgnh chunk is too small" };
-                }
-
-                uint16_t temp;
-                temp = reader.read_u16(); // key low
-                region.range.keylo = temp;
-                temp = reader.read_u16(); // key high
-                region.range.keyhi = temp;
-                temp = reader.read_u16(); // vel low
-                region.range.vello = temp;
-                temp = reader.read_u16(); // vel high
-                region.range.velhi = temp;
-                temp = reader.read_u16();                              // fusOptions
-
-                if((temp & F_RGN_OPTION_SELFNONEXCLUSIVE) == 0)  // self-exclusive
-                {
-                    // implement this flag doesn't make sense
-                    // region.exclusive_class = self_exclusive_class++;
-                }
-
-                temp = reader.read_u16(); // keyGroup
-
-                if(temp != 0)
-                {
-                    region.exclusive_class = temp;
-                }
-
-                // usLayer is useless
-                break;
-            }
-
-            // DLS-2 1.14.6 Each region contains at minimum a <rgnh-ck> region header chunk and a <wlnk-ck> wave link chunk.
-            // It may also **optionally** contain a <wsmp-ck> wave sample chunk. ...
-            // DLS-2 2.2 <rgn-list> -> ... <wsmp-ck> ...
-            // DLS-2 2.2 "the structure tree" ... rgn -> ... wsmp (optional) ...
-            // DLS-2 2.8 Other chunks at the same nesting level include a <wsmp-ck> wave sample chunk.
-            case WSMP_FCC:
-                region.wsmp = parse_wsmp(reader);
-
-                break;
-
-            default:
-                FLUID_LOG(FLUID_WARN,
-                          "Unknown DLS chunk '" FMT_4CC_SPEC "' ofs=0x%llx in LIST[rgn]",
-                          FMT_4CC_ARG(subchunk.id),
-                          pos);
-                break;
-            }
-        });
+        FLUID_LOG(FLUID_DBG, "Region ofs=0x%llx is bypassed by cdl", chunk.offset);
+        return;
     }
-    catch(...)
+    auto &region = instrument.regions.emplace_back();
+
+    visit_subchunks(chunk, 0, [&](fluid_dls_chunk subchunk)
     {
-        if(bypassed)
+        const auto pos = subchunk.offset;
+        auto reader = subchunk.data;
+        switch(subchunk.id)
         {
-            return false;
+        case INFO_FCC:
+        case CRS1_FCC:
+        case CRS2_FCC:
+            break;
+
+        case WLNK_FCC:
+            if(subchunk.data.size() < 12)
+            {
+                throw std::runtime_error{ "DLS wlnk chunk is too small" };
+            }
+
+            reader.skip(8); // fluidsynth does not implement phase-locking and multichannel output
+            region.sampleindex = reader.read_u32();
+
+            if(region.sampleindex >= samples.size())
+            {
+                throw std::runtime_error{ string_format("Sample index %u is out of range",
+                                                        static_cast<unsigned>(region.sampleindex)) };
+            }
+
+            break;
+
+        case CDL_FCC:
+            break;
+
+        case LART_FCC:
+        case LAR2_FCC:
+            articulation_index = merge_articulation(subchunk, articulation_index);
+            break;
+
+        case RGNH_FCC:
+        {
+            if(subchunk.data.size() < 12)
+            {
+                throw std::runtime_error{ "DLS rgnh chunk is too small" };
+            }
+
+            uint16_t temp;
+            temp = reader.read_u16(); // key low
+            region.range.keylo = temp;
+            temp = reader.read_u16(); // key high
+            region.range.keyhi = temp;
+            temp = reader.read_u16(); // vel low
+            region.range.vello = temp;
+            temp = reader.read_u16(); // vel high
+            region.range.velhi = temp;
+            temp = reader.read_u16();                              // fusOptions
+
+            if((temp & F_RGN_OPTION_SELFNONEXCLUSIVE) == 0)  // self-exclusive
+            {
+                // implement this flag doesn't make sense
+                // region.exclusive_class = self_exclusive_class++;
+            }
+
+            temp = reader.read_u16(); // keyGroup
+
+            if(temp != 0)
+            {
+                region.exclusive_class = temp;
+            }
+
+            // usLayer is useless
+            break;
         }
 
-        throw;
-    }
+        // DLS-2 1.14.6 Each region contains at minimum a <rgnh-ck> region header chunk and a <wlnk-ck> wave link chunk.
+        // It may also **optionally** contain a <wsmp-ck> wave sample chunk. ...
+        // DLS-2 2.2 <rgn-list> -> ... <wsmp-ck> ...
+        // DLS-2 2.2 "the structure tree" ... rgn -> ... wsmp (optional) ...
+        // DLS-2 2.8 Other chunks at the same nesting level include a <wsmp-ck> wave sample chunk.
+        case WSMP_FCC:
+            region.wsmp = parse_wsmp(reader);
+
+            break;
+
+        default:
+            FLUID_LOG(FLUID_WARN,
+                      "Unknown DLS chunk '" FMT_4CC_SPEC "' ofs=0x%llx in LIST[rgn]",
+                      FMT_4CC_ARG(subchunk.id),
+                      pos);
+            break;
+        }
+    });
 
     region.artindex = articulation_index;
-
-    return true;
+    if(articulation_index != static_cast<size_t>(-1) &&
+            articulations[articulation_index].keynum_scale != 1.0f)
+    {
+        FLUID_LOG(FLUID_WARN, "Key Number Generator is not allowed in region articulation, ignoring");
+    }
 }
 
 inline void fluid_dls_font::parse_pgal(fluid_dls_reader reader)
