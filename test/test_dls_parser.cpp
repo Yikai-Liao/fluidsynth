@@ -222,7 +222,7 @@ static size_t append_conditional_region_articulation(std::vector<uint8_t> &data,
     return insert_at + art;
 }
 
-static std::vector<float> playing_voice_attenuations(const char *path)
+static std::vector<float> playing_voice_generators(const char *path, int generator)
 {
     fluid_settings_t *settings = new_fluid_settings();
     TEST_ASSERT(settings != nullptr);
@@ -235,19 +235,24 @@ static std::vector<float> playing_voice_attenuations(const char *path)
 
     fluid_voice_t *voices[512] = {};
     fluid_synth_get_voicelist(synth, voices, 512, -1);
-    std::vector<float> attenuations;
+    std::vector<float> values;
 
     for(fluid_voice_t *voice : voices)
     {
         if(voice != nullptr && fluid_voice_is_playing(voice))
         {
-            attenuations.push_back(fluid_voice_gen_get(voice, GEN_ATTENUATION));
+            values.push_back(fluid_voice_gen_get(voice, generator));
         }
     }
 
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
-    return attenuations;
+    return values;
+}
+
+static std::vector<float> playing_voice_attenuations(const char *path)
+{
+    return playing_voice_generators(path, GEN_ATTENUATION);
 }
 
 static void write_dls_file(const char *path, const std::vector<uint8_t> &data)
@@ -1028,6 +1033,50 @@ int main(void)
                                          "wsmp");
     TEST_ASSERT(region_wsmp < invalid_wsmp_note.size());
 
+    /* WSMP owns the whole payload: declared header/loop extensions are legal,
+     * undeclared trailing bytes are not. Retain Crystal's small-cbSize quirk. */
+    const char *wsmp_layout_path = "test_dls_wsmp_layout_tmp.dls";
+    for(int layout = 0; layout < 3; ++layout)
+    {
+        std::vector<uint8_t> layout_data(data);
+        const uint32_t growth = layout == 0 ? 8 : (layout == 1 ? 2 : 0);
+        if(layout == 0)
+        {
+            layout_data.insert(layout_data.begin() + region_wsmp + 28, 4, 0x5a);
+            layout_data.insert(layout_data.begin() + region_wsmp + 48, 4, 0xa5);
+            write_u32(layout_data, region_wsmp + 8, 24);  // Header extension
+            write_u32(layout_data, region_wsmp + 32, 20); // Loop extension
+        }
+        else if(layout == 1)
+        {
+            layout_data.insert(layout_data.begin() + region_wsmp + 44, 2, 0);
+        }
+        else
+        {
+            write_u32(layout_data, region_wsmp + 8, 0);
+            write_u32(layout_data, region_wsmp + 28, 0);
+        }
+        for(size_t size_field : { region_wsmp + 4, first_region + 4, first_lrgn + 4,
+                                  first_instrument + 4, lins_with_invalid_wsmp + 4, size_t{4} })
+        {
+            write_u32(layout_data, size_field, read_u32(layout_data, size_field) + growth);
+        }
+        write_dls_file(wsmp_layout_path, layout_data);
+        settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int layout_sfont = fluid_synth_sfload(synth, wsmp_layout_path, 1);
+        TEST_ASSERT((layout_sfont != FLUID_FAILED) == (layout != 1));
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+        if(layout != 1)
+        {
+            TEST_ASSERT(playing_voice_attenuations(wsmp_layout_path) == original_attenuations);
+        }
+    }
+    TEST_ASSERT(std::remove(wsmp_layout_path) == 0);
+
     /* lGain is signed 32-bit relative gain. Its minimum must become positive
      * attenuation, rather than overflowing during integer negation. */
     TEST_ASSERT(read_u32(data, region_wsmp + 16) == 0);
@@ -1039,6 +1088,59 @@ int main(void)
     expected_attenuations.front() += 32768.0f;
     TEST_ASSERT(playing_voice_attenuations(minimum_gain_path) == expected_attenuations);
     TEST_ASSERT(std::remove(minimum_gain_path) == 0);
+
+    /* Wave inheritance and a region override must interpret the same WSMP
+     * identically. Keep the second selected region's override unchanged, so a
+     * wave gain cannot accidentally be added on top of an explicit override. */
+    const size_t first_wlnk = find_chunk(data, first_region + 12, first_region_end, "wlnk");
+    TEST_ASSERT(first_wlnk < data.size());
+    const uint32_t sample_index = read_u32(data, first_wlnk + 16);
+    TEST_ASSERT(sample_index < bounds_cue_count);
+    const size_t linked_wave = wvpl + 12 + read_u32(data, bounds_cues + 4 * sample_index);
+    const size_t linked_wsmp = find_chunk(data, linked_wave + 12,
+                                          linked_wave + 8 + read_u32(data, linked_wave + 4), "wsmp");
+    TEST_ASSERT(linked_wsmp < data.size());
+    TEST_ASSERT(read_u32(data, linked_wsmp + 4) == 36);
+    TEST_ASSERT(read_u32(data, region_wsmp + 4) == 36);
+    struct playback_case
+    {
+        uint32_t gain;
+        uint32_t loop_type;
+        uint32_t loop_length;
+        float attenuation;
+        float sample_mode;
+    };
+    const playback_case playback_cases[] = {
+        { 0, 0, 100, 0.0f, 1.0f },
+        { static_cast<uint32_t>(-96 * 65536), 1, 100, 96.0f, 3.0f },
+        { 0x80000000u, 99, 100, 32768.0f, 3.0f },
+        { static_cast<uint32_t>(-96 * 65536), 1, 0, 96.0f, 0.0f }
+    };
+    const char *playback_path = "test_dls_normalized_playback_tmp.dls";
+    for(const auto &test : playback_cases)
+    {
+        std::vector<uint8_t> playback(data);
+        write_u32(playback, region_wsmp + 16, test.gain);
+        write_u32(playback, region_wsmp + 32, test.loop_type);
+        write_u32(playback, region_wsmp + 40, test.loop_length);
+        std::copy(playback.begin() + region_wsmp + 8,
+                  playback.begin() + region_wsmp + 44,
+                  playback.begin() + linked_wsmp + 8);
+        write_dls_file(playback_path, playback);
+        auto expected = original_attenuations;
+        expected.front() += test.attenuation;
+        TEST_ASSERT(playing_voice_attenuations(playback_path) == expected);
+        const auto override_modes = playing_voice_generators(playback_path, GEN_SAMPLEMODE);
+        TEST_ASSERT(!override_modes.empty());
+        TEST_ASSERT(override_modes.front() == test.sample_mode);
+
+        // An unknown chunk is skipped without moving any pool-table offsets.
+        std::memcpy(playback.data() + region_wsmp, "JUNK", 4);
+        write_dls_file(playback_path, playback);
+        TEST_ASSERT(playing_voice_attenuations(playback_path) == expected);
+        TEST_ASSERT(playing_voice_generators(playback_path, GEN_SAMPLEMODE) == override_modes);
+    }
+    TEST_ASSERT(std::remove(playback_path) == 0);
 
     write_u16(invalid_wsmp_note, region_wsmp + 12, 255);
 
@@ -1315,6 +1417,20 @@ int main(void)
     TEST_SUCCESS(fluid_synth_activate_key_tuning(synth, 0, 1, "DLS key test", pitches, 0));
     TEST_SUCCESS(fluid_synth_activate_tuning(synth, 0, 0, 1, 1));
     TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    fluid_voice_t *melodic_voices[512] = {};
+    fluid_synth_get_voicelist(synth, melodic_voices, 512, -1);
+    size_t melodic_voice_count = 0;
+    for(fluid_voice_t *voice : melodic_voices)
+    {
+        if(voice != nullptr && fluid_voice_is_playing(voice))
+        {
+            TEST_ASSERT(fluid_voice_get_actual_key(voice) == 127);
+            melodic_voice_count++;
+        }
+    }
+    /* The tuned selection key is zero, selecting the two low-key regions.
+     * Neither the scaled key (132) nor clamped voice key (127) selects them. */
+    TEST_ASSERT(melodic_voice_count == 2);
     float audio[256 * 2];
     TEST_SUCCESS(fluid_synth_write_float(synth, 256, audio, 0, 2, audio, 1, 2));
     delete_fluid_synth(synth);

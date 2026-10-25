@@ -115,6 +115,9 @@ static inline void log_exception(int level, const std::exception &exc, int nest_
 
 // The single authority for callback I/O and the physical file position. All
 // parsing, including libsndfile, goes through this source after initialization.
+// Owned by one synchronous load invocation, not shared between loading threads.
+// Views share a cursor authority, not synchronization; callbacks must not
+// reposition a handle outside this source while parsing.
 class fluid_dls_input
 {
     const fluid_file_callbacks_t &callbacks;
@@ -401,15 +404,67 @@ struct fluid_dls_articulation
     }
 };
 
-// wsmp is used in LIST[wave] chunk and LIST[rgn ] chunk, converting to different fluid structures
+// A runtime value shared by inherited wave settings and region overrides.
+struct fluid_dls_sample_playback
+{
+    fluid_real_t attenuation_cb{};
+    unsigned char sample_mode{};
+};
+
+// Keep the compact file representation; playback() alone interprets gain units
+// and loop modes. Root/tuning and relative loops have different wave/region uses.
 struct fluid_dls_wsmp
 {
     uint16_t unity_note;
     int16_t fine_tune; // in cents
-    int32_t gain;      // in (cB/65536)
+    int32_t gain;      // signed 16.16 relative gain in cB
     uint32_t loop_type;
     uint32_t loop_start;
     uint32_t loop_length;
+
+    fluid_dls_sample_playback playback() const
+    {
+        // Widen before negating: INT32_MIN is a valid encoded gain.
+        return { -static_cast<fluid_real_t>(gain) / 65536.0f,
+                 static_cast<unsigned char>(loop_length == 0 ? 0 : loop_type == 0 ? 1 : 3) };
+    }
+
+    bool apply_sample_loop(fluid_sample_t &sample, unsigned int buffer_bytes) const
+    {
+        const auto loop = absolute_loop(sample.start);
+        // The sanitizer's max_end is buffer_bytes / 2, hence always < UINT_MAX.
+        // UINT_MAX is therefore an invalid endpoint, not a clamped valid loop.
+        // Wide DLS bounds are ordered; this handoff preserves their validity
+        // without wrapping before the existing full-buffer fallback policy.
+        const auto invalid = std::numeric_limits<unsigned int>::max();
+        sample.loopstart = static_cast<unsigned int>(std::min<fluid_long_long_t>(loop.start, invalid));
+        sample.loopend = static_cast<unsigned int>(std::min<fluid_long_long_t>(loop.end, invalid));
+        return fluid_sample_sanitize_loop(&sample, buffer_bytes);
+    }
+
+    void apply_region_loop(fluid_voice_t *voice, const fluid_sample_t &sample) const
+    {
+        const auto loop = absolute_loop(sample.start);
+        // These are generator offsets, not sanitized base-wave pointers.
+        // Keep subtraction wide before conversion to the generator value type.
+        fluid_voice_gen_set(voice, GEN_STARTLOOPADDROFS,
+                            static_cast<fluid_real_t>(loop.start - sample.loopstart));
+        fluid_voice_gen_set(voice, GEN_ENDLOOPADDROFS,
+                            static_cast<fluid_real_t>(loop.end - sample.loopend));
+    }
+
+private:
+    struct loop_bounds
+    {
+        fluid_long_long_t start;
+        fluid_long_long_t end;
+    };
+
+    loop_bounds absolute_loop(unsigned int sample_start) const
+    {
+        const auto start = static_cast<fluid_long_long_t>(sample_start) + loop_start;
+        return { start, start + loop_length };
+    }
 };
 
 struct fluid_dls_sample
@@ -432,8 +487,8 @@ struct fluid_dls_region
 
     uint32_t artindex = -1;
     uint32_t sampleindex{};
-    unsigned char samplemode_inherited{}; // loop_type from sample's wsmp, converted to SF2 sample mode
-    fluid_real_t gain_inherited{};        // gain from sample's wsmp, in cB
+    unsigned char samplemode_inherited{};
+    fluid_real_t attenuation_inherited{}; // Runtime attenuation in cB, not encoded gain
 };
 
 // SF2's instrument level does not exist in DLS, preset is called instrument in DLS
@@ -547,11 +602,13 @@ struct fluid_dls_font
     inline std::optional<uint32_t> eval_dlsid_query(const DLSID &dlsid);
     inline bool execute_cdls(fluid_dls_reader reader);
 
-    // wave
+    // All decoded PCM growth and runtime index formation share one boundary.
     inline int16_t *append_sample_frames(fluid_dls_sample &sample, fluid_long_long_t frames);
+
+    // wave
     inline void parse_wvpl(fluid_dls_chunk chunk);
     inline void parse_wave(fluid_dls_chunk chunk, fluid_dls_sample &sample);
-    inline uint32_t parse_wsmp(fluid_dls_reader reader, fluid_dls_wsmp &wsmp);
+    inline fluid_dls_wsmp parse_wsmp(fluid_dls_reader reader);
 
 #if LIBSNDFILE_SUPPORT
     inline void parse_wave_sndfile(fluid_dls_chunk chunk, fluid_dls_sample &sample);
@@ -1581,7 +1638,7 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
             case COLH_FCC:
             {
-                // read it now to preserve the instrument vector
+                // Keep the count validity contract, but do not allocate from a hint.
                 if(subchunk.data.size() != 4)
                 {
                     throw std::runtime_error{ "DLS colh chunk size is not 4 bytes" };
@@ -1763,11 +1820,9 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
         if(sample.wsmp.has_value())
         {
             const auto &wsmp = sample.wsmp.value();
-            fluid.loopstart = sample.start + wsmp.loop_start;
-            fluid.loopend = sample.start + wsmp.loop_start + wsmp.loop_length;
             fluid.origpitch = wsmp.unity_note;
             fluid.pitchadj = wsmp.fine_tune;
-            invalid_loops_were_sanitized |= fluid_sample_sanitize_loop(&fluid, sample_bytes);
+            invalid_loops_were_sanitized |= wsmp.apply_sample_loop(fluid, sample_bytes);
         }
         else
         {
@@ -1803,37 +1858,9 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
             if(sample.wsmp.has_value())
             {
-                const auto &wsmp = sample.wsmp.value();
-
-                if(wsmp.loop_length == 0)
-                {
-                    region.samplemode_inherited = 0;
-                }
-                else
-                {
-                    if(wsmp.loop_type == 0)
-                    {
-                        region.samplemode_inherited = 1;
-                    }
-                    else if(wsmp.loop_type == 1)
-                    {
-                        region.samplemode_inherited = 3;
-                    }
-                    else
-                    {
-                        FLUID_LOG(FLUID_WARN,
-                                  "Invalid loop type %u, defaulting to loop and release",
-                                  static_cast<unsigned int>(wsmp.loop_type));
-                        region.samplemode_inherited = 3;
-                    }
-                }
-
-                region.gain_inherited = static_cast<fluid_real_t>(wsmp.gain) / 65536;
-            }
-            else
-            {
-                region.samplemode_inherited = 0;
-                region.gain_inherited = 0;
+                const auto playback = sample.wsmp->playback();
+                region.samplemode_inherited = playback.sample_mode;
+                region.attenuation_inherited = playback.attenuation_cb;
             }
         }
     }
@@ -2162,7 +2189,6 @@ inline bool fluid_dls_font::execute_cdls(fluid_dls_reader reader)
     return pop() != 0;
 }
 
-// wave
 // Runtime sample indices are unsigned, and sample validation/sanitation takes
 // an unsigned byte count. This is a representation bound, not a resource budget.
 inline int16_t *fluid_dls_font::append_sample_frames(fluid_dls_sample &sample,
@@ -2183,6 +2209,7 @@ inline int16_t *fluid_dls_font::append_sample_frames(fluid_dls_sample &sample,
     return sampledata.empty() ? nullptr : sampledata.data() + start;
 }
 
+// wave
 inline void fluid_dls_font::parse_wvpl(fluid_dls_chunk chunk)
 {
     const auto offset = chunk.offset;
@@ -2285,10 +2312,7 @@ inline void fluid_dls_font::parse_wave(fluid_dls_chunk chunk, fluid_dls_sample &
         }
 
         case WSMP_FCC:
-            if(parse_wsmp(reader, sample.wsmp.emplace()) != subchunk.data.size())
-            {
-                throw std::runtime_error{ "DLS wsmp chunk in wave chunk has corrupted size" };
-            }
+            sample.wsmp = parse_wsmp(reader);
 
             break;
 
@@ -2312,7 +2336,7 @@ inline void fluid_dls_font::parse_wave(fluid_dls_chunk chunk, fluid_dls_sample &
                 throw std::runtime_error{ "DLS data chunk not align to bitsPerSample" };
             }
 
-            auto samplelen = subchunk.data.size() / (bitsPerSample / 8);
+            const auto samplelen = subchunk.data.size() / (bitsPerSample / 8);
             auto *destination = append_sample_frames(sample, samplelen);
 
             char buffer[4096];
@@ -2366,9 +2390,9 @@ inline void fluid_dls_font::parse_wave(fluid_dls_chunk chunk, fluid_dls_sample &
 #endif
 }
 
-inline uint32_t fluid_dls_font::parse_wsmp(fluid_dls_reader reader,
-                                          fluid_dls_wsmp &wsmp)
+inline fluid_dls_wsmp fluid_dls_font::parse_wsmp(fluid_dls_reader reader)
 {
+    fluid_dls_wsmp wsmp{};
     const auto size = reader.size();
 
     if(size < 4)
@@ -2415,7 +2439,11 @@ inline uint32_t fluid_dls_font::parse_wsmp(fluid_dls_reader reader,
 
     if(loops == 0)
     {
-        return cbsize;
+        if(cbsize != size)
+        {
+            throw std::runtime_error{ "DLS wsmp has trailing data" };
+        }
+        return wsmp;
     }
 
     if(size - cbsize < 4)
@@ -2433,15 +2461,21 @@ inline uint32_t fluid_dls_font::parse_wsmp(fluid_dls_reader reader,
         loopcbsize = 16;
     }
 
-    if(loopcbsize > size - cbsize)
+    if(loopcbsize != size - cbsize)
     {
-        throw std::runtime_error{ "DLS wsmp loop exceeds its chunk" };
+        throw std::runtime_error{ "DLS wsmp loop size does not match its chunk" };
     }
 
     wsmp.loop_type = reader.read_u32();
     wsmp.loop_start = reader.read_u32();
     wsmp.loop_length = reader.read_u32();
-    return cbsize + loopcbsize;
+    reader.skip(loopcbsize - 16); // Preserve declared extension bytes.
+    if(wsmp.loop_length != 0 && wsmp.loop_type > 1)
+    {
+        FLUID_LOG(FLUID_WARN, "Invalid WSMP loop type %u, defaulting to loop and release",
+                  static_cast<unsigned>(wsmp.loop_type));
+    }
+    return wsmp;
 }
 
 // lins
@@ -2829,10 +2863,7 @@ inline bool fluid_dls_font::parse_rgn(fluid_dls_chunk chunk, fluid_dls_region &r
             // DLS-2 2.2 "the structure tree" ... rgn -> ... wsmp (optional) ...
             // DLS-2 2.8 Other chunks at the same nesting level include a <wsmp-ck> wave sample chunk.
             case WSMP_FCC:
-                if(parse_wsmp(reader, region.wsmp.emplace()) != subchunk.data.size())
-                {
-                    throw std::runtime_error{ "DLS wsmp chunk in region has corrupted size" };
-                }
+                region.wsmp = parse_wsmp(reader);
 
                 break;
 
@@ -3309,65 +3340,81 @@ static int fluid_dls_preset_get_num(fluid_preset_t *preset) noexcept
     return static_cast<const fluid_dls_instrument_fluid_data *>(fluid_preset_get_data(preset))->pcnum;
 }
 
+// Selection is allowed outside MIDI range (and may select no region), whereas
+// the actual voice key always indexes 128-note runtime tables.
+struct fluid_dls_note_keys
+{
+    int selection_key;
+    int voice_key;
+};
+
+static fluid_dls_note_keys fluid_dls_resolve_note_keys(const fluid_dls_instrument &instrument,
+                                         fluid_channel_t *channel, int key)
+{
+    // Things affect region selection process:
+    // 1. Subtonal tuning, see https://github.com/FluidSynth/fluidsynth/issues/926
+    // 2. Key Number Generator
+    fluid_real_t selection_key_f = key;
+
+    // this is copied from fluid_defsfont
+    if(channel->channel_type == CHANNEL_TYPE_MELODIC)
+    {
+        selection_key_f = fluid_channel_get_key_pitch(channel, key) / 100.0f;
+    }
+
+    selection_key_f *= instrument.keynum_scale;
+
+    // key with subtonal tuning and key number generator applied
+    int selection_key;
+    if(!std::isfinite(selection_key_f) || selection_key_f <= std::numeric_limits<int>::min())
+    {
+        selection_key = std::numeric_limits<int>::min();
+    }
+    else if(selection_key_f >= std::numeric_limits<int>::max())
+    {
+        selection_key = std::numeric_limits<int>::max();
+    }
+    else
+    {
+        selection_key = static_cast<int>(std::round(selection_key_f));
+    }
+    // key with only key number generator applied
+    int voice_key;
+    if (channel->channel_type == CHANNEL_TYPE_DRUM)
+    {
+        if(instrument.drum_note_aliasing != nullptr)
+        {
+            selection_key = instrument.drum_note_aliasing[std::clamp(selection_key, 0, 127)];
+        }
+        // drum channel has no subtonal tuning, so voice_key == selection_key
+        voice_key = selection_key;
+    }
+    else
+    {
+        voice_key = static_cast<int>(std::round(key * instrument.keynum_scale));
+    }
+    voice_key = std::clamp(voice_key, 0, 127);
+
+    return { selection_key, voice_key };
+}
+
 static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth, int chan, int key, int vel) noexcept
 {
     auto *dlspreset = static_cast<fluid_dls_instrument_fluid_data *>(fluid_preset_get_data(preset))->instrument;
 
-    // Things affect region selection process:
-    // 1. Subtonal tuning, see https://github.com/FluidSynth/fluidsynth/issues/926
-    // 2. Key Number Generator
-    fluid_real_t tuned_key_f = key;
-
-    // this is copied from fluid_defsfont
-    if(synth->channel[chan]->channel_type == CHANNEL_TYPE_MELODIC)
-    {
-        tuned_key_f = fluid_channel_get_key_pitch(synth->channel[chan], key) / 100.0f;
-    }
-
-    tuned_key_f *= dlspreset->keynum_scale;
-
-    // key with subtonal tuning and key number generator applied
-    int tuned_key;
-    if(!std::isfinite(tuned_key_f) || tuned_key_f <= std::numeric_limits<int>::min())
-    {
-        tuned_key = std::numeric_limits<int>::min();
-    }
-    else if(tuned_key_f >= std::numeric_limits<int>::max())
-    {
-        tuned_key = std::numeric_limits<int>::max();
-    }
-    else
-    {
-        tuned_key = static_cast<int>(std::round(tuned_key_f));
-    }
-    // key with only key number generator applied
-    int adjusted_key;
-    if (synth->channel[chan]->channel_type == CHANNEL_TYPE_DRUM)
-    {
-        if(dlspreset->drum_note_aliasing != nullptr)
-        {
-            tuned_key = dlspreset->drum_note_aliasing[std::clamp(tuned_key, 0, 127)];
-        }
-        // drum channel has no subtonal tuning, so adjusted_key == tuned_Key
-        adjusted_key = tuned_key;
-    }
-    else
-    {
-        adjusted_key = static_cast<int>(std::round(key * dlspreset->keynum_scale));
-    }
-    adjusted_key = std::clamp(adjusted_key, 0, 127);
+    const auto keys = fluid_dls_resolve_note_keys(*dlspreset, synth->channel[chan], key);
 
     for(auto &region : dlspreset->regions)
     {
         auto *sample = dlspreset->samples_fluid + region.sampleindex;
         // Check for zero-length samples, typically caused by samples that failed fluid_sample_validate()
-        if(!fluid_zone_inside_range(&region.range, tuned_key, vel) || sample->start == sample->end)
+        if(!fluid_zone_inside_range(&region.range, keys.selection_key, vel) || sample->start == sample->end)
         {
             continue;
         }
 
         auto *voice = fluid_synth_alloc_voice_LOCAL(
-                          synth, sample, chan, adjusted_key, vel, &region.range);
+                          synth, sample, chan, keys.voice_key, vel, &region.range);
 
         if(voice == nullptr)
         {
@@ -3413,43 +3460,12 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
 
             fluid_voice_gen_set(voice, GEN_OVERRIDEROOTKEY, wsmp.unity_note);
             fluid_voice_gen_incr(voice, GEN_FINETUNE, wsmp.fine_tune - sample.pitchadj);
-            fluid_voice_gen_incr(voice, GEN_ATTENUATION, -static_cast<fluid_real_t>(wsmp.gain) / 65536.0f);
-
-            if(wsmp.loop_length != 0)
-            {
-                if(wsmp.loop_type == 0)
-                {
-                    fluid_voice_gen_set(voice, GEN_SAMPLEMODE, 1);
-                }
-                else if(wsmp.loop_type == 1)
-                {
-                    fluid_voice_gen_set(voice, GEN_SAMPLEMODE, 3);
-                }
-                else
-                {
-                    FLUID_LOG(FLUID_WARN, "invalid loop type of region wsmp, set to loop and release");
-                    fluid_voice_gen_set(voice, GEN_SAMPLEMODE, 3);
-                }
-            }
-            else
-            {
-                fluid_voice_gen_set(voice, GEN_SAMPLEMODE, 0);
-            }
-
-            fluid_voice_gen_set(voice,
-                                GEN_STARTLOOPADDROFS,
-                                static_cast<int>(sample.start + wsmp.loop_start) -
-                                static_cast<int>(sample.loopstart));
-            fluid_voice_gen_set(voice,
-                                GEN_ENDLOOPADDROFS,
-                                static_cast<int>(sample.start + wsmp.loop_start + wsmp.loop_length) -
-                                static_cast<int>(sample.loopend));
+            wsmp.apply_region_loop(voice, sample);
         }
-        else
-        {
-            fluid_voice_gen_incr(voice, GEN_ATTENUATION, -region.gain_inherited);
-            fluid_voice_gen_set(voice, GEN_SAMPLEMODE, region.samplemode_inherited);
-        }
+        const auto playback = region.wsmp ? region.wsmp->playback()
+                              : fluid_dls_sample_playback{ region.attenuation_inherited, region.samplemode_inherited };
+        fluid_voice_gen_incr(voice, GEN_ATTENUATION, playback.attenuation_cb);
+        fluid_voice_gen_set(voice, GEN_SAMPLEMODE, playback.sample_mode);
 
         fluid_voice_gen_set(voice, GEN_EXCLUSIVECLASS, region.exclusive_class);
 
