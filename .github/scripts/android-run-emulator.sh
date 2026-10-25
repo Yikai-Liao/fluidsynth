@@ -59,5 +59,4 @@ export NDK="$ANDROID_NDK_HOME" NDK_TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/
 export ARCH=$([[ "$abi" == x86 ]] && echo i686 || echo x86_64) ANDROID_TARGET_ABI=
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 cd "$logs"
-# Trace ADB setup commands as the upstream runner prepares and executes tests.
-timeout 600 bash -x "$script_dir/../../test/run-android-tests.sh" 2>&1 | tee native-tests.log
+timeout 600 bash "$script_dir/../../test/run-android-tests.sh" 2>&1 | tee native-tests.log

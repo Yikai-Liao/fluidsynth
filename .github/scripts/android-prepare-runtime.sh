@@ -8,6 +8,9 @@ if [[ "$api" != 24 ]]; then
 fi
 abi=${1:?Usage: prepare-runtime.sh <armeabi-v7a|arm64-v8a> <runtime-directory>}
 runtime=${2:?Specify a runtime directory}
+# Google publishes these archive names and SHA-1 checksums in:
+# https://dl.google.com/android/repository/sys-img/android/sys-img2-1.xml
+# Update the matching archive/checksum pair and the workflow runtime cache revision together.
 case "$abi" in
     armeabi-v7a) archive=armeabi-v7a-24_r07.zip; checksum=3454546b4eed2d6c3dd06d47757d6da9f4176033 ;;
     arm64-v8a) archive=arm64-v8a-24_r09.zip; checksum=e88ebdf4533efa0370603ee4ab0e7834e0cc364f ;;

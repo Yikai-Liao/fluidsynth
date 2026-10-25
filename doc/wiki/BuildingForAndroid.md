@@ -23,7 +23,57 @@ If you just want to use fluidsynth on Android without going through all the comp
 If you have questions or need support, contact our mailing list:
 https://lists.nongnu.org/mailman/listinfo/fluid-dev
 
-## Prerequisites
+## Reproduce the GitHub Actions build
+
+The Android workflow builds API 24 shared libraries for `armeabi-v7a`,
+`arm64-v8a`, `x86` and `x86_64` with NDK `27.3.13750724`. On an x86_64 Linux
+host, install that NDK through the Android SDK manager, plus CMake, Ninja,
+pkg-config, curl and the tar/xz utilities. From the repository root, use a
+separate checkout for each ABI:
+
+```sh
+git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
+export ANDROID_API=24 ABI=x86_64
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.3.13750724"
+bash .github/scripts/android-build-and-package.sh build-dependencies
+bash .github/scripts/android-build-and-package.sh build-and-install
+bash .github/scripts/android-build-and-package.sh package
+```
+
+The first operation downloads checksum-verified dependency releases and installs
+them under `build/android/prefix`. The second builds FluidSynth, its existing
+unit test executables and the Android asset loader, then installs FluidSynth.
+The `check` build target stages test data but does not execute tests when cross
+compiling. The final operation checks required features and library presence,
+checks every ELF LOAD segment for 16 KB alignment, and copies shared libraries
+and FluidSynth headers into `build/android/package`. The NDK's 32-bit C++ runtime
+is exempt from the alignment check; its 64-bit runtimes are checked.
+
+For `x86` or `x86_64`, install the SDK emulator, platform-tools and matching
+`system-images;android-24;default;<ABI>` package, grant your user access to
+`/dev/kvm`, then run the existing Android unit tests with:
+
+```sh
+bash .github/scripts/android-run-emulator.sh build/android "$ABI"
+```
+
+CI builds each ABI once. Two ARM jobs download the ARM test bundles and execute
+those Android/Bionic binaries on an ARM Linux host, without rebuilding them.
+These jobs test the Android userspace libraries on the host kernel; they do not
+test Android framework services, audio devices or an Android guest kernel.
+
+CI caches installed dependencies before FluidSynth is installed, the x86 SDK
+system images, and the extracted ARM runtime. It does not cache project builds or
+compiler output. Dependency cache keys include the host OS/architecture, target
+ABI, API and NDK; bump their `v1` revision when dependency versions, flags or
+installation policy change. Runtime image changes require the corresponding
+cache revision bump. System images contain target data independent of the host,
+so their keys use the API, image variant and ABI. Weekly scheduled builds bypass
+all three caches. The workflow uploads one library/header artifact per ABI;
+ARM test bundles transfer executables between jobs, and log artifacts retain
+build and test diagnostics.
+
+## Prerequisites for the standalone toolchain guide
 
 #### This guide...
 

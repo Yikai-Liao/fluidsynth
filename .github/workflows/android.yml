@@ -2,11 +2,6 @@ name: FluidSynth Android
 
 on:
   workflow_dispatch:
-    inputs:
-      clean_dependencies:
-        description: Build dependencies without restoring or saving the cache
-        type: boolean
-        default: false
   # Run every PR so path filters cannot leave required checks pending.
   pull_request:
   push:
@@ -40,14 +35,13 @@ env:
   ANDROID_API: '24'
 
 jobs:
-  android:
+  build-test:
     env:
       ABI: ${{ matrix.abi }}
-    name: Android ${{ matrix.abi }}
+    name: Build and test ${{ matrix.abi }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     strategy:
-      fail-fast: false
       matrix:
         abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
     steps:
@@ -55,7 +49,6 @@ jobs:
       - name: Checkout build dependencies
         run: git -c submodule.test/manual.update=none submodule update --init --depth=1 --recursive
       - name: Locate the pinned NDK
-        id: toolchain
         run: |
           ndk="$ANDROID_HOME/ndk/$NDK_VERSION"
           if [[ ! -f "$ndk/build/cmake/android.toolchain.cmake" ]]; then
@@ -63,34 +56,35 @@ jobs:
           fi
           echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "image=$ImageVersion" >> "$GITHUB_OUTPUT"
           cmake --version
           cat "$ndk/source.properties"
       - uses: actions/cache/restore@v5
         id: dependencies
-        if: ${{ !inputs.clean_dependencies && github.event_name != 'schedule' }}
+        if: ${{ github.event_name != 'schedule' }}
         with:
           path: build/android/prefix
-          key: android-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}-${{ hashFiles('.github/scripts/android-build.sh') }}
+          # Bump v1 when changing dependency versions, build flags or installation policy.
+          key: android-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}
       - name: Build dependencies
         if: steps.dependencies.outputs.cache-hit != 'true'
-        run: bash .github/scripts/android-build.sh dependencies
+        run: bash .github/scripts/android-build-and-package.sh build-dependencies
       # Save before FluidSynth installs into the same prefix.
       - uses: actions/cache/save@v5
-        if: ${{ !inputs.clean_dependencies && github.event_name != 'schedule' && steps.dependencies.outputs.cache-hit != 'true' }}
+        if: ${{ github.event_name != 'schedule' && steps.dependencies.outputs.cache-hit != 'true' }}
         with:
           path: build/android/prefix
           key: ${{ steps.dependencies.outputs.cache-primary-key }}
-      - name: Build FluidSynth, tests and asset loader; package libraries
-        run: bash .github/scripts/android-build.sh package
-      - name: Cache the emulator and API 24 system image
+      - name: Build and install FluidSynth, test executables and asset loader
+        run: bash .github/scripts/android-build-and-package.sh build-and-install
+      - name: Verify and package shared libraries and headers
+        run: bash .github/scripts/android-build-and-package.sh package
+      - name: Cache the API 24 system image
         uses: actions/cache@v5
-        if: ${{ (matrix.abi == 'x86' || matrix.abi == 'x86_64') && !inputs.clean_dependencies && github.event_name != 'schedule' }}
+        if: ${{ (matrix.abi == 'x86' || matrix.abi == 'x86_64') && github.event_name != 'schedule' }}
         with:
-          path: |
-            ${{ env.ANDROID_HOME }}/system-images/android-${{ env.ANDROID_API }}/default/${{ matrix.abi }}
-            ${{ env.ANDROID_HOME }}/emulator
-          key: android-emulator-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.image }}-api${{ env.ANDROID_API }}-default-${{ matrix.abi }}
+          path: ${{ env.ANDROID_HOME }}/system-images/android-${{ env.ANDROID_API }}/default/${{ matrix.abi }}
+          # Bump v1 to refresh the SDK system image revision; weekly builds bypass caches.
+          key: android-system-image-v1-api${{ env.ANDROID_API }}-default-${{ matrix.abi }}
       - name: Install the emulator image and grant KVM access
         if: matrix.abi == 'x86' || matrix.abi == 'x86_64'
         run: |
@@ -129,7 +123,8 @@ jobs:
           name: android-tests-${{ matrix.abi }}
           path: ${{ runner.temp }}/android-tests.tar.gz
           compression-level: 0
-          retention-days: 14
+          if-no-files-found: error
+          retention-days: 1
       - uses: actions/upload-artifact@v7
         with:
           name: fluidsynth-android${{ env.ANDROID_API }}-${{ matrix.abi }}
@@ -152,13 +147,10 @@ jobs:
     env:
       ABI: ${{ matrix.abi }}
     name: Native Android/Bionic ${{ matrix.abi }}
-    needs: android
-    # Run uploaded ARM bundles even when another ABI's build or emulator fails.
-    if: ${{ !cancelled() }}
+    needs: build-test
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 15
     strategy:
-      fail-fast: false
       matrix:
         abi: [armeabi-v7a, arm64-v8a]
     steps:
@@ -170,10 +162,11 @@ jobs:
       - name: Cache the pinned API 24 ARM userspace
         id: runtime
         uses: actions/cache@v5
-        if: ${{ !inputs.clean_dependencies && github.event_name != 'schedule' }}
+        if: ${{ github.event_name != 'schedule' }}
         with:
           path: ${{ runner.temp }}/android-runtime
-          key: android-native-runtime-v1-api${{ env.ANDROID_API }}-${{ matrix.abi }}-${{ hashFiles('.github/scripts/android-prepare-runtime.sh') }}
+          # Bump v1 when changing pinned images or the extracted runtime contents.
+          key: android-native-runtime-v1-${{ runner.os }}-${{ runner.arch }}-api${{ env.ANDROID_API }}-${{ matrix.abi }}
       - name: Extract the Android userspace
         if: steps.runtime.outputs.cache-hit != 'true'
         run: bash .github/scripts/android-prepare-runtime.sh "$ABI" "$RUNNER_TEMP/android-runtime"

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Run the Android CI dependency build or package the existing project builds.
+# Build Android dependencies and project targets, or verify and package their libraries.
 set -Eeuo pipefail
 current_phase=setup
 trap 'status=$?; printf "::error::Android %s failed (exit %s)\n" "$current_phase" "$status" >&2; exit "$status"' ERR
-phase=${1:?Specify dependencies or package}
+phase=${1:?Usage: android-build-and-package.sh <build-dependencies|build-and-install|package>}
+case "$phase" in
+    build-dependencies|build-and-install|package) ;;
+    *) echo "Unknown Android build operation: $phase" >&2; exit 2 ;;
+esac
 api=${ANDROID_API:?Set ANDROID_API to the supported API 24}
 if [[ "$api" != 24 ]]; then
     echo 'Android CI requires API 24 to match the pinned native ARM runtimes.' >&2
@@ -14,6 +18,13 @@ work="$root/build/android"
 prefix="$work/prefix"
 ndk=${ANDROID_NDK_HOME:?Set ANDROID_NDK_HOME}
 abi=${ABI:?Set ABI}
+case "$abi" in
+    armeabi-v7a) triple=arm-linux-androideabi ;;
+    arm64-v8a) triple=aarch64-linux-android ;;
+    x86) triple=i686-linux-android ;;
+    x86_64) triple=x86_64-linux-android ;;
+    *) echo "Unknown Android ABI: $abi" >&2; exit 1 ;;
+esac
 jobs=$(nproc)
 export PKG_CONFIG_PATH= PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig"
 args=(-G Ninja "-DCMAKE_TOOLCHAIN_FILE=$ndk/build/cmake/android.toolchain.cmake"
@@ -50,7 +61,7 @@ dependency() {
     printf '::endgroup::\n'
 }
 
-if [[ "$phase" == dependencies ]]; then
+if [[ "$phase" == build-dependencies ]]; then
     dependency ogg https://github.com/xiph/ogg/releases/download/v1.3.6/libogg-1.3.6.tar.gz \
         83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638 -DINSTALL_DOCS=OFF
     dependency vorbis https://github.com/xiph/vorbis/releases/download/v1.3.7/libvorbis-1.3.7.tar.gz \
@@ -83,32 +94,27 @@ Cflags: -I\${includedir}
 EOF
     exit 0
 fi
-if [[ "$phase" != package ]]; then echo "Unknown CI phase: $phase" >&2; exit 1; fi
+if [[ "$phase" == build-and-install ]]; then
+    run_phase configure-fluidsynth cmake -S "$root" -B "$work/build/fluidsynth" "${args[@]}" \
+        -Denable-opensles=ON -Denable-floats=ON -Denable-oboe=ON \
+        -Denable-dbus=OFF -Denable-oss=OFF -Denable-openmp=OFF
+    run_phase build-fluidsynth cmake --build "$work/build/fluidsynth" --parallel "$jobs"
+    run_phase build-tests cmake --build "$work/build/fluidsynth" --target check --parallel "$jobs"
+    run_phase install-fluidsynth cmake --install "$work/build/fluidsynth"
+    # Supply the installed library search path without changing the asset loader's
+    # existing CMake configuration, which also appends its legacy dist/ path.
+    run_phase configure-assetloader cmake -S "$root/doc/android/fluidsynth-assetloader" -B "$work/build/assetloader" "${args[@]}" \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        "-DCMAKE_SHARED_LINKER_FLAGS=-L$prefix/lib -Wl,-z,max-page-size=16384"
+    run_phase build-assetloader cmake --build "$work/build/assetloader" --parallel "$jobs"
+    exit 0
+fi
 
-run_phase configure-fluidsynth cmake -S "$root" -B "$work/build/fluidsynth" "${args[@]}" \
-    -Denable-opensles=ON -Denable-floats=ON -Denable-oboe=ON \
-    -Denable-dbus=OFF -Denable-oss=OFF -Denable-openmp=OFF
-run_phase build-fluidsynth cmake --build "$work/build/fluidsynth" --parallel "$jobs"
-run_phase build-tests cmake --build "$work/build/fluidsynth" --target check --parallel "$jobs"
-run_phase install-fluidsynth cmake --install "$work/build/fluidsynth"
-# Supply the installed library search path without changing the asset loader's
-# existing CMake configuration, which also appends its legacy dist/ path.
-run_phase configure-assetloader cmake -S "$root/doc/android/fluidsynth-assetloader" -B "$work/build/assetloader" "${args[@]}" \
-    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-    "-DCMAKE_SHARED_LINKER_FLAGS=-L$prefix/lib -Wl,-z,max-page-size=16384"
-run_phase build-assetloader cmake --build "$work/build/assetloader" --parallel "$jobs"
 current_phase=package-libraries
 cp "$work/build/assetloader/libfluidsynth-assetloader.so" "$prefix/lib/"
 for feature in OBOE_SUPPORT OPENSLES_SUPPORT LIBSNDFILE_SUPPORT LIBSNDFILE_HASVORBIS; do
     grep -qx "#define $feature 1" "$work/build/fluidsynth/config.h"
 done
-case "$abi" in
-    armeabi-v7a) triple=arm-linux-androideabi ;;
-    arm64-v8a) triple=aarch64-linux-android ;;
-    x86) triple=i686-linux-android ;;
-    x86_64) triple=x86_64-linux-android ;;
-    *) echo "Unknown Android ABI: $abi" >&2; exit 1 ;;
-esac
 toolchain="$ndk/toolchains/llvm/prebuilt/linux-x86_64"
 cp "$toolchain/sysroot/usr/lib/$triple/libc++_shared.so" "$prefix/lib/"
 package="$work/package"
