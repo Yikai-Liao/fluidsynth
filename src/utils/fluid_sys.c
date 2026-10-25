@@ -979,12 +979,14 @@ void fluid_profile_start_stop(unsigned int end_ticks, short clear_data)
 fluid_pointer_t
 fluid_thread_high_prio(fluid_pointer_t data)
 {
-    fluid_thread_info_t *info = data;
+    fluid_thread_info_t info = *(fluid_thread_info_t *)data;
 
-    fluid_thread_self_set_prio(info->prio_level);
+    /* The callback may throw into the C++ thread wrapper. Release its
+     * launch context before calling it so that path also owns no resources. */
+    FLUID_FREE(data);
+    fluid_thread_self_set_prio(info.prio_level);
 
-    info->func(info->data);
-    FLUID_FREE(info);
+    info.func(info.data);
 
     return NULL;
 }

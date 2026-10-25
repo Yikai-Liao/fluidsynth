@@ -1,6 +1,7 @@
 #include "test.h"
 #include <fluidsynth.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -436,6 +437,70 @@ int main(void)
     TEST_ASSERT(unsupported_voice_count > 0);
     TEST_ASSERT(std::remove(query_path.c_str()) == 0);
 
+    /* Boolean results are 0 or UINT32_MAX, including when the input is a
+     * nonzero value other than 1. Compare the result as a full 32-bit word. */
+    auto assert_cdl_value = [&](std::vector<uint8_t> expression, uint32_t expected)
+    {
+        const size_t end = expression.size();
+        expression.resize(end + 8);
+        write_u16(expression, end, 0x0010); // CONST
+        write_u32(expression, end + 2, expected);
+        write_u16(expression, end + 6, 0x000e); // EQ
+        std::vector<uint8_t> conditional_dls(data);
+        append_first_region_cdl(conditional_dls, expression);
+        write_dls_file(query_path.c_str(), conditional_dls);
+        TEST_ASSERT(playing_voice_attenuations(query_path.c_str()).size() == control_voice_count);
+        TEST_ASSERT(std::remove(query_path.c_str()) == 0);
+    };
+
+    std::vector<uint8_t> supported_query(18, 0);
+    write_u16(supported_query, 0, 0x0012); // QUERY_SUPPORTED
+    std::memcpy(supported_query.data() + 2, manufacturer_id, sizeof(manufacturer_id));
+    assert_cdl_value(supported_query, UINT32_MAX);
+    std::fill(supported_query.begin() + 2, supported_query.end(), 0);
+    assert_cdl_value(supported_query, 0);
+
+    static const uint8_t supports_dls2_id[16] = {
+        0xe5, 0x99, 0x45, 0xf1, 0x89, 0x46, 0xd2, 0x11,
+        0xaf, 0xa6, 0x00, 0xaa, 0x00, 0x24, 0xd8, 0xb6
+    };
+    write_u16(supported_query, 0, 0x0011); // QUERY returning a boolean capability
+    std::memcpy(supported_query.data() + 2, supports_dls2_id, sizeof(supports_dls2_id));
+    assert_cdl_value(supported_query, UINT32_MAX);
+
+    struct BooleanCase
+    {
+        uint16_t opcode;
+        uint32_t y; // Previous value
+        uint32_t x; // Top of stack
+        bool result;
+    };
+    const BooleanCase boolean_cases[] = {
+        {0x000f, 0, 0, true}, {0x000f, 0, 2, false}, // NOT
+        {0x0008, 2, 4, true}, {0x0008, 0, 2, false}, // logical AND
+        {0x0009, 0, 2, true}, {0x0009, 0, 0, false}, // logical OR
+        {0x000a, 4, 2, true}, {0x000a, 2, 4, false}, // LT
+        {0x000b, 2, 2, true}, {0x000b, 2, 4, false}, // LE
+        {0x000c, 2, 4, true}, {0x000c, 4, 2, false}, // GT
+        {0x000d, 2, 2, true}, {0x000d, 4, 2, false}, // GE
+        {0x000e, 2, 2, true}, {0x000e, 2, 4, false}  // EQ
+    };
+    for(const auto &boolean_case : boolean_cases)
+    {
+        const bool unary = boolean_case.opcode == 0x000f;
+        const size_t operand_size = unary ? 6 : 12;
+        std::vector<uint8_t> expression(operand_size + 2);
+        write_u16(expression, 0, 0x0010); // CONST
+        write_u32(expression, 2, unary ? boolean_case.x : boolean_case.y);
+        if(!unary)
+        {
+            write_u16(expression, 6, 0x0010);
+            write_u32(expression, 8, boolean_case.x);
+        }
+        write_u16(expression, operand_size, boolean_case.opcode);
+        assert_cdl_value(expression, boolean_case.result ? UINT32_MAX : 0);
+    }
+
     const size_t riff_end = 8 + riff_size;
     std::vector<uint8_t> malformed(data.begin(), data.begin() + riff_end);
     static const uint8_t invalid_info[] = {
@@ -467,6 +532,50 @@ int main(void)
     const size_t wvpl = find_list(data, 12, riff_end, "wvpl");
     TEST_ASSERT(wvpl < data.size());
     const size_t wvpl_end = wvpl + 8 + read_u32(data, wvpl + 4);
+
+    /* Pool cues may be reordered or repeated, and a wave may end exactly at
+     * the WVPL boundary. They must not point to real waves outside the LIST,
+     * or to a wave whose declared extent crosses that boundary. */
+    const size_t bounds_ptbl = find_chunk(data, 12, riff_end, "ptbl");
+    TEST_ASSERT(bounds_ptbl < data.size());
+    const size_t bounds_cues = bounds_ptbl + 8 + read_u32(data, bounds_ptbl + 8);
+    const uint32_t bounds_cue_count = read_u32(data, bounds_ptbl + 12);
+    TEST_ASSERT(bounds_cue_count > 2);
+    const uint32_t last_cue = read_u32(data, bounds_cues + 4 * (bounds_cue_count - 1));
+    const size_t last_wave = wvpl + 12 + last_cue;
+    TEST_ASSERT(last_wave + 8 + read_u32(data, last_wave + 4) == wvpl_end);
+    const char *cue_bounds_path = "test_dls_pool_cue_bounds_tmp.dls";
+
+    for(int bounds_case = 0; bounds_case < 3; ++bounds_case)
+    {
+        std::vector<uint8_t> cue_bounds(data);
+        if(bounds_case == 0)
+        {
+            write_u32(cue_bounds, bounds_cues, last_cue);
+            write_u32(cue_bounds, bounds_cues + 4, last_cue);
+        }
+        else if(bounds_case == 1)
+        {
+            // Existing wave chunks become top-level siblings of an empty WVPL.
+            write_u32(cue_bounds, wvpl + 4, 4);
+        }
+        else
+        {
+            write_u32(cue_bounds, last_wave + 4, read_u32(data, last_wave + 4) + 2);
+        }
+
+        write_dls_file(cue_bounds_path, cue_bounds);
+        settings = new_fluid_settings();
+        TEST_ASSERT(settings != nullptr);
+        synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != nullptr);
+        const int cue_bounds_sfont = fluid_synth_sfload(synth, cue_bounds_path, 1);
+        TEST_ASSERT((cue_bounds_sfont != FLUID_FAILED) == (bounds_case == 0));
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+        TEST_ASSERT(std::remove(cue_bounds_path) == 0);
+    }
+
     const size_t wave = find_list(data, wvpl + 12, wvpl_end, "wave");
     TEST_ASSERT(wave < data.size());
     const size_t wave_end = wave + 8 + read_u32(data, wave + 4);
@@ -559,6 +668,19 @@ int main(void)
                                          first_region_end,
                                          "wsmp");
     TEST_ASSERT(region_wsmp < invalid_wsmp_note.size());
+
+    /* lGain is signed 32-bit relative gain. Its minimum must become positive
+     * attenuation, rather than overflowing during integer negation. */
+    TEST_ASSERT(read_u32(data, region_wsmp + 16) == 0);
+    std::vector<uint8_t> minimum_gain(data);
+    write_u32(minimum_gain, region_wsmp + 16, 0x80000000u);
+    const char *minimum_gain_path = "test_dls_minimum_gain_tmp.dls";
+    write_dls_file(minimum_gain_path, minimum_gain);
+    auto expected_attenuations = original_attenuations;
+    expected_attenuations.front() += 32768.0f;
+    TEST_ASSERT(playing_voice_attenuations(minimum_gain_path) == expected_attenuations);
+    TEST_ASSERT(std::remove(minimum_gain_path) == 0);
+
     write_u16(invalid_wsmp_note, region_wsmp + 12, 255);
 
     const std::string invalid_wsmp_note_path = "test_dls_unity_note_tmp.dls";
@@ -835,6 +957,44 @@ int main(void)
     TEST_SUCCESS(fluid_synth_activate_tuning(synth, 0, 0, 1, 1));
     TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
     float audio[256 * 2];
+    TEST_SUCCESS(fluid_synth_write_float(synth, 256, audio, 0, 2, audio, 1, 2));
+    delete_fluid_synth(synth);
+    delete_fluid_settings(settings);
+    TEST_ASSERT(std::remove(large_keynum_path.c_str()) == 0);
+
+    /* The same voice-key bound applies to drums. Malformed region ranges can
+     * otherwise select a scaled key above 127, which indexes a tuning table. */
+    write_u32(large_keynum_scale, insh + 12, 0x80000000u); // Drum instrument
+    const size_t drum_lrgn = find_list(large_keynum_scale, instrument + 12,
+                                       instrument + 8 + read_u32(large_keynum_scale, instrument + 4),
+                                       "lrgn");
+    TEST_ASSERT(drum_lrgn < large_keynum_scale.size());
+    const size_t drum_region = find_list(large_keynum_scale, drum_lrgn + 12,
+                                         drum_lrgn + 8 + read_u32(large_keynum_scale, drum_lrgn + 4),
+                                         "rgn2");
+    TEST_ASSERT(drum_region < large_keynum_scale.size());
+    const size_t drum_rgnh = find_chunk(large_keynum_scale, drum_region + 12,
+                                        drum_region + 8 + read_u32(large_keynum_scale, drum_region + 4),
+                                        "rgnh");
+    TEST_ASSERT(drum_rgnh < large_keynum_scale.size());
+    write_u16(large_keynum_scale, drum_rgnh + 8, 0); // key low
+    write_u16(large_keynum_scale, drum_rgnh + 10, 65535); // Invalid key high admits 132
+    write_dls_file(large_keynum_path.c_str(), large_keynum_scale);
+
+    settings = new_fluid_settings();
+    TEST_ASSERT(settings != nullptr);
+    synth = new_fluid_synth(settings);
+    TEST_ASSERT(synth != nullptr);
+    const int drum_keynum_sfont = fluid_synth_sfload(synth, large_keynum_path.c_str(), 1);
+    TEST_ASSERT(drum_keynum_sfont >= 0);
+    TEST_SUCCESS(fluid_synth_program_select(synth, 9, drum_keynum_sfont, 128, 0));
+    TEST_SUCCESS(fluid_synth_activate_key_tuning(synth, 0, 1, "DLS drum key test", pitches, 0));
+    TEST_SUCCESS(fluid_synth_activate_tuning(synth, 9, 0, 1, 1));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 9, 60, 100));
+    fluid_voice_t *drum_voices[512] = {};
+    fluid_synth_get_voicelist(synth, drum_voices, 512, -1);
+    TEST_ASSERT(drum_voices[0] != nullptr);
+    TEST_ASSERT(fluid_voice_get_actual_key(drum_voices[0]) == 127);
     TEST_SUCCESS(fluid_synth_write_float(synth, 256, audio, 0, 2, audio, 1, 2));
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);

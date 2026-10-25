@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <fluidsynth.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 
 static int asprintf_calls;
@@ -20,7 +21,8 @@ int __wrap_SDL_asprintf(char **strp, const char *fmt, ...)
 
     if(fake_enumeration && ++asprintf_calls == 2)
     {
-        *strp = NULL;
+        /* SDL leaves this output undefined on failure. It must not be freed. */
+        *strp = (char *)(uintptr_t)1;
         return -1;
     }
 
@@ -80,6 +82,7 @@ const char *__wrap_SDL_GetAudioDeviceName(SDL_AudioDeviceID devid)
 int main(void)
 {
     fluid_settings_t *settings;
+    fluid_settings_t *failed_enumeration_settings;
     fluid_synth_t *synth;
     fluid_audio_driver_t *driver;
 
@@ -90,6 +93,16 @@ int main(void)
     TEST_SUCCESS(fluid_settings_setstr(settings, "audio.driver", "sdl3"));
     synth = new_fluid_synth(settings);
     TEST_ASSERT(synth != NULL);
+
+    /* Settings enumeration must also ignore an undefined failed output. */
+    fake_enumeration = 1;
+    asprintf_calls = 0;
+    playback_device_list_calls = 0;
+    failed_enumeration_settings = new_fluid_settings();
+    TEST_ASSERT(failed_enumeration_settings != NULL);
+    TEST_ASSERT(playback_device_list_calls == 1);
+    TEST_ASSERT(asprintf_calls == 2);
+    delete_fluid_settings(failed_enumeration_settings);
 
     /* Isolate the enumeration performed by the audio-driver constructor from
        any SDL device enumeration during settings initialization. */

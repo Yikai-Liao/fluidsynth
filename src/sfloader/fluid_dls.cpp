@@ -1961,27 +1961,27 @@ inline std::optional<uint32_t> fluid_dls_font::eval_dlsid_query(const DLSID &dls
 {
     if(dlsid == DLSID_GMInHardware)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_GSInHardware)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_XGInHardware)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_SupportsDLS1)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_SupportsDLS2)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_SampleMemorySize)
@@ -2037,6 +2037,12 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
         stack[sp++] = value;
     };
 
+    // DLS 2.2 section 2.6 represents logical TRUE as all 32 bits set.
+    auto push_bool = [&](bool value)
+    {
+        push(value ? std::numeric_limits<uint32_t>::max() : 0);
+    };
+
     auto pop = [&]() -> uint32_t
     {
         if(sp == 0)
@@ -2072,7 +2078,7 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
 
         // Unary operators
         case 0x000F: // DLS_CDL_NOT (logical)
-            push(!pop());
+            push_bool(!pop());
             break;
 
         // Binary operators
@@ -2127,43 +2133,43 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
         case 0x0008: // DLS_CDL_LOGICAL_AND
             rax = pop();
             rbx = pop();
-            push(rax && rbx);
+            push_bool(rax && rbx);
             break;
 
         case 0x0009: // DLS_CDL_LOGICAL_OR
             rax = pop();
             rbx = pop();
-            push(rax || rbx);
+            push_bool(rax || rbx);
             break;
 
         case 0x000A: // DLS_CDL_LT
             rax = pop();
             rbx = pop();
-            push(rax < rbx);
+            push_bool(rax < rbx);
             break;
 
         case 0x000B: // DLS_CDL_LE
             rax = pop();
             rbx = pop();
-            push(rax <= rbx);
+            push_bool(rax <= rbx);
             break;
 
         case 0x000C: // DLS_CDL_GT
             rax = pop();
             rbx = pop();
-            push(rax > rbx);
+            push_bool(rax > rbx);
             break;
 
         case 0x000D: // DLS_CDL_GE
             rax = pop();
             rbx = pop();
-            push(rax >= rbx);
+            push_bool(rax >= rbx);
             break;
 
         case 0x000E: // DLS_CDL_EQ
             rax = pop();
             rbx = pop();
-            push(rax == rbx);
+            push_bool(rax == rbx);
             break;
 
         // Query
@@ -2181,7 +2187,7 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
             }
             else
             {
-                push(result.has_value() ? 1 : 0); // Query_Supported
+                push_bool(result.has_value()); // Query_Supported
             }
 
             pc += sizeof(DLSID);
@@ -2226,10 +2232,29 @@ inline void fluid_dls_font::parse_wvpl(fluid_long_long_t offset)
     for(unsigned i = 0; i < poolcues.size(); i++)
     {
         auto pos = poolcues[i];
-        auto &sample = samples.emplace_back();
 
         try
         {
+            // Pool cues are offsets into this LIST, not arbitrary file offsets.
+            // Validate the whole wave before allocating or decoding its sample.
+            if(pos > chunk.size)
+            {
+                throw std::runtime_error{ "DLS pool cue exceeds its wvpl chunk" };
+            }
+
+            const auto remaining = static_cast<fluid_long_long_t>(chunk.size) - pos;
+            fseek(offset + headersize + pos, SEEK_SET);
+            RIFFChunk wave;
+            const auto wave_header_size = READCHUNK_BOUNDED(this, wave, remaining);
+
+            if(wave_header_size != 12 || wave.id != WAVE_FCC ||
+                    wave_header_size + static_cast<fluid_long_long_t>(wave.size)
+                    + (wave.size & 1u) > remaining)
+            {
+                throw std::runtime_error{ "DLS wave exceeds its wvpl chunk or is not a wave LIST" };
+            }
+
+            auto &sample = samples.emplace_back();
             parse_wave(offset + headersize + pos, sample);
         }
         catch(...)
@@ -3418,8 +3443,9 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
     }
     else
     {
-        adjusted_key = std::clamp(static_cast<int>(std::round(key * dlspreset->keynum_scale)), 0, 127);
+        adjusted_key = static_cast<int>(std::round(key * dlspreset->keynum_scale));
     }
+    adjusted_key = std::clamp(adjusted_key, 0, 127);
 
     for(auto &region : dlspreset->regions)
     {
@@ -3477,7 +3503,7 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
 
             fluid_voice_gen_set(voice, GEN_OVERRIDEROOTKEY, wsmp.unity_note);
             fluid_voice_gen_incr(voice, GEN_FINETUNE, wsmp.fine_tune - sample.pitchadj);
-            fluid_voice_gen_incr(voice, GEN_ATTENUATION, -wsmp.gain / 65536.0f);
+            fluid_voice_gen_incr(voice, GEN_ATTENUATION, -static_cast<fluid_real_t>(wsmp.gain) / 65536.0f);
 
             if(wsmp.loop_length != 0)
             {

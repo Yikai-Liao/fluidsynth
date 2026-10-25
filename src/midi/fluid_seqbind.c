@@ -218,7 +218,8 @@ fluid_seq_fluidsynth_callback(unsigned int time, fluid_event_t *evt, fluid_seque
         short key = fluid_event_get_key(evt);
         int chan = fluid_event_get_channel(evt);
 
-        if(chan < 0 || chan >= synth->midi_channels || key < 0 || key > 127)
+        if(chan < 0 || chan >= synth->midi_channels || key < 0 || key > 127
+                || vel < 0 || vel > 127)
         {
             break;
         }
@@ -230,15 +231,20 @@ fluid_seq_fluidsynth_callback(unsigned int time, fluid_event_t *evt, fluid_seque
         {
             goto err;
         }
-        else if(res)
+
+        if(fluid_synth_noteon(synth, chan, key, vel) != FLUID_OK)
         {
-            // Note is already playing ATM, the following call to fluid_synth_noteon() will kill that note.
-            // Thus, we need to remove its noteoff from the queue
-            fluid_sequencer_invalidate_note(seqbind->seq, seqbind->client_id, id);
+            if(!res)
+            {
+                fluid_note_container_remove(seqbind->note_container, id);
+            }
+            break;
         }
-        else
+
+        if(res)
         {
-            // Note not playing, all good.
+            /* Only a successful replacement cancels the old note's deadline. */
+            fluid_sequencer_invalidate_note(seqbind->seq, seqbind->client_id, id);
         }
 
         fluid_event_noteoff(evt, chan, key);
@@ -247,12 +253,13 @@ fluid_seq_fluidsynth_callback(unsigned int time, fluid_event_t *evt, fluid_seque
         res = fluid_sequencer_send_at(seq, evt, dur, 0);
         if(res == FLUID_FAILED)
         {
+            /* The new note started but has no scheduled end. Release it now. */
+            fluid_synth_noteoff(synth, chan, key);
+            fluid_note_container_remove(seqbind->note_container, id);
             err:
             FLUID_LOG(FLUID_ERR, "seqbind: Unable to process FLUID_SEQ_NOTE event, something went horribly wrong");
             return;
         }
-
-        fluid_synth_noteon(synth, chan, key, vel);
     }
     break;
 

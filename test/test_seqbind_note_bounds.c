@@ -2,6 +2,7 @@
 #include "fluidsynth.h"
 
 #include <stdint.h>
+#include <limits.h>
 
 #include "fluid_voice.h"
 
@@ -43,6 +44,8 @@ int main(void)
     fluid_event_t *evt;
     int sfont_id;
     int seqid;
+    const short invalid_velocities[] = {-1, 128, SHRT_MAX};
+    int i;
 
     TEST_ASSERT(settings != NULL);
     synth = new_fluid_synth(settings);
@@ -78,6 +81,30 @@ int main(void)
 
     fluid_sequencer_process(seq, 2020);
     TEST_ASSERT(latest_note_has_noteoff(synth, 0, 61) == 1);
+
+    for(i = 0; i < 3; i++)
+    {
+        unsigned int time = 2030 + i * 1020;
+        short key = 62 + i;
+
+        fluid_event_note(evt, 0, key, 100, 1000);
+        send_event(seq, evt, seqid, time);
+        TEST_ASSERT(latest_note_has_noteoff(synth, 0, key) == 0);
+
+        /* Rejected velocity must not replace the existing note's deadline. */
+        fluid_event_note(evt, 0, key, invalid_velocities[i], 2000);
+        send_event(seq, evt, seqid, time + 10);
+        fluid_sequencer_process(seq, time + 1000);
+        TEST_ASSERT(latest_note_has_noteoff(synth, 0, key) == 1);
+    }
+
+    /* Preserve the binding's existing zero-velocity note-off behavior. */
+    fluid_event_note(evt, 0, 65, 100, 1000);
+    send_event(seq, evt, seqid, 5080);
+    TEST_ASSERT(latest_note_has_noteoff(synth, 0, 65) == 0);
+    fluid_event_note(evt, 0, 65, 0, 2000);
+    send_event(seq, evt, seqid, 5090);
+    TEST_ASSERT(latest_note_has_noteoff(synth, 0, 65) == 1);
 
     fluid_sequencer_unregister_client(seq, seqid);
     delete_fluid_event(evt);

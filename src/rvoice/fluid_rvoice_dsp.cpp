@@ -112,7 +112,9 @@ static int fluid_rvoice_dsp_silence_local(fluid_rvoice_t *rvoice, fluid_real_t *
         dsp_phase_index = fluid_phase_index_round(dsp_phase); /* round to nearest point */
 
         /* interpolate sequence of sample points */
-        auto safe_count = compute_interpolation_steps(dsp_phase, dsp_phase_incr, end_index, dsp_i);
+        /* Use the same half-sample offset as fluid_phase_index_round(), so
+         * silence ends and loops at the nearest-neighbor sampling boundary. */
+        auto safe_count = compute_interpolation_steps(dsp_phase + 0x80000000, dsp_phase_incr, end_index, dsp_i);
 
         for(; safe_count--; dsp_i++)
         {
@@ -178,7 +180,9 @@ fluid_rvoice_dsp_interpolate_none_local(fluid_rvoice_t *rvoice, fluid_real_t *FL
         dsp_phase_index = fluid_phase_index_round(dsp_phase);	/* round to nearest point */
 
         /* interpolate sequence of sample points */
-        auto safe_count = compute_interpolation_steps(dsp_phase, dsp_phase_incr, end_index, dsp_i);
+        /* The last half-sample already rounds past end_index. Count steps
+         * using the same offset as the sample lookup, including zero steps. */
+        auto safe_count = compute_interpolation_steps(dsp_phase + 0x80000000, dsp_phase_incr, end_index, dsp_i);
 
         for(; safe_count--; dsp_i++)
         {

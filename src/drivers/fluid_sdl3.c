@@ -45,7 +45,6 @@ typedef struct
     fluid_synth_t *synth;
     fluid_audio_callback_t write_ptr;
 
-    SDL_AudioDeviceID devid;
     SDL_AudioStream *stream;
     AudioDeviceList AudioSDL3PlaybackDevices;
     AudioDeviceList AudioSDL3RecordingDevices;
@@ -59,7 +58,6 @@ typedef struct
 const char *SDLC_GetAudioDeviceName(int idx, int iscapture, fluid_sdl3_audio_driver_t *dev)
 {
     AudioDeviceList *list;
-    SDL_Mutex *AudioDeviceLock = SDL_CreateMutex();
     const char *retval = NULL;
 
     if(!SDL_GetCurrentAudioDriver())
@@ -68,7 +66,6 @@ const char *SDLC_GetAudioDeviceName(int idx, int iscapture, fluid_sdl3_audio_dri
         return NULL;
     }
 
-    SDL_LockMutex(AudioDeviceLock);
     list = iscapture ? &(dev->AudioSDL3RecordingDevices) : &(dev->AudioSDL3PlaybackDevices);
 
     if((idx < 0) || (idx >= list->num_devices))
@@ -80,10 +77,20 @@ const char *SDLC_GetAudioDeviceName(int idx, int iscapture, fluid_sdl3_audio_dri
         retval = list->devices[idx].name;
     }
 
-    SDL_UnlockMutex(AudioDeviceLock);
-    SDL_free(AudioDeviceLock);
-
     return retval;
+}
+
+static void FreeAudioDeviceList(AudioDeviceList *list)
+{
+    int i;
+
+    for(i = 0; i < list->num_devices; i++)
+    {
+        SDL_free(list->devices[i].name);
+    }
+
+    SDL_free(list->devices);
+    SDL_zero(*list);
 }
 
 static int GetNumAudioDevices(int iscapture, fluid_sdl3_audio_driver_t *dev)
@@ -134,18 +141,11 @@ static int GetNumAudioDevices(int iscapture, fluid_sdl3_audio_driver_t *dev)
             /* Device names must be unique in sdl3, as that's how we open them.
                sdl3 took serious pains to try to add numbers to the end of duplicate device names ("SoundBlaster Pro" and then "SoundBlaster Pro (2)"),
                but here we're just putting the actual SDL3 instance id at the end of everything. Good enough. I hope. */
-            if(!newname || (SDL_asprintf(&fullname, "%s (id=%u)", newname, (unsigned int) devices[i]) < 0))
+            if(SDL_asprintf(&fullname, "%s (id=%u)", newname, (unsigned int) devices[i]) < 0)
             {
                 /* we're in real trouble now.  :/  */
-                int j;
-
-                for(j = 0; j < i; j++)
-                {
-                    SDL_free(newlist.devices[j].name);
-                }
-
-                SDL_free(fullname);
-                SDL_free(newlist.devices);
+                newlist.num_devices = i;
+                FreeAudioDeviceList(&newlist);
                 SDL_free(devices);
                 return list->num_devices;  /* just return the existing one for now. Oh well. */
             }
@@ -157,12 +157,7 @@ static int GetNumAudioDevices(int iscapture, fluid_sdl3_audio_driver_t *dev)
 
     if(list != NULL)
     {
-        for(i = 0; i < list->num_devices; i++)
-        {
-            SDL_free(list->devices[i].name);
-        }
-
-        SDL_free(list->devices);
+        FreeAudioDeviceList(list);
     }
 
     SDL_free(devices);
@@ -239,7 +234,6 @@ void fluid_sdl3_audio_driver_settings(fluid_settings_t *settings)
              but here we're just putting the actual SDL3 instance id at the end of everything. Good enough. I hope. */
             if(SDL_asprintf(&fullname, "%s (id=%u)", newname, (unsigned int) devices[n]) < 0)
             {
-                SDL_free(fullname);
                 goto cleanup;
             }
 
@@ -268,12 +262,7 @@ void fluid_sdl3_audio_driver_settings(fluid_settings_t *settings)
     }
 
 cleanup:
-    for(n = 0; n < list.num_devices; n++)
-    {
-        SDL_free(list.devices[n].name);
-    }
-
-    SDL_free(list.devices);
+    FreeAudioDeviceList(&list);
     SDL_free(devices);
 }
 
@@ -416,7 +405,6 @@ new_fluid_sdl3_audio_driver(fluid_settings_t *settings, fluid_synth_t *synth)
 
         /* Open audio device */
         dev->stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &aspec, SDLAudioCallback, dev);
-        dev->devid = SDL_GetAudioStreamDevice(dev->stream);
 
         if(!dev->stream)
         {
@@ -442,13 +430,15 @@ void delete_fluid_sdl3_audio_driver(fluid_audio_driver_t *d)
 
     if(dev != NULL)
     {
-        if(dev->devid)
+        if(dev->stream)
         {
-            /* Stop audio and close */
-            SDL_PauseAudioDevice(dev->devid);
-            SDL_CloseAudioDevice(dev->devid);
+            /* The stream owns the device opened by SDL_OpenAudioDeviceStream. */
+            SDL_PauseAudioStreamDevice(dev->stream);
+            SDL_DestroyAudioStream(dev->stream);
         }
 
+        FreeAudioDeviceList(&dev->AudioSDL3PlaybackDevices);
+        FreeAudioDeviceList(&dev->AudioSDL3RecordingDevices);
         FLUID_FREE(dev->render_buf);
         FLUID_FREE(dev);
     }

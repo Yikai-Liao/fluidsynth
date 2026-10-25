@@ -1353,6 +1353,65 @@ static void test_zero_step_at_sample_end()
     }
 }
 
+/* Nearest-neighbor reads round up at the last half-sample. Both positive
+ * and zero steps must stop before that rounded index leaves the sample. */
+static void test_nearest_neighbor_end_boundary()
+{
+    const double phase_unit = 1.0 / FLUID_FRACT_MAX;
+    const double phases[] = {63.0, 63.25, 63.5 - phase_unit,
+                             63.5, 63.5 + phase_unit, 63.75, 64.0};
+    const double increments[] = {0.0, 0.25};
+    const int expected_counts[2][7] = {{64, 64, 64, 0, 0, 0, 0},
+                                      {2, 1, 1, 0, 0, 0, 0}};
+    fluid_rvoice_t rvoice;
+    fluid_sample_t sample;
+    std::array<short, FLUID_BUFSIZE> data{};
+    std::array<fluid_real_t, FLUID_BUFSIZE> buf{};
+    data.back() = 123;
+
+    for(int increment = 0; increment < 2; ++increment)
+    {
+        for(int phase = 0; phase < 7; ++phase)
+        {
+            setup_rvoice(&rvoice, &sample, data.data(), nullptr,
+                         phases[phase], increments[increment], 0, FLUID_BUFSIZE - 1,
+                         0, 0, 0, FLUID_INTERP_NONE);
+            const int count = fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 0);
+            TEST_ASSERT(count == expected_counts[increment][phase]);
+            for(int i = 0; i < count; ++i)
+            {
+                test_sample_eq(buf[i], 123, 0, i);
+            }
+
+            /* Inaudible playback must advance to the same stopping point. */
+            fluid_phase_set_float(rvoice.dsp.phase, phases[phase]);
+            TEST_ASSERT(fluid_rvoice_dsp_silence(&rvoice, buf.data(), 0) == count);
+        }
+    }
+
+    /* At a loop boundary the rounded index wraps to the first loop sample. */
+    data[LOOP_START] = 345;
+    setup_rvoice_16bit(&rvoice, &sample, data.data(),
+                       LOOP_END - 0.25, 0.0, LOOP_START, LOOP_END, 1, FLUID_INTERP_NONE);
+    TEST_ASSERT(fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 1) == FLUID_BUFSIZE);
+    for(int i = 0; i < FLUID_BUFSIZE; ++i)
+    {
+        test_sample_eq(buf[i], 345, 0, i);
+    }
+
+    /* A fractional positive step can reach the same tail on a later block. */
+    for(int i = 0; i < FLUID_BUFSIZE; ++i)
+    {
+        data[i] = static_cast<short>(i);
+    }
+    setup_rvoice_16bit(&rvoice, &sample, data.data(),
+                       0.0, 0.75, 0, 0, 0, FLUID_INTERP_NONE);
+    TEST_ASSERT(fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 0) == FLUID_BUFSIZE);
+    TEST_ASSERT(fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 0) == 21);
+    test_sample_eq(buf[20], 63, 0, 20);
+    TEST_ASSERT(fluid_rvoice_dsp_interpolate(&rvoice, buf.data(), 0) == 0);
+}
+
 int main(void)
 {
     printf("FluidSynth DSP Interpolation Unit Tests\n");
@@ -1398,6 +1457,7 @@ int main(void)
     printf("\n");
 
     test_zero_step_at_sample_end();
+    test_nearest_neighbor_end_boundary();
 
     printf("========================================\n");
     printf("All tests PASSED\n");
