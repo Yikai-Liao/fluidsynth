@@ -163,6 +163,7 @@ jobs:
           path: |
             build/android/logs
             build/android/build/**/CMakeFiles/CMakeConfigureLog.yaml
+            build/android/vcpkg/buildtrees/**/*.log
           retention-days: 14
 
   # Hosted ARM runners do not expose nested KVM. Execute Android/Bionic tests
