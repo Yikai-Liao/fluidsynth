@@ -6,24 +6,28 @@
 
 - `fix/dev-xxx`、`perf/dev-xxx`、`ci/dev-xxx`、`refactor/dev-xxx`：未完成工作，完整保留 Git 提交历史，允许继续迭代。
 - 去掉 `dev-` 的对应分支：review 完成后基于当时的上游，整理为一个完整提交，再提 PR。开发分支不提前 squash。
-- 已有开放 PR 的 head 分支保留原名，避免影响 PR；目前是 macOS CI 和 SF3 gain。
+- 已有开放 PR 的 head 分支保留，避免影响 PR；目前共 5 个，见“已提上游的工作”。macOS CI 和 SF3 gain 沿用原分支名。
 - `archive/previous-work`：集中保留旧分支的完整提交历史及原名称映射。原来的日期分支、重复版本和已停止实验分支从分支列表清理；所有原始提交仍可追溯。
-- 本阶段先完成分支结构与待办整理。下面的 dev 分支还保留原开发基线，**不等于已经完成测试精简、rebase 或上游提交 review**。审计包后续仍要按主题拆分；DLS 按整体重构系列 review。
+- 分支结构已整理完成。All Notes Off、踏板转交、零 tempo 已整理为单提交分支并提 PR；其余 dev 分支仍需逐项 review，不能视为已完成测试精简或 rebase。审计包按主题拆分；DLS 按整体重构系列 review。
 
-整理后的结构为 **25 个 dev 工作分支、2 个开放 PR 分支，以及 master / todo / archive/previous-work，共 30 个分支**。旧的 100 个分支头均保留在归档历史中。
+当前为 **25 个 dev 工作分支、5 个开放 PR 分支，以及 master / todo / archive/previous-work，共 33 个分支**。旧的 100 个分支头均保留在归档历史中；三个新 PR 的原 dev 历史也完整保留。
 
 ## 优先顺序
 
-先 review 生产改动小、后果较明确的修复；S/M/L 只表示初步人工 review 规模，不含构建和等待 CI。
+**优先处理音频正确性**：先看错误音色、力度调制、漏发音和踏板错误延音，再考虑内存释放、空指针和其他防御性边界。相同优先级内，先 review 根因集中、生产改动小的修复；S/M/L 只表示初步人工 review 规模，不含构建和等待 CI。**下一批选 4 个独立主题**，尚未整理成 PR 分支，也未提交上游：
 
-1. 审计包中的 F14：注销已释放 synth 的设置回调，生产 +2，现有生命周期测试补 +3 即可。
-2. `fix/dev-sample-guard-frame-overflow`：生产 +6，已有 sample validate 测试可扩展。
-3. 审计包中的 F18、F30、F09/F10：分别是合法 unpitched SF2 根音、采样结束边界、调音名称缓冲区；先精简夹具并合入适合的现有测试。
-4. `fix/dev-midi-zero-tempo`、`fix/dev-timer-thread-handle-release`、`fix/dev-shell-server-mutex-release`、`fix/dev-midi-track-count`。
-5. `fix/dev-shared-synth-init`：并发首次构造的后果较重，等待和原子可见性需额外 review。
-6. 其余控制器/效果器修复，再到 player、DLS、性能和 CI 较大工作。
+| 顺序 | 主题与来源 | 优先原因 | 下一步与验收 |
+|---|---|---|---|
+| 1 | **采样率变化后更新 IIR 表**；`fix/dev-initial-rate-iir-table` | 仍用旧采样率的滤波表会改变截止频率响应和音色；生产 +1 | 核对采样率切换入口；精简现有回归，比较切换到目标采样率与直接以该采样率创建 synth 的滤波表和非静音音频输出；撤销该行后应失败 |
+| 2 | **F31：CC121 后 Breath Sync 漏发音**；`fix/dev-audit-fixes` | 控制器复位后旧气息状态未清零，新气息到达时等待音符不会启动；生产移动 1 行 | 只提取 previous breath 复位；沿用 `test_synth_reset_cc` 验证 CC121 后从零气息到正值会启动等待音符，并做修复前后对照 |
+| 3 | **F46：重复 CC66 错误捕获新音符**；`fix/dev-audit-fixes` | 踏板保持按下时的重复消息会前移捕获边界，让后来音符错误延音 | 只在 CC66 从抬起变为按下时更新捕获序号；复用 `test_synth_reset_cc`，覆盖重复按下值及真正抬起/再按下；与 #1880 的踏板释放转交分别验证 |
+| 4 | **F19：SF2 固定力度 0 被忽略**；`fix/dev-audit-fixes` | 合法固定 velocity=0 应覆盖输入力度，否则力度相关调制和音色不符；核心条件改动 +1/−1 | 仅提取有效值判定，不夹带越界值钳制；精简现有 209 行 SF2 重写/渲染夹具，核对可复用的 voice 测试；检查实际力度为 0 及调制结果，不能把它当作 MIDI Note Off 或一律断言静音 |
 
-测试整理要求：先复用现有测试文件和夹具；确需独立文件时说明原因。命名、缩进、注释和断言沿用邻近测试。对精简后的关键回归做修复前失败/修复后通过的对照，避免只凭删行数判断有效性。
+**音频正确性后备：** F18 unpitched SF2 根音回退（合法 originalPitch=255 的音高与自定义调音；现有夹具 74 行，保留非静音及 root=60 音频等价检查）；F49 自定义调音跨音区时单音连奏保留旧音区声音；`fix/dev-dattorro-sample-rate` 的混响采样率切换。Dattorro 先核对当前调用路径、状态重建和音频连续性，再决定最小修复范围。
+
+**后移的内存与边界工作：** F14 设置回调注销、采样 guard-frame 分配溢出、F09/F10 调音名称缓冲区、F30 采样结束边界、timer thread handle 与 shell server mutex 释放，以及 MIDI track count 和共享初始化。已有分支和审计证据保留，不进入当前音频批次。DLS、性能和 CI 较大工作继续排后。播放器相关工作见“用户补充与移出队列的工作”，不进入当前批次。
+
+每个主题保持最小生产差异，先复用项目已有结构，不夹带查询 API、注释、命名或线程机制整理。测试沿用邻近命名、缩进、注释和断言；复用文件必须符合其职责，确需独立文件时说明原因。对关键回归做修复前失败/修复后通过的对照；完成 review 后才从当时上游建立单提交 PR 分支，作者使用 Yikai-Liao，PR 正文简短并注明 `AI-assisted with Codex`。
 
 ## 审计前的积压与当前工作分支
 
@@ -31,16 +35,16 @@
 
 | 工作分支 | 内容 | review 规模 | 生产/CI 差异 |
 |---|---|---|---|
-| [fix/dev-all-notes-off-mono-keys](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-all-notes-off-mono-keys) | All Notes Off 清除 mono held keys | M | +7 / −0 |
+| [fix/dev-all-notes-off-mono-keys](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-all-notes-off-mono-keys) | All Notes Off 清除 mono held keys；已提 #1879 | M | +7 / −0 |
 | [fix/dev-basic-channel-count-bounds](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-basic-channel-count-bounds) | basic channel 数量校验与加法溢出 | M | +2 / −8 |
 | [fix/dev-dattorro-sample-rate](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-dattorro-sample-rate) | Dattorro 采样率变化时重建状态 | M | +25 / −2 |
 | [fix/dev-dither-table-init](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-dither-table-init) | 共享 S16 dither 表并发初始化 | M | +20 / −19 |
 | [fix/dev-initial-rate-iir-table](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-initial-rate-iir-table) | 采样率变化后更新 IIR 查表 | M | +1 / −0 |
 | [fix/dev-jack-rate-change](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-jack-rate-change) | JACK 采样率变化时停止不匹配渲染 | L | +48 / −18 |
 | [fix/dev-midi-track-count](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-midi-track-count) | MIDI 轨道数符号扩展与边界 | S | +6 / −1 |
-| [fix/dev-midi-zero-tempo](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-midi-zero-tempo) | 拒绝 MIDI 零 tempo | S | +6 / −0 |
-| [fix/dev-player-control](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-player-control) | MIDI player 暂停恢复与 tempo 请求 | L | +81 / −111 |
-| [fix/dev-player-track-order](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-player-track-order) | 跨轨全局 tick 顺序与 seek 重建 | L | +53 / −63 |
+| [fix/dev-midi-zero-tempo](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-midi-zero-tempo) | 拒绝 MIDI 零 tempo；已提 #1881 | S | +6 / −0 |
+| [fix/dev-player-control](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-player-control) | MIDI player 暂停恢复与 tempo 请求；搁置 | L | +74 / −58 |
+| [fix/dev-player-track-order](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-player-track-order) | 跨轨全局 tick 顺序与 seek 重建；搁置 | L | +53 / −63 |
 | [fix/dev-relative-clock-init](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-relative-clock-init) | 相对时钟 origin 的并发首次初始化 | M | +10 / −0 |
 | [fix/dev-sample-guard-frame-overflow](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sample-guard-frame-overflow) | 采样 guard-frame 分配尺寸溢出 | S | +6 / −0 |
 | [fix/dev-shared-synth-init](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-shared-synth-init) | 并发构造时等待共享 synth 初始化完成 | M | +18 / −3 |
@@ -48,10 +52,10 @@
 | [fix/dev-short-loop-interpolation](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-short-loop-interpolation) | 短循环的高阶插值 tap wrap | L | +68 / −0 |
 | [fix/dev-smf-sysex-continuations](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-smf-sysex-continuations) | SMF SysEx 续包与 escaped MIDI 时序 | L | +120 / −55 |
 | [fix/dev-timer-thread-handle-release](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-timer-thread-handle-release) | timer join 后释放线程句柄 | S | +3 / −1 |
-| [fix/dev-sostenuto-sustain-handoff](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-sustain-handoff) | CC66 抬起时转交仍按下的 sustain | M | +7 / −2 |
+| [fix/dev-sostenuto-sustain-handoff](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-sustain-handoff) | CC66 抬起时转交仍按下的 sustain；已提 #1880 | M | +7 / −2 |
 | [fix/dev-audit-fixes](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-audit-fixes) | 审计混合包：51 项成立问题，待按主题拆分 | L | 混合/重构包，见下文 |
 | [perf/dev-iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-iir-stable-block) | double IIR 稳态四采样展开（W4） | L | +129 / −0 |
-| [perf/dev-midi-track-merge](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-midi-track-merge) | MIDI 跨轨事件 heap merge 备选实现 | L | +84 / −58 |
+| [perf/dev-midi-track-merge](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-midi-track-merge) | MIDI 跨轨事件 heap merge 备选实现；随 player 搁置 | L | +84 / −58 |
 | [ci/dev-windows-build](https://github.com/Yikai-Liao/fluidsynth/tree/ci/dev-windows-build) | Windows CI 子模块与 MSYS2 依赖精简 | L | +27 / −12 |
 | [ci/dev-android-migration](https://github.com/Yikai-Liao/fluidsynth/tree/ci/dev-android-migration) | Android CI 迁移与构建/测试工具整合 | L | +647 / −751 |
 | [ci/dev-android-developer-probe](https://github.com/Yikai-Liao/fluidsynth/tree/ci/dev-android-developer-probe) | Android API 35 Debug 与消费端独立 probe | L | +708 / −751 |
@@ -70,6 +74,8 @@
 
 ## 用户补充与移出队列的工作
 
+- **优先级按音频正确性排序（2026-10-26 用户决定）。** 下一批先处理音色、力度、漏发音和踏板延音；内存释放、空指针和防御性边界后移，不再仅按审计严重度或生产行数排在最前。
+- **播放器问题搁置（2026-10-26 用户决定）。** 暂停继续精简、拆 PR 或提交 `fix/dev-player-control`；跨轨顺序/seek、heap merge 备选以及审计 F35 的播放器计数改造也移出当前队列，已有分支和证据保留。暂停恢复的公开 API 复现已确认上游有 unsigned 时间差溢出，但现有修复仍涉及 tempo 请求与 timer 生命周期；恢复工作时先评估局部修复或拆分方案，不直接提交当前大补丁。零 tempo 的解析期拒绝已独立提 #1881，继续等待 review。
 - **sinc：维护者自行处理。** 不继续 review 或提 PR。两个旧实现分支及证据在归档历史中保留。
 - **未定位的时间偏移修复：** 用户记得声音或效果整体提前/延后约一秒，可能与效果器有关；明确排除 Dattorro 4 ms predelay 的 #1872。已检查当前分支标题、效果器修改和主要实验报告，尚未找到能确认匹配的记录；保留为待定位，不能用 player 或 predelay 的近似问题替代。
 - 早期无稳定收益、质量门槛未过或仅 instrumentation 的 perf/explore/measure/investigate 原型已移入归档。SoA IIR 是搁置的架构实验，不列入当前提交队列；需要恢复时可从归档取回完整历史。
@@ -78,11 +84,16 @@
 
 | 工作 | 状态与分支处理 |
 |---|---|
+| [#1879 All Notes Off mono keys](https://github.com/FluidSynth/fluidsynth/pull/1879) | open；单提交 `fix/all-notes-off-mono-keys`；原 dev 历史保留；Debug UBSan/float-cast-overflow 全量 46/46 通过 |
+| [#1880 sostenuto → sustain](https://github.com/FluidSynth/fluidsynth/pull/1880) | open；单提交 `fix/sostenuto-sustain-handoff`；原 dev 历史保留；同配置全量 46/46 通过 |
+| [#1881 MIDI zero tempo](https://github.com/FluidSynth/fluidsynth/pull/1881) | open；单提交 `fix/midi-zero-tempo`；原 dev 历史保留；同配置全量 47/47 通过；实时解析测试文件名和内容保持上游原样，文件 tempo 用独立小型 C 测试 |
 | [#1877 SF3 gain](https://github.com/FluidSynth/fluidsynth/pull/1877) | open；保留 `fix/sf3-sample-gain-20261021` |
 | [#1876 macOS CI](https://github.com/FluidSynth/fluidsynth/pull/1876) | open；保留 `ci/macos-intel-arm` |
 | [#1878 silent-loop](https://github.com/FluidSynth/fluidsynth/pull/1878) | 关闭未合并，作者以 [#1871](https://github.com/FluidSynth/fluidsynth/pull/1871) 覆盖为由关闭；旧分支归档，不重提 |
 | [#1863 voice reuse](https://github.com/FluidSynth/fluidsynth/pull/1863)、[#1864 Dattorro tap](https://github.com/FluidSynth/fluidsynth/pull/1864)、[#1867 IIR](https://github.com/FluidSynth/fluidsynth/pull/1867)、[#1868 realtime MIDI](https://github.com/FluidSynth/fluidsynth/pull/1868) | merged；旧实现/证据分支归档 |
 | [#1870 Linux CI](https://github.com/FluidSynth/fluidsynth/pull/1870)、[#1872 predelay](https://github.com/FluidSynth/fluidsynth/pull/1872)、[#1873 runner](https://github.com/FluidSynth/fluidsynth/pull/1873)、[#1874 Ubuntu/Arm](https://github.com/FluidSynth/fluidsynth/pull/1874)、[#1875 Alpine](https://github.com/FluidSynth/fluidsynth/pull/1875) | merged；旧分支归档 |
+
+以上 5 个 open PR 的状态于 2026-10-26 重新核对；测试数字来自各 PR 提交前的本地验证，本次仅更新任务记录，未重跑代码测试。
 
 ## 归档与恢复
 
