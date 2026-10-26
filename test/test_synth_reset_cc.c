@@ -156,13 +156,14 @@ static void test_portamento_fromkey(fluid_synth_t* synth, int chan)
     TEST_ASSERT(!fluid_channel_is_valid_note(ptc));
 }
 
-// this test should make sure that sample rate changed are handled correctly
+/* Test controller resets and overlapping hold pedals. */
 int main(void)
 {
     int chan, mono;
     fluid_synth_t *synth;
     fluid_settings_t *settings = new_fluid_settings();
     TEST_ASSERT(settings != NULL);
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.note-cut", 2));
 
     synth = new_fluid_synth(settings);
     TEST_ASSERT(synth != NULL);
@@ -188,12 +189,6 @@ int main(void)
     }
 
     test_sostenuto(synth, 0, 1);
-    delete_fluid_synth(synth);
-
-    TEST_SUCCESS(fluid_settings_setint(settings, "synth.note-cut", 2));
-    synth = new_fluid_synth(settings);
-    TEST_ASSERT(synth != NULL);
-    TEST_SUCCESS(fluid_synth_sfload(synth, TEST_SOUNDFONT, 1));
     for(mono = 0; mono <= 1; mono++)
     {
         test_pedal_overlap(synth, mono, SUSTAIN_SWITCH);
