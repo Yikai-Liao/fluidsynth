@@ -289,7 +289,7 @@ typedef struct
 struct _fluid_player_t
 {
     fluid_atomic_int_t status;
-    fluid_atomic_int_t stopping; /* Flag for sending all_notes_off when player is stopped */
+    fluid_atomic_int_t stopping; /* Pending All Sound Off, even after an immediate play request. */
     int ntracks;
     fluid_track_t *track[MAX_NUMBER_OF_TRACKS];
     fluid_synth_t *synth;
@@ -303,6 +303,7 @@ struct _fluid_player_t
     char use_system_timer;   /* if zero, use sample timers, otherwise use system clock timer */
     char reset_synth_between_songs; /* 1 if system reset should be sent to the synth between songs. */
     fluid_atomic_int_t seek_ticks; /* new position in tempo ticks (midi ticks) for seeking */
+    /* Clock anchors and track positions are owned by the playback callback. */
     int start_ticks;          /* the number of tempo ticks passed at the last tempo change */
     int cur_ticks;            /* the number of tempo ticks passed */
     int last_callback_ticks;  /* the last tick number that was passed to player->tick_callback */
@@ -319,7 +320,7 @@ struct _fluid_player_t
     fluid_atomic_int_t division;
     fluid_atomic_int_t tick_snapshot;
     fluid_atomic_int_t total_ticks;
-    fluid_atomic_int_t resume_requested;
+    fluid_atomic_int_t resume_requested; /* Re-anchor the clock on the next playback callback. */
 
     handle_midi_event_func_t playback_callback; /* function fired on each midi event as it is played */
     void *playback_userdata; /* pointer to user-defined data passed to playback_callback function */

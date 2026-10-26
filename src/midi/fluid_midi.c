@@ -1776,10 +1776,9 @@ delete_fluid_player(fluid_player_t *player)
                                 NULL, NULL);
 
     fluid_player_stop(player);
-    fluid_player_reset(player);
-
     delete_fluid_timer(player->system_timer);
     delete_fluid_sample_timer(player->synth, player->sample_timer);
+    fluid_player_reset(player);
 
     while(player->playlist != NULL)
     {
@@ -2142,21 +2141,23 @@ fluid_player_callback(void *data, unsigned int msec)
     mute_event.param1 = ALL_SOUND_OFF;
     mute_event.param2 = 1;
 
+    /* A stop may be followed by play before the next callback. Still mute the
+     * voices from the interrupted playback before resuming it. */
+    if(fluid_atomic_int_compare_and_exchange(&player->stopping, 1, 0))
+    {
+        for(i = 0; i < MAX_NUMBER_OF_CHANNELS; i++)
+        {
+            if(player->channel_isplaying[i])
+            {
+                fluid_midi_event_set_channel(&mute_event, i);
+                player->playback_callback(player->playback_userdata, &mute_event);
+                player->channel_isplaying[i] = FALSE;
+            }
+        }
+    }
+
     if(fluid_player_get_status(player) != FLUID_PLAYER_PLAYING)
     {
-        if(fluid_atomic_int_get(&player->stopping))
-        {
-            for(i = 0; i < MAX_NUMBER_OF_CHANNELS; i++)
-            {
-                if(player->channel_isplaying[i])
-                {
-                    fluid_midi_event_set_channel(&mute_event, i);
-                    player->playback_callback(player->playback_userdata, &mute_event);
-                    player->channel_isplaying[i] = FALSE;
-                }
-            }
-            fluid_atomic_int_set(&player->stopping, 0);
-        }
         return 1;
     }
     if(fluid_atomic_int_compare_and_exchange(&player->resume_requested, 1, 0))
@@ -2183,7 +2184,9 @@ fluid_player_callback(void *data, unsigned int msec)
 
             if(player->currentfile == NULL)
             {
-                return 0;
+                /* Keep both timer types alive so play() can restart the playlist.
+                 * Only this callback owns the playback clock; play() never resets it. */
+                return 1;
             }
         }
 
@@ -2194,7 +2197,8 @@ fluid_player_callback(void *data, unsigned int msec)
             fluid_player_stop(player);
             fluid_player_seek(player, 0);
             player->cur_ticks = 0;
-            return 0;
+            fluid_atomic_int_set(&player->tick_snapshot, 0);
+            return 1;
         }
 
         fluid_player_update_tempo(player);
@@ -2309,6 +2313,7 @@ fluid_player_callback(void *data, unsigned int msec)
  *
  * If the list of files added to the player has completed its requested number of loops,
  * the playlist will be restarted from the beginning with a loop count of 1.
+ * Playback resumes at the next timer callback, without counting time spent paused.
  */
 int
 fluid_player_play(fluid_player_t *player)
@@ -2419,10 +2424,7 @@ int fluid_player_set_loop(fluid_player_t *player, int loop)
     return FLUID_OK;
 }
 
-/**
- * update the MIDI player internal deltatime dependent of actual tempo.
- * @param player MIDI player instance
- */
+/* Decode an internal multiplier from the single atomic tempo request. */
 static float fluid_player_tempo_multiplier(int request)
 {
     float multiplier;
@@ -2491,6 +2493,7 @@ static void fluid_player_update_tempo(fluid_player_t *player)
  * MIDI file so that next call to fluid_player_set_tempo() with
  * #FLUID_PLAYER_TEMPO_INTERNAL will set the player to follow this internal
  * tempo.
+ * Tempo changes take effect at the next playback callback.
  *
  * @warning If the function is called when no MIDI file is loaded or currently playing, it
  * would have caused a division by zero in fluidsynth 2.2.7 and earlier. Starting with 2.2.8, the
@@ -2546,8 +2549,8 @@ int fluid_player_set_tempo(fluid_player_t *player, int tempo_type, double tempo)
 /**
  * Set the tempo of a MIDI player.
  * @param player MIDI player instance
- * @param tempo Tempo to set playback speed to (in microseconds per quarter note, as per MIDI file spec)
- * @return Always returns #FLUID_OK
+ * @param tempo Positive tempo in microseconds per quarter note, as per MIDI file spec
+ * @return #FLUID_OK on success, #FLUID_FAILED if player is NULL or tempo is not positive.
  * @note Tempo change events contained in the MIDI file can override the specified tempo at any time!
  * @deprecated Use fluid_player_set_tempo() instead.
  */
@@ -2667,7 +2670,11 @@ int fluid_player_get_midi_tempo(fluid_player_t *player)
     double tempo;
     fluid_return_val_if_fail(player != NULL, FLUID_FAILED);
     request = fluid_atomic_int_get(&player->tempo_request);
-    tempo = request > 0 ? request : (double)fluid_atomic_int_get(&player->miditempo) / fluid_player_tempo_multiplier(request);
+    if(request > 0)
+    {
+        return request;
+    }
+    tempo = (double)fluid_atomic_int_get(&player->miditempo) / fluid_player_tempo_multiplier(request);
     return tempo >= INT_MAX ? INT_MAX : (int)tempo;
 }
 
