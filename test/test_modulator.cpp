@@ -1,7 +1,9 @@
 
 #include "test.h"
 #include "fluidsynth.h"
+#include "fluid_sys.h"
 #include "fluid_mod.h"
+#include "fluid_voice.h"
 
 #include <array>
 #include <cmath>
@@ -239,6 +241,26 @@ static void test_custom_mapping(fluid_mod_t *mod)
     }
 }
 
+/* Fixed velocity includes zero; -1 keeps the incoming note velocity. */
+static void test_fixed_velocity(fluid_mod_t *mod)
+{
+    fluid_voice_t voice = {};
+    voice.vel = 100;
+    fluid_mod_set_source1(mod, FLUID_MOD_VELOCITY,
+                         FLUID_MOD_GC | FLUID_MOD_LINEAR | FLUID_MOD_UNIPOLAR | FLUID_MOD_POSITIVE);
+    fluid_mod_set_source2(mod, FLUID_MOD_NONE, 0);
+    fluid_mod_set_dest(mod, GEN_ATTENUATION);
+    fluid_mod_set_amount(mod, Range);
+
+    for(int velocity : {-1, 0, 1, 127})
+    {
+        const int expected = velocity < 0 ? voice.vel : velocity;
+        fluid_voice_gen_set(&voice, GEN_VELOCITY, velocity);
+        TEST_ASSERT(fluid_mod_get_value(mod, &voice) == expected);
+        TEST_ASSERT(fluid_voice_get_actual_velocity(&voice) == expected);
+    }
+}
+
 // this tests ensures that samples with invalid SfSampleType flag combinations are rejected
 int main(void)
 {
@@ -249,6 +271,8 @@ int main(void)
     test_mod_source_mapping(mod);
 
     test_custom_mapping(mod);
+
+    test_fixed_velocity(mod);
 
     delete_fluid_mod(mod);
 

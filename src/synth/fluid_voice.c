@@ -1754,7 +1754,8 @@ int fluid_voice_get_actual_velocity(const fluid_voice_t *voice)
 {
     fluid_real_t x = fluid_voice_gen_value(voice, GEN_VELOCITY);
 
-    if(x > 0)
+    /* -1 means no override; valid fixed velocity 0 must not fall back to the note-on velocity. */
+    if(x >= 0)
     {
         return (int)x;
     }
