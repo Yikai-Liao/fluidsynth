@@ -50,6 +50,14 @@ static void test_sostenuto(fluid_synth_t *synth, int chan)
     TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 2);
     TEST_SUCCESS(fluid_synth_cc(synth, chan, SOSTENUTO_SWITCH, 127));
 
+    // repeated pedal-down messages must not capture notes played afterwards
+    TEST_SUCCESS(fluid_synth_noteon(synth, chan, 61, 127));
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, SOSTENUTO_SWITCH, 127));
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, SOSTENUTO_SWITCH, 64));
+    TEST_SUCCESS(fluid_synth_noteoff(synth, chan, 61));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 2);
+
     // send noteoff right afterwards
     TEST_SUCCESS(fluid_synth_noteoff(synth, chan, 60));
 
