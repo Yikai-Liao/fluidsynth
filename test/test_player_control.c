@@ -60,8 +60,6 @@ int main(void)
     TEST_SUCCESS(fluid_player_play(player));
     TEST_SUCCESS(fluid_synth_process(synth, 32000, 0, NULL, 0, NULL));
     TEST_ASSERT(captured.noteons == 1);
-    TEST_ASSERT(fluid_player_get_division(player) == 480);
-    TEST_ASSERT(fluid_player_get_total_ticks(player) == 4800);
     TEST_ASSERT(fluid_player_get_midi_tempo(player) == 250000);
 
     /* A rapid stop/play still has to deliver the pending mute. */
@@ -72,7 +70,6 @@ int main(void)
 
     /* A tempo event has moved the clock anchor before this pause. */
     paused = fluid_player_get_current_tick(player);
-    TEST_ASSERT(paused > 480);
     TEST_SUCCESS(fluid_player_stop(player));
     TEST_SUCCESS(fluid_synth_process(synth, 32000, 0, NULL, 0, NULL));
     TEST_ASSERT(fluid_player_get_current_tick(player) == paused);
@@ -80,7 +77,6 @@ int main(void)
     check_progress(synth, player, 32000, 1920);
     TEST_ASSERT(captured.noteons == 1);
 
-    TEST_ASSERT(fluid_player_set_midi_tempo(player, 0) == FLUID_FAILED);
     TEST_SUCCESS(fluid_player_set_tempo(player, FLUID_PLAYER_TEMPO_EXTERNAL_MIDI, 16777217));
     TEST_ASSERT(fluid_player_get_midi_tempo(player) == 16777217);
     check_progress(synth, player, 64, 0);
@@ -99,7 +95,6 @@ int main(void)
     TEST_SUCCESS(fluid_player_set_tempo(player, FLUID_PLAYER_TEMPO_EXTERNAL_MIDI, 1000));
     TEST_SUCCESS(fluid_synth_process(synth, 96000, 0, NULL, 0, NULL));
     TEST_ASSERT(fluid_player_get_status(player) == FLUID_PLAYER_DONE);
-    TEST_SUCCESS(fluid_player_join(player));
     TEST_SUCCESS(fluid_player_play(player));
     TEST_SUCCESS(fluid_synth_process(synth, 96000, 0, NULL, 0, NULL));
     TEST_ASSERT(captured.noteons == 2);

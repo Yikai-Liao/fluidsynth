@@ -289,7 +289,7 @@ typedef struct
 struct _fluid_player_t
 {
     fluid_atomic_int_t status;
-    fluid_atomic_int_t stopping; /* Pending All Sound Off, even after an immediate play request. */
+    fluid_atomic_int_t stopping; /* Flag for sending all_notes_off when player is stopped */
     int ntracks;
     fluid_track_t *track[MAX_NUMBER_OF_TRACKS];
     fluid_synth_t *synth;
@@ -303,7 +303,6 @@ struct _fluid_player_t
     char use_system_timer;   /* if zero, use sample timers, otherwise use system clock timer */
     char reset_synth_between_songs; /* 1 if system reset should be sent to the synth between songs. */
     fluid_atomic_int_t seek_ticks; /* new position in tempo ticks (midi ticks) for seeking */
-    /* Clock anchors and track positions are owned by the playback callback. */
     int start_ticks;          /* the number of tempo ticks passed at the last tempo change */
     int cur_ticks;            /* the number of tempo ticks passed */
     int last_callback_ticks;  /* the last tick number that was passed to player->tick_callback */
@@ -312,15 +311,16 @@ struct _fluid_player_t
     unsigned int cur_msec;    /* the current time */
     int end_msec;             /* when >=0, playback is extended until this time (for, e.g., reverb) */
     char end_pedals_disabled; /* 1 once the pedals have been released after the last midi event, 0 otherwise */
-    /* Publish mode and value together: positive microseconds per beat, or negated
-     * positive-float bits for an internal multiplier. Preserve external integer precision. */
+    /* Publish tempo mode and value together: positive microseconds per quarter
+       note, or negated positive-float bits for an internal multiplier. */
     fluid_atomic_int_t tempo_request;
-    fluid_atomic_int_t miditempo;
-    float deltatime; /* Callback-owned milliseconds per tick. */
-    fluid_atomic_int_t division;
-    fluid_atomic_int_t tick_snapshot;
-    fluid_atomic_int_t total_ticks;
-    fluid_atomic_int_t resume_requested; /* Re-anchor the clock on the next playback callback. */
+    fluid_atomic_int_t resume_requested;
+    /* miditempo: internal tempo coming from MIDI file tempo change events
+      (in micro seconds per quarter note)
+    */
+    int miditempo;     /* as indicated by MIDI SetTempo: n 24th of a usec per midi-clock. bravo! */
+    float deltatime;   /* milliseconds per midi tick. depends on tempo_request */
+    unsigned int division;
 
     handle_midi_event_func_t playback_callback; /* function fired on each midi event as it is played */
     void *playback_userdata; /* pointer to user-defined data passed to playback_callback function */
