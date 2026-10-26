@@ -1,103 +1,110 @@
-# FluidSynth
+# Previous fork work
 
-| | Build Status |
-|---|---|
-| <img src="https://www.kernel.org/theme/images/logos/tux.png" height="30" alt=""> **Linux** (CI) | [![FluidSynth Linux](https://github.com/FluidSynth/fluidsynth/actions/workflows/linux.yml/badge.svg?branch=master)](https://github.com/FluidSynth/fluidsynth/actions/workflows/linux.yml) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Obs-logo.png" height=30 alt=""> **Linux** (Packaging) | [![build result](https://build.opensuse.org/projects/home:derselbst:anmp/packages/fluidsynth/badge.svg?type=default)](https://build.opensuse.org/package/show/home:derselbst:anmp/fluidsynth)
-| <img src="https://raw.githubusercontent.com/docker-library/docs/781049d54b1bd9b26d7e8ad384a92f7e0dcb0894/alpine/logo.png" height="25" alt=""> **Alpine** (musl) | [![Fluidsynth Alpine](https://dev.azure.com/tommbrt/tommbrt/_apis/build/status%2FFluidSynth.fluidsynth.alpine?branchName=master)](https://dev.azure.com/tommbrt/tommbrt/_build/latest?definitionId=12&branchName=master) |
-| <img src="https://www.freebsd.org/gifs/daemon_hammer.jpg" height="30" alt=""> **FreeBSD** | [![FluidSynth FreeBSD](https://github.com/FluidSynth/fluidsynth/actions/workflows/freebsd.yml/badge.svg?branch=master)](https://github.com/FluidSynth/fluidsynth/actions/workflows/freebsd.yml) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Windows_Logo_%281992-2001%29.svg/960px-Windows_Logo_%281992-2001%29.svg.png" height="25" alt=""> **Windows 10** | [![Fluidsynth Windows](https://github.com/FluidSynth/fluidsynth/actions/workflows/windows.yml/badge.svg?branch=master)](https://github.com/FluidSynth/fluidsynth/actions/workflows/windows.yml) |
-| <img src="https://www.apple.com/favicon.ico" height="30" alt=""> **MacOSX** | [![Build Status](https://dev.azure.com/tommbrt/tommbrt/_apis/build/status/FluidSynth.fluidsynth.macOS?branchName=master)](https://dev.azure.com/tommbrt/tommbrt/_build/latest?definitionId=5&branchName=master) |
-| <img src="https://www.android.com/favicon.ico" height="30" alt=""> **Android** | [![Build Status](https://dev.azure.com/tommbrt/tommbrt/_apis/build/status/FluidSynth.fluidsynth.Android?branchName=master)](https://dev.azure.com/tommbrt/tommbrt/_build/latest?definitionId=4&branchName=master) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/IOS_logo.svg/60px-IOS_logo.svg.png" height="30" alt=""> **iOS** | [![FluidSynth iOS](https://github.com/FluidSynth/fluidsynth/actions/workflows/ios.yml/badge.svg?branch=master)](https://github.com/FluidSynth/fluidsynth/actions/workflows/ios.yml) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Solaris_OS_logo.svg/60px-Solaris_OS_logo.svg.png" height="30" alt=""> **Solaris** | [![FluidSynth Solaris](https://github.com/FluidSynth/fluidsynth/actions/workflows/solaris.yml/badge.svg?branch=master)](https://github.com/FluidSynth/fluidsynth/actions/workflows/solaris.yml) |
-| <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Os2logo.svg/60px-Os2logo.svg.png" height="30" alt=""> **OS/2** | [![FluidSynth OS/2](https://github.com/FluidSynth/fluidsynth/actions/workflows/os2.yml/badge.svg?branch=master)](https://github.com/FluidSynth/fluidsynth/actions/workflows/os2.yml) |
+Archived on 2026-10-26 before branch cleanup. This branch preserves every commit reachable from the 100 former fork branch heads. Its archive commit retains the independent former heads as parents; no original commit was squashed or rewritten.
 
-#### FluidSynth is a cross-platform, real-time software synthesizer based on the Soundfont 2 specification.
+Active work is on `fix/dev-*`, `perf/dev-*`, `ci/dev-*`, and `refactor/dev-*`. The independent `todo` branch records review priorities and the work still required before creating compact PR branches.
 
-FluidSynth generates audio by reading and handling MIDI events from MIDI input devices by using a [SoundFont](https://www.fluidsynth.org/wiki/SoundFont). It is the software analogue of a MIDI synthesizer. FluidSynth can also play MIDI files.
+Old experimental reports, prototypes, and intermediate Android/CI versions remain accessible through the commits below and through this branch's history. This is an archive, not a PR candidate.
 
-[![SonarQube Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=FluidSynth_fluidsynth&metric=alert_status)](https://sonarcloud.io/dashboard?id=FluidSynth_fluidsynth) [![OHLOH Project Stats](https://www.openhub.net/p/fluidsynth/widgets/project_thin_badge?format=gif)](https://www.openhub.net/p/fluidsynth)
-
-
-## Documentation
-
-The central place for documentation and further links is our **wiki** here at GitHub:
-
-#### https://www.fluidsynth.org/wiki
-
-If you are missing parts of the documentation, let us know by writing to our mailing list.
-Of course, you are welcome to edit and improve the wiki yourself. All you need is an account at GitHub. Alternatively, you may send an EMail to our mailing list along with your suggested changes. Further information about the mailing list is available in the wiki as well.
-
-Latest information about FluidSynth is also available on the web site at https://www.fluidsynth.org/.
-
-## License
-
-The source code for FluidSynth is distributed under the terms of the [GNU Lesser General Public License](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html), see the [LICENSE](https://github.com/FluidSynth/fluidsynth/blob/master/LICENSE) file. To better understand the conditions how FluidSynth can be used in e.g. commercial or closed-source projects, please refer to the [LicensingFAQ in our wiki](https://www.fluidsynth.org/wiki/LicensingFAQ).
-
-## Building from source
-
-For information on how to build FluidSynth from source, please [refer to our wiki](https://www.fluidsynth.org/wiki/BuildingWithCMake).
-
-## Links
-
-- FluidSynth's Home Page, https://www.fluidsynth.org
-
-- FluidSynth's wiki, https://www.fluidsynth.org/wiki
-
-- FluidSynth's API documentation, https://www.fluidsynth.org/wiki/api/
-
----
-
-## Historical background
-
-### Why did we do it
-
-The synthesizer grew out of a project, started by Samuel Bianchini and
-Peter Hanappe, and later joined by Johnathan Lee, that aimed at
-developing a networked multi-user game.
-
-Sound (and music) was considered a very important part of the game. In
-addition, users had to be able to extend the game with their own
-sounds and images. Johnathan Lee proposed to use the Soundfont
-standard combined with intelligent use of midifiles. The arguments
-were:
-
-- Wavetable synthesis is low on CPU usage, it is intuitive and it can
-  produce rich sounds
-
-- Hardware acceleration is possible if the user owns a Soundfont
-  compatible soundcard (important for games!)
-
-- MIDI files are small and Soundfont2 files can be made small thru the
-  intelligent use of loops and wavetables. Together, they are easier to
-  downloaded than MP3 or audio files.
-
-- Graphical editors are available for both file format: various
-  Soundfont editors are available on PC and on Linux (Smurf!), and
-  MIDI sequencers are available on all platforms.
-
-It seemed like a good combination to use for an (online) game. 
-
-In order to make Soundfonts available on all platforms (Linux, Mac,
-and Windows) and for all sound cards, we needed a software Soundfont
-synthesizer. That is why we developed FluidSynth.
-
-### Design decisions
-
-The synthesizer was designed to be as self-contained as possible for
-several reasons:
-
-- It had to be multi-platform (Linux, macOS, Win32). It was therefore
-  important that the code didn't rely on any platform-specific
-  library.
-
-- It had to be easy to integrate the synthesizer modules in various
-  environments, as a plugin or as a dynamically loadable object. I
-  wanted to make the synthesizer available as a plugin (jMax, LADSPA,
-  Xmms, WinAmp, Director, ...); develop language bindings (Python,
-  Java, Perl, ...); and integrate it into (game) frameworks (Crystal
-  Space, SDL, ...). For these reasons I've decided it would be easiest
-  if the project stayed very focused on its goal (a Soundfont
-  synthesizer), stayed small (ideally one file) and didn't dependent
-  on external code.
+| Former branch | Original head | Active replacement |
+|---|---|---|
+| `archive/deferred-cross-voice-soa-iir-20261016` | [`c97283c0`](https://github.com/Yikai-Liao/fluidsynth/commit/c97283c0ad344821baf087c14370455913911447) | `仅归档` |
+| `archive/failed-chorus-control-20261016` | [`4e03c557`](https://github.com/Yikai-Liao/fluidsynth/commit/4e03c557cbe44348483fa93cd1564bd0a2c8d426) | `仅归档` |
+| `archive/failed-compensated-c-20261016` | [`9004b99a`](https://github.com/Yikai-Liao/fluidsynth/commit/9004b99a0a37e224cfc23f834ca306edc51d9679) | `仅归档` |
+| `archive/failed-fdn-four-line-20261016` | [`a6b39b6f`](https://github.com/Yikai-Liao/fluidsynth/commit/a6b39b6f5f7f5677a429cc463b3c48bb11459fd7) | `仅归档` |
+| `archive/failed-finished-voice-index-20261016` | [`2472957b`](https://github.com/Yikai-Liao/fluidsynth/commit/2472957b1e78c118b82165f157b628daab93122a) | `仅归档` |
+| `archive/failed-fractional-delay-ab-20261016` | [`e3ac2371`](https://github.com/Yikai-Liao/fluidsynth/commit/e3ac237180af732eca8a935cf3ee6abc434dedb3) | `仅归档` |
+| `archive/failed-g-halfband-screen-20261016` | [`c0e88ba5`](https://github.com/Yikai-Liao/fluidsynth/commit/c0e88ba5382267c76184fea4a86097b612d44db8) | `仅归档` |
+| `archive/failed-iir-block-e-20261016` | [`b2a1eb7b`](https://github.com/Yikai-Liao/fluidsynth/commit/b2a1eb7bb1cef82394322114168ca46e8f9c9949) | `仅归档` |
+| `archive/failed-ivn-cost-screen-20261016` | [`0fce95ad`](https://github.com/Yikai-Liao/fluidsynth/commit/0fce95ada8332d09404415d41b91b84727e2e77e) | `仅归档` |
+| `archive/failed-mipmap-d-screen-20261016` | [`a9743831`](https://github.com/Yikai-Liao/fluidsynth/commit/a9743831f35bbb64592058622ac174e0772fffad) | `仅归档` |
+| `archive/failed-modulator-index-20261016` | [`50c28d00`](https://github.com/Yikai-Liao/fluidsynth/commit/50c28d00416d0b9620f197e5ef626df406536453) | `仅归档` |
+| `archive/failed-noteon-zone-index-20261016` | [`7b881ac4`](https://github.com/Yikai-Liao/fluidsynth/commit/7b881ac43695e59ed948700e50fc3f82bc2b987f) | `仅归档` |
+| `archive/failed-oversampled-c-20261016` | [`09a28d5e`](https://github.com/Yikai-Liao/fluidsynth/commit/09a28d5e1872a8fd7b8d41699710287da90b1133) | `仅归档` |
+| `archive/failed-pcm-output-layout-20261016` | [`15382535`](https://github.com/Yikai-Liao/fluidsynth/commit/153825350114fa5af7d9b41a418e1ba974287aa9) | `仅归档` |
+| `archive/failed-phase-increment-cache-20261016` | [`be527c5b`](https://github.com/Yikai-Liao/fluidsynth/commit/be527c5b2ea83bc2e57117f55e5ed2de4d2483fb) | `仅归档` |
+| `ci/alpine-native-20261021` | [`6a1ccadd`](https://github.com/Yikai-Liao/fluidsynth/commit/6a1ccadd0f27f0ead57fefe190a788e244ae0049) | `仅归档` |
+| `ci/android-cicd-work-20261026` | [`453c0381`](https://github.com/Yikai-Liao/fluidsynth/commit/453c03814351be8ce3cb699dd1315b6cbc110cd1) | `仅归档` |
+| `ci/android-developer-probe-20261026` | [`6a3325d3`](https://github.com/Yikai-Liao/fluidsynth/commit/6a3325d3a3f656381c469dd7884b998a56d86e8e) | `ci/dev-android-developer-probe` |
+| `ci/android-maintainability-20261026` | [`6b4ae317`](https://github.com/Yikai-Liao/fluidsynth/commit/6b4ae317596c7cb6b9f22bbf3ab25ae7e921aefb) | `仅归档` |
+| `ci/android-migration-20261026` | [`99f8d0b6`](https://github.com/Yikai-Liao/fluidsynth/commit/99f8d0b6b51e4bd905ab9d9006c4f895e6c48f5a) | `ci/dev-android-migration` |
+| `ci/android-superbuild-20261021` | [`9f827c71`](https://github.com/Yikai-Liao/fluidsynth/commit/9f827c71a878d1afda3fb8aa44eab687393831b6) | `仅归档` |
+| `ci/android-superbuild-arm-20261021` | [`830b2cf2`](https://github.com/Yikai-Liao/fluidsynth/commit/830b2cf2c1bc4f37f85f07aceab3c6d9e5648aaf) | `仅归档` |
+| `ci/azure-migration-20261019` | [`1a1c7e3d`](https://github.com/Yikai-Liao/fluidsynth/commit/1a1c7e3d9e3cf2e4f3e3cdc75d122ea8dda4d054) | `仅归档` |
+| `ci/dependency-reuse-20261019` | [`ce0b9a61`](https://github.com/Yikai-Liao/fluidsynth/commit/ce0b9a6197f6e4bc3fd354862a6532d760f61b40) | `仅归档` |
+| `ci/followup-probe-20261021` | [`24d04bfc`](https://github.com/Yikai-Liao/fluidsynth/commit/24d04bfc44e1153940da328b44697421e9a805ab) | `仅归档` |
+| `ci/linux-apt-20261019` | [`d52cb97d`](https://github.com/Yikai-Liao/fluidsynth/commit/d52cb97d70d4ac4d3cd533501632a979a92e499b) | `仅归档` |
+| `ci/linux-apt-action-20261019` | [`6590315a`](https://github.com/Yikai-Liao/fluidsynth/commit/6590315af2f227f5f712b9a4a10a3a6bc16b35f5) | `仅归档` |
+| `ci/linux-cache-pr-validation-20261019` | [`0f7f70f5`](https://github.com/Yikai-Liao/fluidsynth/commit/0f7f70f5269812c51a512501aab924c6a84ee6d7) | `仅归档` |
+| `ci/linux-lean-20261019` | [`485bcd60`](https://github.com/Yikai-Liao/fluidsynth/commit/485bcd60ed9cdf658f004be6c5df92519e3b1396) | `仅归档` |
+| `ci/linux-lean-cache-20261019` | [`811ff51a`](https://github.com/Yikai-Liao/fluidsynth/commit/811ff51af3d4bcdfb95403b78e1d7faee3fa62ac) | `仅归档` |
+| `ci/macos-intel-arm` | [`4ef44acf`](https://github.com/Yikai-Liao/fluidsynth/commit/4ef44acfe47a1033297ab502d9ad85d849d94d74) | `ci/macos-intel-arm` |
+| `ci/macos-native-20261021` | [`4189448b`](https://github.com/Yikai-Liao/fluidsynth/commit/4189448b49e04d2eb839db4e8eea498d1662bb82) | `仅归档` |
+| `ci/macos-native-config-cache-20261021` | [`b3664d65`](https://github.com/Yikai-Liao/fluidsynth/commit/b3664d654428faa9b4ded6072131ee30eca26c2e) | `仅归档` |
+| `ci/pin-runner-versions-20261021` | [`cbed3241`](https://github.com/Yikai-Liao/fluidsynth/commit/cbed324196ee96f27014322527b97103062bd117) | `仅归档` |
+| `ci/pr01-pin-runner-versions` | [`cbed3241`](https://github.com/Yikai-Liao/fluidsynth/commit/cbed324196ee96f27014322527b97103062bd117) | `仅归档` |
+| `ci/pr02-ubuntu-native-arm` | [`62c8770e`](https://github.com/Yikai-Liao/fluidsynth/commit/62c8770e8a360c1c14dea3d7f1cd1057a70a34c0) | `仅归档` |
+| `ci/pr03-alpine-migration` | [`26382e10`](https://github.com/Yikai-Liao/fluidsynth/commit/26382e100b95f6f99281b674923c68dcd867fccb) | `仅归档` |
+| `ci/pr04-macos-migration` | [`508b8c55`](https://github.com/Yikai-Liao/fluidsynth/commit/508b8c55346f8254bba2917cc6974c28841a4c59) | `仅归档` |
+| `ci/ubuntu-native-arm-20261021` | [`b3429862`](https://github.com/Yikai-Liao/fluidsynth/commit/b3429862ecf9ed5ba06ad430f509c196736d8fe2) | `仅归档` |
+| `ci/windows-ci-fast-20261019` | [`a7164f74`](https://github.com/Yikai-Liao/fluidsynth/commit/a7164f7446d14b4aa9f41d462f808cb8a38f88f2) | `ci/dev-windows-build` |
+| `experiment/alpine-docker-actions-20261021` | [`62413d99`](https://github.com/Yikai-Liao/fluidsynth/commit/62413d9987298435807b32267c4ebc53f163458a) | `仅归档` |
+| `experiment/alpine-job-container-20261021` | [`04bb32f6`](https://github.com/Yikai-Liao/fluidsynth/commit/04bb32f6c483f68a38809253246c0b564aa2edaa) | `仅归档` |
+| `explore/aa-waveform-playback-20261016` | [`a9a2a599`](https://github.com/Yikai-Liao/fluidsynth/commit/a9a2a5994112c400e14dd1f421c099f18206fa8e) | `仅归档` |
+| `explore/dattorro-multirate-20261016` | [`f27403f8`](https://github.com/Yikai-Liao/fluidsynth/commit/f27403f8c9f7b94047cacab976a1964a8a728a40) | `仅归档` |
+| `explore/fdn-coefficient-tuning-20261016` | [`a83c7bb2`](https://github.com/Yikai-Liao/fluidsynth/commit/a83c7bb29202459ac4c70cdedc39a0d7aa8fe261) | `仅归档` |
+| `fix/all-notes-off-mono-keys-20261021` | [`9929ccff`](https://github.com/Yikai-Liao/fluidsynth/commit/9929ccffed2886c2e3be1fe7e2d8b0541fb488ae) | `fix/dev-all-notes-off-mono-keys` |
+| `fix/audit-review-20261025` | [`0b8c7240`](https://github.com/Yikai-Liao/fluidsynth/commit/0b8c7240de5d1e331dec71b68438cd63ed36c17e) | `fix/dev-audit-fixes` |
+| `fix/basic-channel-count-bounds-20261021` | [`70044ec4`](https://github.com/Yikai-Liao/fluidsynth/commit/70044ec423fbcf753e46810a18bc5379c838fdfb) | `fix/dev-basic-channel-count-bounds` |
+| `fix/dattorro-predelay-20261021` | [`0b40f443`](https://github.com/Yikai-Liao/fluidsynth/commit/0b40f44347f9d86cecde093c3f4d2de2f5bfaabd) | `仅归档` |
+| `fix/dattorro-sample-rate-20261021` | [`6603116f`](https://github.com/Yikai-Liao/fluidsynth/commit/6603116f8c749152cd09eaec72a4b02fb51a29f1) | `fix/dev-dattorro-sample-rate` |
+| `fix/dither-table-init-20261021` | [`02da8b35`](https://github.com/Yikai-Liao/fluidsynth/commit/02da8b35ffd40d544557dcf7669cbe4fc5a08e56) | `fix/dev-dither-table-init` |
+| `fix/initial-rate-iir-table-20261021` | [`d9d48351`](https://github.com/Yikai-Liao/fluidsynth/commit/d9d483512ce631b1562a9b28992222036303bd18) | `fix/dev-initial-rate-iir-table` |
+| `fix/jack-rate-change-20261021` | [`2c82f2ef`](https://github.com/Yikai-Liao/fluidsynth/commit/2c82f2ef3a12c1de3d56f095c94bd1bbf471f528) | `fix/dev-jack-rate-change` |
+| `fix/midi-track-count-20261021` | [`f8edcf0a`](https://github.com/Yikai-Liao/fluidsynth/commit/f8edcf0ae81a0e5bc21a035db5309acb77f12294) | `fix/dev-midi-track-count` |
+| `fix/midi-track-duration-20261021` | [`d0549caf`](https://github.com/Yikai-Liao/fluidsynth/commit/d0549caf09e29316b437af3a70a321bf8f300ada) | `仅归档` |
+| `fix/midi-zero-tempo-20261021` | [`6c1dbe47`](https://github.com/Yikai-Liao/fluidsynth/commit/6c1dbe4717c4a7e22ca477fcf58a92cd676b455a) | `fix/dev-midi-zero-tempo` |
+| `fix/player-control-20261021` | [`a276608a`](https://github.com/Yikai-Liao/fluidsynth/commit/a276608aa240443de765964da73dcd8981859ff5) | `fix/dev-player-control` |
+| `fix/player-track-order-20261021` | [`e24167f8`](https://github.com/Yikai-Liao/fluidsynth/commit/e24167f840d5e8fc32213a800e3efa495067324c) | `fix/dev-player-track-order` |
+| `fix/relative-clock-init-20261021` | [`2c7321b7`](https://github.com/Yikai-Liao/fluidsynth/commit/2c7321b74fefbd6705229f2b6e3dcabc6ebc6f9a) | `fix/dev-relative-clock-init` |
+| `fix/sample-guard-frame-overflow-20261021` | [`ce6705c6`](https://github.com/Yikai-Liao/fluidsynth/commit/ce6705c6c2684249f7576dc535f10846ba74fa64) | `fix/dev-sample-guard-frame-overflow` |
+| `fix/sf3-sample-gain-20261021` | [`e989abe6`](https://github.com/Yikai-Liao/fluidsynth/commit/e989abe6dcf3c26fe7411778c662ba44c55abd72) | `fix/sf3-sample-gain-20261021` |
+| `fix/shared-synth-init-20261021` | [`d865d0b1`](https://github.com/Yikai-Liao/fluidsynth/commit/d865d0b1d916a2d8e04a41df957b14e1f5173062) | `fix/dev-shared-synth-init` |
+| `fix/shell-server-mutex-release-20261021` | [`4b10b321`](https://github.com/Yikai-Liao/fluidsynth/commit/4b10b321056ee64b529445030ac575068b67478f) | `fix/dev-shell-server-mutex-release` |
+| `fix/short-loop-interpolation-20261021` | [`0842256d`](https://github.com/Yikai-Liao/fluidsynth/commit/0842256d29205af1c5963bf51a840940237c3e8f) | `fix/dev-short-loop-interpolation` |
+| `fix/silent-loop-phase-wrap` | [`480ee9b7`](https://github.com/Yikai-Liao/fluidsynth/commit/480ee9b7d39b260e11177cad2ca779ee44e56789) | `仅归档` |
+| `fix/smf-sysex-continuations-20261021` | [`af38af77`](https://github.com/Yikai-Liao/fluidsynth/commit/af38af77c832c0a1e7fef71f2739d57ea378d5b1) | `fix/dev-smf-sysex-continuations` |
+| `fix/sostenuto-sustain-handoff` | [`53c04009`](https://github.com/Yikai-Liao/fluidsynth/commit/53c040094f68985ec415b74aa46ae05608fd2ae7) | `fix/dev-sostenuto-sustain-handoff` |
+| `fix/sostenuto-sustain-handoff-20261021` | [`9d10576c`](https://github.com/Yikai-Liao/fluidsynth/commit/9d10576c0a1e540e832d84720a648ee9509cdfad) | `仅归档` |
+| `fix/timer-thread-handle-release-20261021` | [`53d29244`](https://github.com/Yikai-Liao/fluidsynth/commit/53d29244966f680785484bf0aa927a88c4f44239) | `fix/dev-timer-thread-handle-release` |
+| `fix/voice-reuse-gain` | [`be4b4cb3`](https://github.com/Yikai-Liao/fluidsynth/commit/be4b4cb3a298f9a6670a589563dc7bc0b8f7f113) | `仅归档` |
+| `fix/voice-reuse-mixer-gains` | [`6326bec2`](https://github.com/Yikai-Liao/fluidsynth/commit/6326bec2c2791be7cb6d15b124019060a6856ae2) | `仅归档` |
+| `investigate/interpolation-fastpaths-20261016` | [`3ad32a69`](https://github.com/Yikai-Liao/fluidsynth/commit/3ad32a69927e740e8a596da14bbd9466b4fee88e) | `仅归档` |
+| `master` | [`ae31c514`](https://github.com/Yikai-Liao/fluidsynth/commit/ae31c51454c4d2bab98c9d8ce65e9a5eafcf741c) | `master` |
+| `measure/dattorro-wrap-guard-combined-20261016` | [`8c23e042`](https://github.com/Yikai-Liao/fluidsynth/commit/8c23e04255b5ad3ea56b738dcacbaa2e0bc8a503) | `仅归档` |
+| `perf/combined-iir-dattorro-20261016` | [`571bc72e`](https://github.com/Yikai-Liao/fluidsynth/commit/571bc72e72b756f25333b3e31fb3046161c27632) | `仅归档` |
+| `perf/dattorro-single-wrap-20261016` | [`6eb3a557`](https://github.com/Yikai-Liao/fluidsynth/commit/6eb3a557dae24c2e1eb3f479ce149cac9e50d6db) | `仅归档` |
+| `perf/dattorro-tap-guard-20261016` | [`a0066ef2`](https://github.com/Yikai-Liao/fluidsynth/commit/a0066ef2adeee1d6f04fd9fb42fbc1e8e13d9819) | `仅归档` |
+| `perf/dattorro-tap-wrap` | [`671358b9`](https://github.com/Yikai-Liao/fluidsynth/commit/671358b9a2d99f51901ccea13612e36def302012) | `仅归档` |
+| `perf/fdn-output-gain-20261016` | [`75f68969`](https://github.com/Yikai-Liao/fluidsynth/commit/75f689692cdfc2e44f8f0f3c3238cac7b624029d) | `仅归档` |
+| `perf/freeverb-block-process-20261016` | [`4579a124`](https://github.com/Yikai-Liao/fluidsynth/commit/4579a124024a64ffc9dfeaab6129eaf12ba4f045) | `仅归档` |
+| `perf/fused-voice-mix-20261016` | [`f48afbdd`](https://github.com/Yikai-Liao/fluidsynth/commit/f48afbdd39f00c27bcf9cfa1c255bf6f16747314) | `仅归档` |
+| `perf/iir-coeff-reuse-20261016` | [`3cc15811`](https://github.com/Yikai-Liao/fluidsynth/commit/3cc158113e19eb549535ec43fd1da02653b9f631) | `仅归档` |
+| `perf/iir-custom-buffer-fusion-20261016` | [`0e1deed4`](https://github.com/Yikai-Liao/fluidsynth/commit/0e1deed40a00a9a38a2cd29dc0412f559174acbb) | `仅归档` |
+| `perf/iir-cutoff-coefficient-reuse` | [`12d885e1`](https://github.com/Yikai-Liao/fluidsynth/commit/12d885e1fa84b1f2e8779c3362ca826725a8255a) | `仅归档` |
+| `perf/iir-gain-factor-reuse-20261016` | [`494e690b`](https://github.com/Yikai-Liao/fluidsynth/commit/494e690b7f7219ce08075db924c05633981cf09e) | `仅归档` |
+| `perf/iir-stable-block-w4-20261016` | [`e9133d01`](https://github.com/Yikai-Liao/fluidsynth/commit/e9133d017d6571712a1aac249d74362ec1a879fc) | `perf/dev-iir-stable-block` |
+| `perf/iir-steady-coeff-loop-20261016` | [`5fa81dea`](https://github.com/Yikai-Liao/fluidsynth/commit/5fa81dea3d58a49f0a6d06d9d95109b2b816c39f) | `仅归档` |
+| `perf/interpolation-block-safe-count-20261016` | [`0079c847`](https://github.com/Yikai-Liao/fluidsynth/commit/0079c847e8e03da245da730cee59af79b98472a7) | `仅归档` |
+| `perf/interpolation-fixed-row-20261016` | [`9b56200b`](https://github.com/Yikai-Liao/fluidsynth/commit/9b56200bf15ab4e03f5e79b2fbc133492613ae98) | `仅归档` |
+| `perf/interpolation-integer-phase-direct-20261016` | [`de27ad1f`](https://github.com/Yikai-Liao/fluidsynth/commit/de27ad1fa401bef5153500681b47b97dca59b381) | `仅归档` |
+| `perf/interpolation-step-count-20261016` | [`f9fdaa13`](https://github.com/Yikai-Liao/fluidsynth/commit/f9fdaa137e765890f0c8d0ec9c33274f2686c3c9) | `仅归档` |
+| `perf/interpolation-tap-simd-20261016` | [`3a590d5f`](https://github.com/Yikai-Liao/fluidsynth/commit/3a590d5f841abe322171ab79c6d20660adc22201) | `仅归档` |
+| `perf/midi-track-merge-20261021` | [`1f8dba15`](https://github.com/Yikai-Liao/fluidsynth/commit/1f8dba15d7ccc0214d7b2d390095173faf60f396) | `perf/dev-midi-track-merge` |
+| `perf/mix-constant-gain-20261016` | [`0fdb0f37`](https://github.com/Yikai-Liao/fluidsynth/commit/0fdb0f3787f68b8a034c69c9016885df81ec5aad) | `仅归档` |
+| `perf/modulator-preparation-20261016` | [`4bfb3a91`](https://github.com/Yikai-Liao/fluidsynth/commit/4bfb3a9181a2126309e6fb4e4a10aead6c0603f9) | `仅归档` |
+| `perf/offline-render-batching-20261016` | [`f227be8e`](https://github.com/Yikai-Liao/fluidsynth/commit/f227be8e2e087abf6e2f64a092eafe74b6c2d7ea) | `仅归档` |
+| `perf/reverb-delay-size-cache-20261016` | [`fd99df61`](https://github.com/Yikai-Liao/fluidsynth/commit/fd99df61c5b14ffae9f3e11d0bd98361a535c24f) | `仅归档` |
+| `perf/sinc-phase-lut-20261016` | [`e3e4c41b`](https://github.com/Yikai-Liao/fluidsynth/commit/e3e4c41b3f98f03b594e97a2ed4f79e0e832308a) | `仅归档` |
+| `perf/sinc-phase-table-pr-20261019` | [`9bb84529`](https://github.com/Yikai-Liao/fluidsynth/commit/9bb84529f0419580a0a3d469976b2690cddaff6e) | `仅归档` |
+| `reviewable/dls-contracts-20261025` | [`437fd2eb`](https://github.com/Yikai-Liao/fluidsynth/commit/437fd2eb3728c725c09c8df4462dfeb0000f0f6f) | `refactor/dev-dls-boundaries` |
