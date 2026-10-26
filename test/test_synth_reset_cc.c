@@ -65,6 +65,24 @@ static void test_sostenuto(fluid_synth_t *synth, int chan)
     TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
 }
 
+/* CC121 must reset the breath edge used to start a waiting mono note. */
+static void test_breath_sync_after_all_ctrl_off(fluid_synth_t *synth, int chan)
+{
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, POLY_OFF, 0));
+    TEST_SUCCESS(fluid_synth_set_breath_mode(synth, chan,
+                 FLUID_CHANNEL_BREATH_MONO | FLUID_CHANNEL_BREATH_SYNC));
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, BREATH_MSB, 127));
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, ALL_CTRL_OFF, 0));
+
+    TEST_SUCCESS(fluid_synth_noteon(synth, chan, 60, 100));
+    TEST_SUCCESS(fluid_synth_process(synth, FLUID_BUFSIZE, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+
+    TEST_SUCCESS(fluid_synth_cc(synth, chan, BREATH_MSB, 127));
+    TEST_SUCCESS(fluid_synth_process(synth, FLUID_BUFSIZE, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) > 0);
+}
+
 static void test_portamento_fromkey(fluid_synth_t* synth, int chan)
 {
     int ptc;
@@ -119,6 +137,9 @@ int main(void)
     synth = new_fluid_synth(settings);
     TEST_ASSERT(synth != NULL);
     TEST_SUCCESS(fluid_synth_sfload(synth, TEST_SOUNDFONT, 1));
+
+    test_breath_sync_after_all_ctrl_off(synth, 0);
+    fluid_synth_system_reset(synth);
 
     for (chan = 0; chan < fluid_synth_count_midi_channels(synth); chan++)
     {
