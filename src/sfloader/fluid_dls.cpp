@@ -3166,7 +3166,16 @@ static fluid_sfont_t *fluid_dls_loader_load(fluid_sfloader_t *loader, const char
         return nullptr;
     }
 
-    sfont->default_mod_list = fluid_dls_default_mod_list();
+    try
+    {
+        sfont->default_mod_list = fluid_dls_default_mod_list();
+    }
+    catch(const std::bad_alloc &)
+    {
+        FLUID_LOG(FLUID_ERR, "Out of memory while creating DLS default modulators");
+        delete_fluid_sfont(sfont);
+        return nullptr;
+    }
 
     uint32_t sample_rate = 44100;
     bool try_mlock = false;

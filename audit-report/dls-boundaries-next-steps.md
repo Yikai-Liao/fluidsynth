@@ -72,3 +72,66 @@
 - 用回归测试对照修复前版本，确认每项测试确实能检测对应行为差异。
 - 对受共享字段及地址转换影响的现有测试做必要检查，随后再决定是否运行全套。
 - 尚无性能基准；resolver 调用增加发生在分配／换音路径，不能宣称零开销。
+
+## 2026-10-26 本地继续执行记录（未提交、未推送）
+
+基于精确提交 `cb7b8ce67ed16f071b28e5b46ef7dc1f744c7af0`，以下是本轮
+实际证据，不覆盖上文历史记录，也不把历史 sanitizer 结果记成本轮结果。
+
+### 计划 1：职责链复核
+
+已复核 chunk 遍历/叶解析、解码/PCM 累积/发布、resolver/voice/默认调制器
+三条链。遍历器仍负责父子范围、padding 与推进；严格叶格式（如 WSMP）负责自身格式和
+完整消费；未知 chunk/允许扩展仍由遍历器跳过。sample 数据最终发布在 PCM
+累积完成之后；voice 持有 sample 引用，SoundFont 删除依据 sample.refcount
+延迟释放，从而守住 resolver context 的存活期。本轮没有足够依据再引入新抽象或
+重复实现已经存在的 resolver、INFO、WSMP、默认槽位及地址转换修复。
+独立逐项审查矩阵随本轮交付保存；这不意味着所有异常路径已动态覆盖。
+
+### 计划 2：错误传播与兼容边界
+
+已完成源码复核：libsndfile callback 内保存异常，在 C++ 边界传播；首次
+定位错误不会被当成功；close guard 先于底层状态析构。只读 close 返回值
+的处理与共享 SF2 实践一致。保留 `exception_ptr` 和现有“无明确 callback
+失败的短读给 warning”策略，没有擅自更改为一律拒绝或静音。
+
+新增唯一产品改动：在 `noexcept` loader 创建默认调制器列表的位置增加
+局部 `bad_alloc` 捕获，记录错误、释放尚未发布的 SoundFont、返回空。
+helper 抛出前已清临时链表，失败赋值不会发生，SoundFont 的 list 仍为零
+初始化的空值。独立源审通过；本轮不做分配故障注入，因此不声称 catch
+分支已有运行覆盖。损坏压缩流、底层故障和历史内存错误复现没有重新运行。
+另用合法零帧 PCM 验证现有兼容行为：font 可加载，空 region 不产生 voice，
+输出为零，相邻非空 region 保持有效；运行保留现有 sample 校验 warning。
+这不是对所有空压缩格式或损坏流作统一策略承诺。
+
+### 计划 3：review 范围
+
+产品代码仅 `src/sfloader/fluid_dls.cpp` +10/-1；本记录是额外文档更新。
+没有混入开发分支 `77ee7d54`，没有新增 SF2/MIDI/后端重构。共享文件本轮
+零修改；已有必要共享接口的正常行为已选择测试。没有提交、推送或 PR。
+旧 review 中的历史统计没有冒充当前结论，以本记录及独立矩阵为准。
+
+### 计划 4：实际验证与剩余项
+
+- 有/无 libsndfile：两种配置均构建成功，生成 config.h 已核实际启闭。
+- 两配置均通过：`test_dls_sample_storage`、`test_modulator`、
+  `test_sfont_loading`、`test_voice_callback`、`test_voice_reuse_gain`，各5个
+  已审选正常目标。它们覆盖合法 PCM、DLS 调音跨区、默认调制器替换/清除、
+  SF2 加载/重载/移除重加及 voice 生命周期和复用音频一致。
+- 有 libsndfile 另通过正常 μ-law DLS：3种长度，独立 G.711 整数解码
+  oracle 检查全部 sample、span、可听且有限输出，以及正常默认 mod/legato。
+- 合法 INFO/WSMP 兼容：首 INAM（前有 odd IART padding，后有另一个 INAM）
+  强断言保持 First；WSMP cbSize=24 合法扩展仍维持全部 sample/audio 结果。
+  μ-law ON、PCM ON/OFF 三种正常变体均通过；PCM ON/OFF 也通过上述空样本控制。
+- 没有跑完整混合 DLS parser/allocation suite，没有跑修复前危险复现、
+  故障注入、ASan/UBSan；历史红绿和 sanitizer 仅为历史证据，未重新核实。
+- 未开展 resolver 性能测量，不宣称零开销。
+
+因此本轮已补最小实现和正常关键路径验证，但不把整份计划或所有安全性
+验收标成已完成。剩余项包括空压缩格式策略的推广判断、未复核的历史异常红绿、
+完整测试/跨平台覆盖和性能测量；应分别作后续决策而非隐去限制。
+
+新增正常兼容测试**未纳入仓库默认 CTest/CI**：完整可复跑源码
+`normal_mulaw_smoke.cpp`、`run-normal-variants.sh`、配套编译命令及结果日志
+保存在随本轮交付的 `fluidsynth-dls-minimal-maintenance-20261026.zip` 附件。
+它们不是本仓库中的相对文件路径；仓库现有5个白名单目标保持原样。
