@@ -185,7 +185,7 @@ struct _fluid_sample_t
 
     unsigned int refcount;             /**< Count of voices using this sample */
     int preset_count;                  /**< Count of selected presets using this sample (used for dynamic sample loading) */
-    fluid_mod_t *default_modulators;   /**< Default soundfont modulators for this sample to allocate the voice for it. NULL will use the synth's defaults. */
+    fluid_mod_t **default_modulators;  /**< SoundFont's current default modulators. NULL uses the synth's defaults. */
 
     /**
      * Implement this function to receive notification when sample is no longer used.

@@ -5364,6 +5364,15 @@ fluid_synth_alloc_voice(fluid_synth_t *synth, fluid_sample_t *sample,
 fluid_voice_t *
 fluid_synth_alloc_voice_LOCAL(fluid_synth_t *synth, fluid_sample_t *sample, int chan, int key, int vel, fluid_zone_range_t *zone_range)
 {
+    return fluid_synth_alloc_voice_mapped(synth, sample, chan, key, vel,
+                                         zone_range, NULL, NULL);
+}
+
+fluid_voice_t *
+fluid_synth_alloc_voice_mapped(fluid_synth_t *synth, fluid_sample_t *sample,
+        int chan, int key, int vel, fluid_zone_range_t *zone_range,
+        fluid_voice_note_resolver_t resolver, const void *context)
+{
     int i, k;
     fluid_voice_t *voice = NULL;
     fluid_channel_t *channel = NULL;
@@ -5403,7 +5412,7 @@ fluid_synth_alloc_voice_LOCAL(fluid_synth_t *synth, fluid_sample_t *sample, int 
     channel = synth->channel[chan];
 
     if(fluid_voice_init(voice, sample, zone_range, channel, key, vel,
-                        synth->storeid, ticks, synth->gain) != FLUID_OK)
+                        synth->storeid, ticks, synth->gain, resolver, context) != FLUID_OK)
     {
         FLUID_LOG(FLUID_WARN, "Failed to initialize voice");
         return NULL;
@@ -5417,11 +5426,11 @@ fluid_synth_alloc_voice_LOCAL(fluid_synth_t *synth, fluid_sample_t *sample, int 
     {
         int mono = fluid_channel_is_playing_mono(channel);
         fluid_mod_t *default_mod;
-        if (sample->default_modulators != NULL)
-        {
-            default_mod = sample->default_modulators;
-        }
-        else
+        default_mod = sample->default_modulators != NULL
+                      ? *sample->default_modulators
+                      : NULL;
+
+        if(default_mod == NULL)
         {
             default_mod = synth->default_mod;
         }

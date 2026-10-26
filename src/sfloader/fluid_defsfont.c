@@ -2097,7 +2097,7 @@ fluid_sample_import_sfont(fluid_sample_t *sample, SFSample *sfsample, fluid_defs
     sample->origpitch = sfsample->origpitch;
     sample->pitchadj = sfsample->pitchadj;
     sample->sampletype = sfsample->sampletype;
-    sample->default_modulators = defsfont->sfont->default_mod_list;
+    sample->default_modulators = &defsfont->sfont->default_mod_list;
 
     if(defsfont->dynamic_samples)
     {

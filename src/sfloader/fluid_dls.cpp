@@ -388,15 +388,8 @@ struct fluid_dls_font
                 file = nullptr;
             }
         } };
-    fluid_long_long_t filesize{};
-
-    // offset to chunk header
-    fluid_long_long_t linsoffset{};
-    fluid_long_long_t wvploffset{};
-
-    // offset to chunk data
-    fluid_long_long_t pgaloffset{};
-    fluid_long_long_t pgalsize{};
+    fluid_long_long_t position{};
+    fluid_long_long_t read_begin{}, read_end{};
 
     // this MUST NOT be modified after initialization, because of probable mlock
     std::vector<int16_t> sampledata;
@@ -440,6 +433,7 @@ struct fluid_dls_font
     // parsing functions
 
     // visitor(RIFFChunk chunk, int headersize, fluid_long_long_t pos)
+    // A bool visitor may return false to stop; void visitors inspect every child.
     template<class Visitor>
     inline std::enable_if_t<std::is_invocable_v<Visitor, RIFFChunk, int, fluid_long_long_t>, RIFFChunk>
     visit_subchunks(fluid_long_long_t offset, uint32_t expected_4cc, Visitor &&visitor);
@@ -449,11 +443,13 @@ struct fluid_dls_font
     // offset is at chunk data
     inline bool execute_cdls(fluid_long_long_t offset, int size);
 
+    inline int16_t *append_sample_frames(fluid_dls_sample &sample, fluid_long_long_t frames);
+
     // wave, offset is at chunk header
     inline void parse_wvpl(fluid_long_long_t offset);
     inline void parse_wave(fluid_long_long_t offset, fluid_dls_sample &sample);
     // offset is at wsmpnnnn^... (chunk data)
-    inline uint32_t parse_wsmp(fluid_long_long_t offset, fluid_dls_wsmp &wsmp);
+    inline void parse_wsmp(fluid_long_long_t offset, uint32_t size, fluid_dls_wsmp &wsmp);
 
 #if LIBSNDFILE_SUPPORT
     inline void parse_wave_sndfile(fluid_long_long_t offset, fluid_dls_sample &sample);
@@ -465,6 +461,7 @@ struct fluid_dls_font
     inline bool parse_lart(fluid_long_long_t offset, fluid_dls_articulation &articulation);
     inline void parse_art(fluid_long_long_t offset, fluid_dls_articulation &articulation);
     inline void parse_lrgn(fluid_long_long_t offset, fluid_dls_instrument &instrument);
+    inline bool region_applicable(fluid_long_long_t offset);
     inline bool parse_rgn(fluid_long_long_t offset, fluid_dls_region &region);
 
     // pgal, offset is at chunk data
@@ -472,14 +469,68 @@ struct fluid_dls_font
     inline void parse_pgal(fluid_long_long_t offset, int size);
 
     // info
-    inline std::string read_name_from_info_entries(fluid_long_long_t offset, uint32_t size);
+    inline std::string read_name_from_info(fluid_long_long_t offset);
 
-    // utilities
+    // Validate the whole encoded chunk, but expose no padding to its parser.
+    // Traversal restores the parent range automatically after each child.
+    auto limit(fluid_long_long_t begin, fluid_long_long_t size, unsigned int padding = 0)
+    {
+        if(begin < read_begin || begin > read_end || size < 0 || size > read_end - begin - padding)
+        {
+            throw std::runtime_error{ "DLS range exceeds its parent chunk" };
+        }
+        const auto previous_begin = read_begin;
+        const auto previous_end = read_end;
+        read_begin = begin;
+        read_end = begin + size;
+        return scope_guard{ [this, previous_begin, previous_end]() noexcept
+        {
+            read_begin = previous_begin;
+            read_end = previous_end;
+        } };
+    }
+
+    fluid_long_long_t remaining() const { return read_end - position; }
+
+    void read(void *dest, fluid_long_long_t count)
+    {
+        if(count < 0 || position < read_begin || count > remaining())
+        {
+            throw std::runtime_error{ "DLS read exceeds chunk boundary" };
+        }
+        if(count == 0)
+        {
+            return;
+        }
+        const auto start = position;
+        position = -1; // Failed callbacks may partially advance the physical cursor.
+        if(fcbs.fread(dest, count, file) != FLUID_OK)
+        {
+            throw std::runtime_error{ "Failed to read DLS data" };
+        }
+        position = start + count;
+    }
+
     void fseek(fluid_long_long_t pos, int whence)
     {
-        if(fcbs.fseek(file, pos, whence) != FLUID_OK)
+        if(whence == SEEK_CUR && position < 0)
         {
-            throw std::runtime_error{ "Failed to seek" };
+            throw std::runtime_error{ "Cannot seek relative to an unknown DLS position" };
+        }
+        const auto base = whence == SEEK_CUR ? position : 0;
+        if(pos < read_begin - base || pos > read_end - base)
+        {
+            throw std::runtime_error{ "DLS seek exceeds chunk boundary" };
+        }
+        pos += base;
+        if(pos != position)
+        {
+            position = -1;
+            if(fcbs.fseek(file, pos, SEEK_SET) != FLUID_OK)
+            {
+                throw std::runtime_error{ "Failed to seek" };
+            }
+            position = pos;
         }
     }
 
@@ -487,6 +538,7 @@ struct fluid_dls_font
     {
         fseek(pos, SEEK_CUR);
     }
+
 };
 
 // helper function to create a new fluid_dls_font
@@ -586,34 +638,31 @@ static void delete_fluid_dls_font(fluid_dls_font *dlsfont) noexcept
 #define INAM_FCC FLUID_FOURCC('I', 'N', 'A', 'M')
 
 
+// Field readers delegate range checks and callback failures to read().
 #define READCHUNK_RAW(sf, var)                                                  \
     do                                                                          \
     {                                                                           \
-        if ((sf)->fcbs.fread(var, 8, (sf)->file) == FLUID_FAILED)              \
-            throw std::runtime_error{ "Failed when reading chunk" };            \
+        (sf)->read(var, 8);                                                    \
         ((RIFFChunk *)(var))->size = FLUID_LE32TOH(((RIFFChunk *)(var))->size); \
     } while (0)
 
 #define READID(sf, var)                                                  \
     do                                                                   \
     {                                                                    \
-        if ((sf)->fcbs.fread(var, 4, (sf)->file) == FLUID_FAILED)       \
-            throw std::runtime_error{ "Failed when reading FOURCC ID" }; \
+        (sf)->read(var, 4);                                                    \
     } while (0)
 
 #define READ8(sf, var)                                              \
     do                                                              \
     {                                                               \
-        if ((sf)->fcbs.fread(&var, 1, (sf)->file) == FLUID_FAILED) \
-            throw std::runtime_error{ "Failed when reading byte" }; \
+        (sf)->read(&var, 1);                                                   \
     } while (0)
 
 #define READ16(sf, var)                                               \
     do                                                                \
     {                                                                 \
         uint16_t _temp;                                               \
-        if ((sf)->fcbs.fread(&_temp, 2, (sf)->file) == FLUID_FAILED) \
-            throw std::runtime_error{ "Failed when reading word" };   \
+        (sf)->read(&_temp, 2);                                                 \
         (var) = FLUID_LE16TOH(_temp);                                 \
     } while (0)
 
@@ -621,47 +670,30 @@ static void delete_fluid_dls_font(fluid_dls_font *dlsfont) noexcept
     do                                                                \
     {                                                                 \
         uint32_t _temp;                                               \
-        if ((sf)->fcbs.fread(&_temp, 4, (sf)->file) == FLUID_FAILED) \
-            throw std::runtime_error{ "Failed when reading dword" };  \
+        (sf)->read(&_temp, 4);                                                 \
         (var) = FLUID_LE32TOH(_temp);                                 \
     } while (0)
 
-// return header size
+// Decode the header; entering the chunk validates its extent and padding.
 static inline int READCHUNK(fluid_dls_font *dlsfont, RIFFChunk &chunk)
 {
     READCHUNK_RAW(dlsfont, &chunk);
-
-    if(chunk.id == LIST_FCC)
+    int headersize = 8;
+    if(chunk.id == LIST_FCC || chunk.id == RIFF_FCC)
     {
         if(chunk.size < 4)
         {
             throw std::runtime_error{ "Bad LIST header: size < 4" };
         }
-
         READID(dlsfont, &chunk.id);
         chunk.size -= 4;
-        return 12;
+        headersize = 12;
     }
-
-    if(chunk.id == RIFF_FCC)
+    else if(chunk.id == CRS1_FCC)
     {
-        if(chunk.size < 4)
-        {
-            throw std::runtime_error{ "Bad RIFF header: size < 4" };
-        }
-
-        READID(dlsfont, &chunk.id);
-        chunk.size -= 4;
-        return 12;
+        chunk.size = 28; // Crystal's nonstandard size, see CRS1_FCC.
     }
-
-    if(chunk.id == CRS1_FCC)
-    {
-        // see CRS1_FCC comment
-        chunk.size = 28;
-    }
-
-    return 8;
+    return headersize;
 }
 
 template<class Visitor>
@@ -703,19 +735,33 @@ fluid_dls_font::visit_subchunks(fluid_long_long_t offset, uint32_t expected_4cc,
         // clang-format on
     }
 
+    auto list_bounds = limit(offset + 12, chunk.size);
     fluid_long_long_t pos = offset + 12;
+    const fluid_long_long_t list_end = pos + chunk.size;
 
-    while(pos < offset + 12 + chunk.size)
+    while(pos < list_end)
     {
         RIFFChunk subchunk;
         fseek(pos, SEEK_SET);
         auto subchunkpos = pos;
         auto headersize = READCHUNK(this, subchunk);
+
         pos += headersize;
 
         try
         {
-            visitor(subchunk, headersize, subchunkpos);
+            auto child_bounds = limit(subchunkpos, headersize + static_cast<fluid_long_long_t>(subchunk.size), subchunk.size & 1u);
+            if constexpr(std::is_same_v<std::invoke_result_t<Visitor, RIFFChunk, int, fluid_long_long_t>, bool>)
+            {
+                if(!visitor(subchunk, headersize, subchunkpos))
+                {
+                    return chunk;
+                }
+            }
+            else
+            {
+                visitor(subchunk, headersize, subchunkpos);
+            }
         }
         catch(...)
         {
@@ -742,40 +788,22 @@ fluid_dls_font::visit_subchunks(fluid_long_long_t offset, uint32_t expected_4cc,
     return chunk;
 }
 
-inline std::string fluid_dls_font::read_name_from_info_entries(fluid_long_long_t offset, uint32_t size)
+inline std::string fluid_dls_font::read_name_from_info(fluid_long_long_t offset)
 {
-    fseek(offset, SEEK_SET);
-    fluid_long_long_t pos = offset;
-
-    while(pos < offset + size)
+    std::string name;
+    visit_subchunks(offset, INFO_FCC, [&](RIFFChunk chunk, int, fluid_long_long_t) -> bool
     {
-        RIFFChunk chunk;
-        fseek(pos, SEEK_SET);
-        pos += READCHUNK(this, chunk);
-
-        if(chunk.id == INAM_FCC)
+        if(chunk.id != INAM_FCC)
         {
-            std::string name;
-            name.resize(chunk.size);
-
-            if(fcbs.fread(name.data(), chunk.size, file) != FLUID_OK)
-            {
-                throw std::runtime_error{ "Failed when reading INAM chunk" };
-            }
-
-            FLUID_LOG(FLUID_DBG, "Read INAM: '%s'", name.c_str());
-            return name;
+            return true;
         }
 
-        pos += chunk.size;
-
-        if(chunk.size % 2 != 0)
-        {
-            pos++;
-        }
-    }
-
-    return "";
+        name.resize(chunk.size);
+        read(name.data(), chunk.size);
+        FLUID_LOG(FLUID_DBG, "Read INAM: '%s'", name.c_str());
+        return false;
+    });
+    return name;
 }
 
 // DLS-2.2 2.5 <dlid-ck>, DLSID Chunk
@@ -815,10 +843,7 @@ inline static void READGUID(fluid_dls_font *sf, DLSID &id)
     READ16(sf, id.Data2);
     READ16(sf, id.Data3);
 
-    if(sf->fcbs.fread(id.Data4, 8, sf->file) == FLUID_FAILED)
-    {
-        throw std::runtime_error{ "Failed when reading GUID" };
-    }
+    sf->read(id.Data4, 8);
 }
 
 // macro WAVE_FORMAT_PCM is defined in some Windows headers
@@ -845,7 +870,7 @@ static inline void read_data_lpcm(void *dest, const void *data, fluid_long_long_
 
     for(fluid_long_long_t i = 0; i < size; ++i)
     {
-        dest16[i] = (static_cast<int8_t>(src[i] - 128) << 8);
+        dest16[i] = static_cast<int16_t>((static_cast<int>(src[i]) - 128) * 256);
     }
 }
 
@@ -1475,7 +1500,7 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
         throw std::runtime_error{ "Seek to end of file failed" };
     }
 
-    filesize = fcbs.ftell(file);
+    fluid_long_long_t filesize = fcbs.ftell(file);
 
     if(filesize == FLUID_FAILED)
     {
@@ -1496,6 +1521,7 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
     // chunk: RIFF[DLS ]
     // subchunk: ...
 
+    read_end = filesize;
     RIFFChunk chunk{};
 
     READCHUNK_RAW(this, &chunk); // load RIFF chunk
@@ -1539,11 +1565,20 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
     // we don't care about real file size after this point
     filesize = chunk.size + 8LL;
+    read_end = filesize;
+
+    // offset to chunk header
+    fluid_long_long_t linsoffset{};
+    fluid_long_long_t wvploffset{};
+
+    // offset to chunk data
+    fluid_long_long_t pgaloffset{};
+    fluid_long_long_t pgalsize{};
 
     // iterate over chunks in the RIFF form
     try
     {
-        visit_subchunks(0, DLS_FCC, [this](RIFFChunk subchunk, int headersize, fluid_long_long_t pos)
+        visit_subchunks(0, DLS_FCC, [&](RIFFChunk subchunk, int headersize, fluid_long_long_t pos)
         {
             switch(subchunk.id)  // toplevel chunk
             {
@@ -1569,6 +1604,12 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
                 uint32_t colh;
                 READ32(this, colh);
+
+                if(colh > filesize / 32) // A LIST[INS] with its required INSH chunk needs at least 32 bytes
+                {
+                    throw std::runtime_error{ "DLS instrument count exceeds file size" };
+                }
+
                 instruments.reserve(colh);
                 break;
             }
@@ -1608,12 +1649,11 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
                     READ32(this, poolcues[i]);
                 }
 
-                samples.reserve(cues);
                 break;
             }
 
             case INFO_FCC:
-                read_name_from_info_entries(pos + headersize, subchunk.size);
+                read_name_from_info(pos);
                 break;
 
             case LINS_FCC:
@@ -1666,7 +1706,7 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
     FLUID_LOG(FLUID_DBG, "DLS %zu samples read, %zu bytes", samples.size(), sampledata.size());
 
-    sampledata_mlock = mlock_guard{ sampledata.data(), static_cast<fluid_long_long_t>(sampledata.size()) };
+    sampledata_mlock = mlock_guard{ sampledata.data(), static_cast<fluid_long_long_t>(sampledata.size() * sizeof(int16_t)) };
 
     if(try_mlock && !sampledata.empty())
     {
@@ -1729,7 +1769,7 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
     {
         auto& fluid = samples_fluid.emplace_back();
         fluid.start = sample.start;
-        fluid.end = sample.end - 1;
+        fluid.end = sample.end > sample.start ? sample.end - 1 : sample.start;
         fluid.samplerate = sample.samplerate;
         std::strncpy(fluid.name, sample.name.c_str(), sizeof(fluid.name) - 1);
         fluid.name[sizeof(fluid.name) - 1] = '\0';
@@ -1737,11 +1777,15 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
         if(sample.wsmp.has_value())
         {
             const auto &wsmp = sample.wsmp.value();
-            fluid.loopstart = sample.start + wsmp.loop_start;
-            fluid.loopend = sample.start + wsmp.loop_start + wsmp.loop_length;
             fluid.origpitch = wsmp.unity_note;
             fluid.pitchadj = wsmp.fine_tune;
-            invalid_loops_were_sanitized |= fluid_sample_sanitize_loop(&fluid, sampledata.size() * sizeof(decltype(sampledata)::value_type));
+            // Form absolute endpoints wide; UINT_MAX remains invalid for the
+            // sanitizer, so oversized loops cannot wrap into the sample buffer.
+            const auto loop_start = static_cast<fluid_long_long_t>(sample.start) + wsmp.loop_start;
+            const auto loop_end = loop_start + wsmp.loop_length;
+            fluid.loopstart = std::min<fluid_long_long_t>(loop_start, std::numeric_limits<unsigned int>::max());
+            fluid.loopend = std::min<fluid_long_long_t>(loop_end, std::numeric_limits<unsigned int>::max());
+            invalid_loops_were_sanitized |= fluid_sample_sanitize_loop(&fluid, sampledata.size() * sizeof(int16_t));
         }
         else
         {
@@ -1753,7 +1797,7 @@ fluid_dls_font::fluid_dls_font(fluid_synth_t *synth,
 
         fluid.data = sampledata.data();
         fluid.sampletype = FLUID_SAMPLETYPE_MONO;
-        fluid.default_modulators = this->sfont->default_mod_list;
+        fluid.default_modulators = &this->sfont->default_mod_list;
 
         if(fluid_sample_validate(&fluid, sampledata.size() * sizeof(decltype(sampledata)::value_type)) != FLUID_OK)
         {
@@ -1901,27 +1945,27 @@ inline std::optional<uint32_t> fluid_dls_font::eval_dlsid_query(const DLSID &dls
 {
     if(dlsid == DLSID_GMInHardware)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_GSInHardware)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_XGInHardware)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_SupportsDLS1)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_SupportsDLS2)
     {
-        return 1;
+        return std::numeric_limits<uint32_t>::max();
     }
 
     if(dlsid == DLSID_SampleMemorySize)
@@ -1977,6 +2021,12 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
         stack[sp++] = value;
     };
 
+    // DLS 2.2 section 2.6 represents logical TRUE as all 32 bits set.
+    auto push_bool = [&](bool value)
+    {
+        push(value ? std::numeric_limits<uint32_t>::max() : 0);
+    };
+
     auto pop = [&]() -> uint32_t
     {
         if(sp == 0)
@@ -1987,17 +2037,14 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
         return stack[--sp];
     };
 
-    if(fcbs.fseek(file, offset, SEEK_SET) != FLUID_OK)
-    {
-        throw std::runtime_error{ "Failed to seek to CDL operations" };
-    }
+    auto bounds = limit(offset, size);
+    fseek(offset, SEEK_SET);
 
-    int pc = 0;
     uint16_t opcode;
     uint32_t rax; // these two are just temp vars
     uint32_t rbx;
 
-    while(pc < size)
+    while(remaining() != 0)
     {
         READ16(this, opcode);
 
@@ -2007,12 +2054,11 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
         case 0x0010: // DLS_CDL_CONST
             READ32(this, rax);
             push(rax);
-            pc += 4;
             break;
 
         // Unary operators
         case 0x000F: // DLS_CDL_NOT (logical)
-            push(!pop());
+            push_bool(!pop());
             break;
 
         // Binary operators
@@ -2067,43 +2113,43 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
         case 0x0008: // DLS_CDL_LOGICAL_AND
             rax = pop();
             rbx = pop();
-            push(rax && rbx);
+            push_bool(rax && rbx);
             break;
 
         case 0x0009: // DLS_CDL_LOGICAL_OR
             rax = pop();
             rbx = pop();
-            push(rax || rbx);
+            push_bool(rax || rbx);
             break;
 
         case 0x000A: // DLS_CDL_LT
             rax = pop();
             rbx = pop();
-            push(rax < rbx);
+            push_bool(rax < rbx);
             break;
 
         case 0x000B: // DLS_CDL_LE
             rax = pop();
             rbx = pop();
-            push(rax <= rbx);
+            push_bool(rax <= rbx);
             break;
 
         case 0x000C: // DLS_CDL_GT
             rax = pop();
             rbx = pop();
-            push(rax > rbx);
+            push_bool(rax > rbx);
             break;
 
         case 0x000D: // DLS_CDL_GE
             rax = pop();
             rbx = pop();
-            push(rax >= rbx);
+            push_bool(rax >= rbx);
             break;
 
         case 0x000E: // DLS_CDL_EQ
             rax = pop();
             rbx = pop();
-            push(rax == rbx);
+            push_bool(rax == rbx);
             break;
 
         // Query
@@ -2116,21 +2162,14 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
 
             if(opcode == 0x0011)  // Query
             {
-                if(result.has_value())
-                {
-                    push(result.value());
-                }
-                else
-                {
-                    throw std::runtime_error
-                    {
-                        string_format("CDL query for unsupported DLSID, pc=0x%x", pc)
-                    };
-                }
+                // DLS 2.2 section 2.6: unsupported queries evaluate to FALSE.
+                push(result.value_or(0));
+            }
+            else
+            {
+                push_bool(result.has_value()); // Query_Supported
             }
 
-            push(result.has_value() ? 1 : 0); // Query_Supported
-            pc += sizeof(DLSID);
             break;
         }
 
@@ -2139,15 +2178,29 @@ inline bool fluid_dls_font::execute_cdls(fluid_long_long_t offset, int size)
             throw std::runtime_error{ string_format("Unknown CDL opcode 0x%04x", opcode) };
         } // switch(opcode) end
 
-        pc += 2;
-    } // while pc end
-
-    if(pc > size)
-    {
-        throw std::runtime_error{ "CDL chunk too early end of chunk" };
-    }
+    } // while
 
     return pop() != 0;
+}
+
+// Runtime sample indices are unsigned, and sample validation/sanitation takes
+// an unsigned byte count. This is a representation bound, not a resource budget.
+inline int16_t *fluid_dls_font::append_sample_frames(fluid_dls_sample &sample,
+                                                   fluid_long_long_t frames)
+{
+    const auto max_frames = std::min(sampledata.max_size(),
+        static_cast<size_t>(std::numeric_limits<unsigned int>::max()) / sizeof(int16_t));
+    const auto start = sampledata.size();
+    if(frames < 0 || static_cast<unsigned long long>(frames) > max_frames - start)
+    {
+        throw std::runtime_error{ "Decoded DLS samples exceed runtime buffer representation" };
+    }
+
+    const auto end = start + static_cast<size_t>(frames);
+    sampledata.resize(end);
+    sample.start = static_cast<unsigned int>(start);
+    sample.end = static_cast<unsigned int>(end);
+    return sampledata.empty() ? nullptr : sampledata.data() + start;
 }
 
 // wave
@@ -2158,15 +2211,12 @@ inline void fluid_dls_font::parse_wvpl(fluid_long_long_t offset)
     RIFFChunk chunk;
     const int headersize = READCHUNK(this, chunk);
 
-    if(offset + headersize + chunk.size > filesize)
-    {
-        throw std::runtime_error{ "DLS wvpl chunk exceeds file size" };
-    }
-
     if(headersize != 12)
     {
         FLUID_LOG(FLUID_WARN, "Nonstandard 'wvpl' chunk; 'LIST[wvpl]' is legal");
     }
+
+    auto bounds = limit(offset + headersize, chunk.size);
 
     // iterate ptbl
     for(unsigned i = 0; i < poolcues.size(); i++)
@@ -2197,7 +2247,7 @@ inline void fluid_dls_font::parse_wave(fluid_long_long_t offset, fluid_dls_sampl
         switch(subchunk.id)
         {
         case INFO_FCC:
-            sample.name = read_name_from_info_entries(pos + headersize, subchunk.size);
+            sample.name = read_name_from_info(pos);
             break;
 
         case DLID_FCC:
@@ -2247,10 +2297,7 @@ inline void fluid_dls_font::parse_wave(fluid_long_long_t offset, fluid_dls_sampl
         }
 
         case WSMP_FCC:
-            if(parse_wsmp(pos + headersize, sample.wsmp.emplace()) != subchunk.size)
-            {
-                throw std::runtime_error{ "DLS wsmp chunk in wave chunk has corrupted size" };
-            }
+            parse_wsmp(pos + headersize, subchunk.size, sample.wsmp.emplace());
 
             break;
 
@@ -2275,23 +2322,16 @@ inline void fluid_dls_font::parse_wave(fluid_long_long_t offset, fluid_dls_sampl
             }
 
             auto samplelen = subchunk.size / (bitsPerSample / 8);
-            sample.start = sampledata.size();
-            sample.end = sample.start + samplelen;
-            sampledata.resize(sampledata.size() + samplelen);
+            auto *destination = append_sample_frames(sample, samplelen);
 
             char buffer[4096];
             uint32_t remaining = subchunk.size;
-            int16_t *destination = sampledata.data() + sample.start;
 
             while(remaining > 0)
             {
                 uint32_t c = remaining > sizeof(buffer) ? sizeof(buffer) : remaining;
 
-                if(fcbs.fread(buffer, c, file) != FLUID_OK)
-                {
-                    FLUID_LOG(FLUID_ERR, "fcbs::fread failed when reading DLS data chunk");
-                    throw std::exception{};
-                }
+                read(buffer, c);
 
                 read_data_lpcm(destination, buffer, c, bitsPerSample);
 
@@ -2335,8 +2375,11 @@ inline void fluid_dls_font::parse_wave(fluid_long_long_t offset, fluid_dls_sampl
 #endif
 }
 
-inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset, fluid_dls_wsmp &wsmp)
+inline void fluid_dls_font::parse_wsmp(fluid_long_long_t offset,
+                                       uint32_t size,
+                                       fluid_dls_wsmp &wsmp)
 {
+    auto bounds = limit(offset, size);
     fseek(offset, SEEK_SET);
 
     uint32_t cbsize;
@@ -2350,6 +2393,11 @@ inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset, fluid_dls_w
     }
 
     READ16(this, wsmp.unity_note);
+    if(wsmp.unity_note > 127)
+    {
+        throw std::runtime_error{ "DLS wsmp unity note is outside the MIDI note range" };
+    }
+
     READ16(this, wsmp.fine_tune);
     READ32(this, wsmp.gain);
     fskip(4); // fulOptions
@@ -2361,25 +2409,33 @@ inline uint32_t fluid_dls_font::parse_wsmp(fluid_long_long_t offset, fluid_dls_w
         throw std::runtime_error{ "DLS wsmp chunk has more than one loop" };
     }
 
-    if(loops == 0)
+    if(cbsize > 20)
     {
-        return cbsize;
+        fskip(cbsize - 20);
     }
 
-    uint32_t loopcbsize;
-    READ32(this, loopcbsize);
-
-    if(loopcbsize < 16)
+    if(loops != 0)
     {
-        // This is also seen in Crystal's DLS. See CRS1_FCC comment.
-        FLUID_LOG(FLUID_WARN, "DLS wsmp chunk loop cbSize < 16. The file is probably corrupted.");
-        loopcbsize = 16;
+        uint32_t loopcbsize;
+        READ32(this, loopcbsize);
+
+        if(loopcbsize < 16)
+        {
+            // This is also seen in Crystal's DLS. See CRS1_FCC comment.
+            FLUID_LOG(FLUID_WARN, "DLS wsmp chunk loop cbSize < 16. The file is probably corrupted.");
+            loopcbsize = 16;
+        }
+
+        READ32(this, wsmp.loop_type);
+        READ32(this, wsmp.loop_start);
+        READ32(this, wsmp.loop_length);
+        fskip(loopcbsize - 16);
     }
 
-    READ32(this, wsmp.loop_type);
-    READ32(this, wsmp.loop_start);
-    READ32(this, wsmp.loop_length);
-    return cbsize + loopcbsize;
+    if(remaining() != 0)
+    {
+        throw std::runtime_error{ "DLS wsmp chunk has corrupted size" };
+    }
 }
 
 // lins
@@ -2415,6 +2471,13 @@ inline void fluid_dls_font::parse_lins(fluid_long_long_t offset)
 inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instrument &instrument)
 {
     size_t articulation_index = -1; // in C++26 we can do std::optional<T&>
+    fseek(offset, SEEK_SET);
+    RIFFChunk ins_chunk;
+
+    if(READCHUNK(this, ins_chunk) != 12 || ins_chunk.id != INS_FCC)
+    {
+        throw std::runtime_error{ "Expected DLS instrument LIST" };
+    }
 
     visit_subchunks(offset, INS_FCC, [&](RIFFChunk subchunk, int headersize [[maybe_unused]], fluid_long_long_t pos)
     {
@@ -2426,7 +2489,7 @@ inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instru
             break;
 
         case INFO_FCC:
-            instrument.name = read_name_from_info_entries(pos + headersize, subchunk.size);
+            instrument.name = read_name_from_info(pos);
             break;
 
         case INSH_FCC:
@@ -2438,6 +2501,12 @@ inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instru
 
             uint32_t temp;
             READ32(this, temp); // cRegions
+
+            if(temp > ins_chunk.size / 52) // Minimum size of a region LIST, RGNH and WLNK chunks
+            {
+                throw std::runtime_error{ "DLS region count exceeds instrument chunk size" };
+            }
+
             instrument.regions.reserve(temp);
             READ32(this, temp); // bank
             instrument.is_drums = (temp & 0x80000000) != 0;
@@ -2480,6 +2549,11 @@ inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instru
         }
     });
 
+    if(articulation_index != static_cast<size_t>(-1))
+    {
+        instrument.keynum_scale = articulations[articulation_index].keynum_scale;
+    }
+
     for(auto &region : instrument.regions)
     {
         if(region.artindex == static_cast<uint32_t>(-1))
@@ -2491,45 +2565,42 @@ inline void fluid_dls_font::parse_ins(fluid_long_long_t offset, fluid_dls_instru
 
 inline bool fluid_dls_font::parse_lart(fluid_long_long_t offset, fluid_dls_articulation &articulation)
 {
-    bool bypassed{};
+    bool applicable = true;
 
-    try
+    // DLS 2.2 section 2.6 allows CDL after ART. Check conditions before
+    // modifying an articulation shared with earlier lists at this level.
+    visit_subchunks(offset, 0, [&](RIFFChunk subchunk, int headersize, fluid_long_long_t pos)
     {
-        visit_subchunks(offset, 0, [&](RIFFChunk subchunk, int headersize [[maybe_unused]], fluid_long_long_t pos)
+        if(applicable && subchunk.id == CDL_FCC)
         {
-            if(subchunk.id == CDL_FCC)
-            {
-                if(!execute_cdls(pos + headersize, subchunk.size))
-                {
-                    bypassed = false;
-                    throw std::exception{};
-                }
+            applicable = execute_cdls(pos + headersize, subchunk.size);
+        }
+    });
 
-                return;
-            }
-
-            if(subchunk.id != ART1_FCC && subchunk.id != ART2_FCC)
-            {
-                // clang-format off
-                FLUID_LOG(FLUID_WARN,
-                          "Unknown DLS chunk '" FMT_4CC_SPEC "' ofs=0x%llx in LIST[lart]",
-                          FMT_4CC_ARG(subchunk.id), pos);
-                return;
-                // clang-format on
-            }
-
-            parse_art(pos, articulation);
-        });
+    if(!applicable)
+    {
+        return false;
     }
-    catch(...)
+
+    visit_subchunks(offset, 0, [&](RIFFChunk subchunk, int headersize [[maybe_unused]], fluid_long_long_t pos)
     {
-        if(bypassed)
+        if(subchunk.id == CDL_FCC)
         {
-            return false;
+            return;
         }
 
-        throw;
-    }
+        if(subchunk.id != ART1_FCC && subchunk.id != ART2_FCC)
+        {
+            // clang-format off
+            FLUID_LOG(FLUID_WARN,
+                      "Unknown DLS chunk '" FMT_4CC_SPEC "' ofs=0x%llx in LIST[lart]",
+                      FMT_4CC_ARG(subchunk.id), pos);
+            return;
+            // clang-format on
+        }
+
+        parse_art(pos, articulation);
+    });
 
     return true;
 }
@@ -2647,14 +2718,26 @@ inline void fluid_dls_font::parse_lrgn(fluid_long_long_t offset, fluid_dls_instr
     });
 }
 
+inline bool fluid_dls_font::region_applicable(fluid_long_long_t offset)
+{
+    bool applicable = true;
+    visit_subchunks(offset, 0, [&](RIFFChunk chunk, int headersize, fluid_long_long_t pos)
+    {
+        if(chunk.id == CDL_FCC)
+        {
+            applicable = execute_cdls(pos + headersize, chunk.size);
+        }
+        return applicable;
+    });
+    return applicable;
+}
+
 inline bool fluid_dls_font::parse_rgn(fluid_long_long_t offset, fluid_dls_region &region)
 {
     static int self_exclusive_class [[maybe_unused]] = 65536; // exclusive number for self-exclusive regions
     size_t articulation_index = -1;
 
-    bool bypassed{};
-
-    try
+    if(region_applicable(offset))
     {
         visit_subchunks(offset, 0, [&](RIFFChunk subchunk, int headersize, fluid_long_long_t pos)
         {
@@ -2678,12 +2761,6 @@ inline bool fluid_dls_font::parse_rgn(fluid_long_long_t offset, fluid_dls_region
                 break;
 
             case CDL_FCC:
-                if(!execute_cdls(pos + headersize, subchunk.size))
-                {
-                    bypassed = true;
-                    throw std::exception{};
-                }
-
                 break;
 
             case LART_FCC:
@@ -2747,7 +2824,8 @@ inline bool fluid_dls_font::parse_rgn(fluid_long_long_t offset, fluid_dls_region
             // DLS-2 2.2 "the structure tree" ... rgn -> ... wsmp (optional) ...
             // DLS-2 2.8 Other chunks at the same nesting level include a <wsmp-ck> wave sample chunk.
             case WSMP_FCC:
-                parse_wsmp(pos + headersize, region.wsmp.emplace());
+                parse_wsmp(pos + headersize, subchunk.size, region.wsmp.emplace());
+
                 break;
 
             default:
@@ -2758,29 +2836,15 @@ inline bool fluid_dls_font::parse_rgn(fluid_long_long_t offset, fluid_dls_region
                 break;
             }
         });
+        region.artindex = articulation_index;
+        return true;
     }
-    catch(...)
-    {
-        if(bypassed)
-        {
-            return false;
-        }
-
-        throw;
-    }
-
-    region.artindex = articulation_index;
-
-    return true;
+    return false;
 }
 
 inline void fluid_dls_font::parse_pgal(fluid_long_long_t offset, int size)
 {
-    if(size < 4 + 128 + 4)
-    {
-        throw std::runtime_error{ string_format("DLS pgal chunk is too small: %d bytes", size) };
-    }
-
+    auto bounds = limit(offset, size);
     fseek(offset, SEEK_SET);
 
     // drum note aliasing table
@@ -2795,10 +2859,7 @@ inline void fluid_dls_font::parse_pgal(fluid_long_long_t offset, int size)
 
     drum_note_aliasing.emplace();
 
-    if(fcbs.fread(drum_note_aliasing->data(), 128, file) != FLUID_OK)
-    {
-        throw std::runtime_error{ "Failed to read drum note aliasing table" };
-    }
+    read(drum_note_aliasing->data(), 128);
 
     // melodic instrument aliasing table
     uint32_t nAlias;
@@ -2855,6 +2916,9 @@ struct sfvio_data
     fluid_long_long_t offset; // offset in file to wave file
     fluid_long_long_t pos;    // cursor pos in wave file
     fluid_long_long_t size;   // wave file size (including RIFF header)
+    // C callbacks report EOF/errors to libsndfile; the decode operation must
+    // still fail even if the decoder retries or accepts a short read.
+    std::exception_ptr error;
 };
 
 static sf_count_t sfvio_get_filelen(void *user_data) noexcept
@@ -2876,11 +2940,11 @@ static sf_count_t sfvio_seek(sf_count_t offset, int whence, void *user_data) noe
         break;
 
     case SEEK_CUR:
-        newpos += offset;
+        newpos += std::clamp<sf_count_t>(offset, -newpos, data->size - newpos);
         break;
 
     case SEEK_END:
-        newpos = data->size + offset;
+        newpos = data->size + std::clamp<sf_count_t>(offset, -data->size, 0);
         break;
 
     default:
@@ -2889,9 +2953,15 @@ static sf_count_t sfvio_seek(sf_count_t offset, int whence, void *user_data) noe
 
     newpos = std::clamp(newpos, 0LL, data->size);
 
-    if(data->font->fcbs.fseek(data->font->file, data->offset + newpos, SEEK_SET) == FLUID_OK)
+    try
     {
+        data->font->fseek(data->offset + newpos, SEEK_SET);
         data->pos = newpos;
+    }
+    catch(...)
+    {
+        data->error = std::current_exception();
+        return -1;
     }
 
     return data->pos;
@@ -2907,18 +2977,23 @@ static sf_count_t sfvio_read(void *buffer, sf_count_t count, void *user_data) no
 {
     auto *data = static_cast<sfvio_data *>(user_data);
 
-    if(data->pos + count > data->size)
+    if(count > data->size - data->pos)
     {
         count = data->size - data->pos;
     }
 
-    if(count == 0)
+    if(count <= 0)
     {
         return 0;
     }
 
-    if(data->font->fcbs.fread(buffer, count, data->font->file) != FLUID_OK)
+    try
     {
+        data->font->read(buffer, count);
+    }
+    catch(...)
+    {
+        data->error = std::current_exception();
         return 0;
     }
 
@@ -2959,15 +3034,27 @@ inline void fluid_dls_font::parse_wave_sndfile(fluid_long_long_t offset, fluid_d
         throw std::runtime_error{ "Invalid 'wave' chunk instead of LIST[wave]" };
     }
 
-    sfvio_data data{ this, offset, 0, chunk.size + 12 };
+    auto bounds = limit(offset, 12LL + chunk.size);
+    sfvio_data data{ this, offset, 0, chunk.size + 12LL, {} };
     sfvio_seek(0, SEEK_SET, &data);
 
     SF_INFO sfinfo{};
     auto *sndfile = sf_open_virtual(&sfvio, SFM_READ, &sfinfo, &data);
+    scope_guard close_sndfile{ [sndfile]()
+    {
+        if(sndfile != nullptr)
+        {
+            sf_close(sndfile);
+        }
+    } };
+
+    if(data.error)
+    {
+        std::rethrow_exception(data.error);
+    }
 
     if(sndfile == nullptr)
     {
-        sf_close(sndfile);
         throw std::runtime_error{ string_format("Failed to open 'wave' chunk using libsndfile: %s",
                                                 sf_strerror(sndfile)) };
     }
@@ -2976,23 +3063,23 @@ inline void fluid_dls_font::parse_wave_sndfile(fluid_long_long_t offset, fluid_d
 
     if(sfinfo.channels != 1)
     {
-        sf_close(sndfile);
         throw std::runtime_error{ string_format("Unsupported wave channel count: %d (libsndfile)",
                                                 sfinfo.channels) };
     }
 
-    sample.start = sampledata.size();
-    sample.end = sample.start + sfinfo.frames;
-    sampledata.resize(sampledata.size() + sfinfo.frames);
+    auto *destination = append_sample_frames(sample, sfinfo.frames);
+    auto count = sfinfo.frames == 0 ? 0 : sf_read_short(sndfile, destination, sfinfo.frames);
 
-    auto count = sf_read_short(sndfile, sampledata.data() + sample.start, sfinfo.frames);
+    if(data.error)
+    {
+        std::rethrow_exception(data.error);
+    }
 
     if(count != sfinfo.frames)
     {
         FLUID_LOG(FLUID_WARN, "Read 'wave' using libsndfile reached unexpected EOF");
     }
 
-    sf_close(sndfile);
 }
 #endif
 
@@ -3252,52 +3339,84 @@ static int fluid_dls_preset_get_num(fluid_preset_t *preset) noexcept
     return static_cast<const fluid_dls_instrument_fluid_data *>(fluid_preset_get_data(preset))->pcnum;
 }
 
+// Selection may miss every region; playback remains bounded to MIDI tables.
+static fluid_voice_note_t fluid_dls_resolve_note_keys(const fluid_dls_instrument &instrument,
+                                         fluid_channel_t *channel, int key)
+{
+    // Things affect region selection process:
+    // 1. Subtonal tuning, see https://github.com/FluidSynth/fluidsynth/issues/926
+    // 2. Key Number Generator
+    fluid_real_t selection_key_f = key;
+
+    // this is copied from fluid_defsfont
+    if(channel->channel_type == CHANNEL_TYPE_MELODIC)
+    {
+        selection_key_f = fluid_channel_get_key_pitch(channel, key) / 100.0f;
+    }
+
+    selection_key_f *= instrument.keynum_scale;
+
+    // key with subtonal tuning and key number generator applied
+    int selection_key;
+    if(!std::isfinite(selection_key_f) || selection_key_f <= std::numeric_limits<int>::min())
+    {
+        selection_key = std::numeric_limits<int>::min();
+    }
+    else if(selection_key_f >= std::numeric_limits<int>::max())
+    {
+        selection_key = std::numeric_limits<int>::max();
+    }
+    else
+    {
+        selection_key = static_cast<int>(std::round(selection_key_f));
+    }
+    // key with only key number generator applied
+    int voice_key;
+    if (channel->channel_type == CHANNEL_TYPE_DRUM)
+    {
+        if(instrument.drum_note_aliasing != nullptr)
+        {
+            selection_key = instrument.drum_note_aliasing[std::clamp(selection_key, 0, 127)];
+        }
+        // drum channel has no subtonal tuning, so voice_key == selection_key
+        voice_key = selection_key;
+    }
+    else
+    {
+        voice_key = static_cast<int>(std::round(key * instrument.keynum_scale));
+    }
+    voice_key = std::clamp(voice_key, 0, 127);
+
+    return { selection_key, voice_key };
+}
+
+static fluid_voice_note_t fluid_dls_resolve_voice_note(const void *context,
+        fluid_channel_t *channel, int key)
+{
+    return fluid_dls_resolve_note_keys(
+               *static_cast<const fluid_dls_instrument *>(context), channel, key);
+}
+
 static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth, int chan, int key, int vel) noexcept
 {
     auto *dlspreset = static_cast<fluid_dls_instrument_fluid_data *>(fluid_preset_get_data(preset))->instrument;
 
-    // Things affect region selection process:
-    // 1. Subtonal tuning, see https://github.com/FluidSynth/fluidsynth/issues/926
-    // 2. Key Number Generator
-    fluid_real_t tuned_key_f = key;
-
-    // this is copied from fluid_defsfont
-    if(synth->channel[chan]->channel_type == CHANNEL_TYPE_MELODIC)
-    {
-        tuned_key_f = fluid_channel_get_key_pitch(synth->channel[chan], key) / 100.0f;
-    }
-
-    tuned_key_f *= dlspreset->keynum_scale;
-
-    // key with subtonal tuning and key number generator applied
-    int tuned_key = static_cast<int>(std::round(tuned_key_f));
-    // key with only key number generator applied
-    int adjusted_key;
-    if (synth->channel[chan]->channel_type == CHANNEL_TYPE_DRUM)
-    {
-        if(dlspreset->drum_note_aliasing != nullptr)
-        {
-            tuned_key = dlspreset->drum_note_aliasing[std::clamp(tuned_key, 0, 127)];
-        }
-        // drum channel has no subtonal tuning, so adjusted_key == tuned_Key
-        adjusted_key = tuned_key;
-    }
-    else
-    {
-        adjusted_key = static_cast<int>(std::round(key * dlspreset->keynum_scale));
-    }
+    const auto keys = fluid_dls_resolve_note_keys(*dlspreset, synth->channel[chan], key);
 
     for(auto &region : dlspreset->regions)
     {
         auto *sample = dlspreset->samples_fluid + region.sampleindex;
         // Check for zero-length samples, typically caused by samples that failed fluid_sample_validate()
-        if(!fluid_zone_inside_range(&region.range, tuned_key, vel) || sample->start == sample->end)
+        if(!fluid_zone_inside_range(&region.range, keys.selection_key, vel) || sample->start == sample->end)
         {
             continue;
         }
 
-        auto *voice = fluid_synth_alloc_voice_LOCAL(
-                          synth, sample, chan, adjusted_key, vel, &region.range);
+        // Tuning affects region selection even when the playback key is unchanged.
+        // Keep the same resolver for initial selection and mono voice reuse.
+        auto *voice = fluid_synth_alloc_voice_mapped(
+                          synth, sample, chan, key, vel, &region.range,
+                          fluid_dls_resolve_voice_note, dlspreset);
 
         if(voice == nullptr)
         {
@@ -3343,7 +3462,7 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
 
             fluid_voice_gen_set(voice, GEN_OVERRIDEROOTKEY, wsmp.unity_note);
             fluid_voice_gen_incr(voice, GEN_FINETUNE, wsmp.fine_tune - sample.pitchadj);
-            fluid_voice_gen_incr(voice, GEN_ATTENUATION, -wsmp.gain / 65536.0f);
+            fluid_voice_gen_incr(voice, GEN_ATTENUATION, -static_cast<fluid_real_t>(wsmp.gain) / 65536.0f);
 
             if(wsmp.loop_length != 0)
             {
@@ -3368,12 +3487,12 @@ static int fluid_dls_preset_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
 
             fluid_voice_gen_set(voice,
                                 GEN_STARTLOOPADDROFS,
-                                static_cast<int>(sample.start + wsmp.loop_start) -
-                                static_cast<int>(sample.loopstart));
+                                static_cast<fluid_long_long_t>(sample.start) + wsmp.loop_start -
+                                static_cast<fluid_long_long_t>(sample.loopstart));
             fluid_voice_gen_set(voice,
                                 GEN_ENDLOOPADDROFS,
-                                static_cast<int>(sample.start + wsmp.loop_start + wsmp.loop_length) -
-                                static_cast<int>(sample.loopend));
+                                static_cast<fluid_long_long_t>(sample.start) + wsmp.loop_start + wsmp.loop_length -
+                                static_cast<fluid_long_long_t>(sample.loopend));
         }
         else
         {

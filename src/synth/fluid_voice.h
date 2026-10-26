@@ -36,6 +36,17 @@
 extern "C" {
 #endif
 
+/* A preset may select a region in a different key domain from playback.
+ * The original MIDI key remains the voice's event identity. */
+typedef struct
+{
+    int selection_key;
+    int default_actual_key;
+} fluid_voice_note_t;
+
+typedef fluid_voice_note_t (*fluid_voice_note_resolver_t)(const void *context,
+        fluid_channel_t *channel, int key);
+
 typedef struct _fluid_overflow_prio_t fluid_overflow_prio_t;
 
 struct _fluid_overflow_prio_t
@@ -72,6 +83,7 @@ struct _fluid_voice_t
     unsigned char key;              /* the key of the noteon event, quick access for noteoff */
     unsigned char vel;              /* the velocity of the noteon event */
     unsigned char has_noteoff; /* Flag set when noteoff has been sent */
+    unsigned char default_actual_key; /* Playback fallback, separate from MIDI identity */
     unsigned int id;                /* the id is incremented for every new noteon.
 					   it's used for noteoff's  */
     unsigned int start_time;
@@ -106,6 +118,10 @@ struct _fluid_voice_t
 
     fluid_rvoice_eventhandler_t *eventhandler;
     fluid_zone_range_t *zone_range;  /* instrument zone range*/
+    /* Optional preset mapping. Context must outlive the voice's sample reference.
+     * Used only on note transitions, never in the audio rendering loop. */
+    fluid_voice_note_resolver_t note_resolver;
+    const void *note_context;
     fluid_sample_t *sample;          /* Pointer to sample (dupe in rvoice) */
     fluid_sample_t *overflow_sample; /* Pointer to sample (dupe in overflow_rvoice) */
 
@@ -133,7 +149,10 @@ void  fluid_voice_calculate_gen_pitch(fluid_voice_t *voice);
 int fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
                      fluid_zone_range_t *inst_zone_range,
                      fluid_channel_t *channel, int key, int vel,
-                     unsigned int id, unsigned int time, fluid_real_t gain);
+                     unsigned int id, unsigned int time, fluid_real_t gain,
+                     fluid_voice_note_resolver_t resolver, const void *context);
+
+fluid_voice_note_t fluid_voice_resolve_note(const fluid_voice_t *voice, int key);
 
 int fluid_voice_modulate(fluid_voice_t *voice, int cc, int ctrl);
 int fluid_voice_modulate_all(fluid_voice_t *voice);
