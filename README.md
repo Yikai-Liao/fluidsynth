@@ -10,18 +10,20 @@
 - `archive/previous-work`：集中保留旧分支的完整提交历史及原名称映射。原来的日期分支、重复版本和已停止实验分支从分支列表清理；所有原始提交仍可追溯。
 - 分支结构已整理完成。All Notes Off、踏板转交、零 tempo 已整理为单提交分支并提 PR；其余 dev 分支仍需逐项 review，不能视为已完成测试精简或 rebase。审计包按主题拆分；DLS 按整体重构系列 review。
 
-当前为 **25 个 dev 工作分支、5 个开放 PR 分支，以及 master / todo / archive/previous-work，共 33 个分支**。旧的 100 个分支头均保留在归档历史中；三个新 PR 的原 dev 历史也完整保留。
+当前为 **28 个 dev 工作分支、5 个开放 PR 分支，以及 master / todo / archive/previous-work，共 36 个分支**。旧的 100 个分支头均保留在归档历史中；三个已提交 PR 的原 dev 历史也完整保留。
 
 ## 优先顺序
 
-**优先处理音频正确性**：先看错误音色、力度调制、漏发音和踏板错误延音，再考虑内存释放、空指针和其他防御性边界。相同优先级内，先 review 根因集中、生产改动小的修复；S/M/L 只表示初步人工 review 规模，不含构建和等待 CI。**下一批选 4 个独立主题**，尚未整理成 PR 分支，也未提交上游：
+**优先处理音频正确性**：先看错误音色、力度调制、漏发音和踏板错误延音，再考虑内存释放、空指针和其他防御性边界。相同优先级内，先 review 根因集中、生产改动小的修复；S/M/L 只表示初步人工 review 规模，不含构建和等待 CI。**本批 4 个独立主题已完成根因 review 和精简调整**，保存在下列 dev 分支，尚未整理为 PR 分支或提交上游：
 
-| 顺序 | 主题与来源 | 优先原因 | 下一步与验收 |
+| 顺序 | 主题与开发分支 | 优先原因 | 本轮 review 与调整 |
 |---|---|---|---|
-| 1 | **采样率变化后更新 IIR 表**；`fix/dev-initial-rate-iir-table` | 仍用旧采样率的滤波表会改变截止频率响应和音色；生产 +1 | 核对采样率切换入口；精简现有回归，比较切换到目标采样率与直接以该采样率创建 synth 的滤波表和非静音音频输出；撤销该行后应失败 |
-| 2 | **F31：CC121 后 Breath Sync 漏发音**；`fix/dev-audit-fixes` | 控制器复位后旧气息状态未清零，新气息到达时等待音符不会启动；生产移动 1 行 | 只提取 previous breath 复位；沿用 `test_synth_reset_cc` 验证 CC121 后从零气息到正值会启动等待音符，并做修复前后对照 |
-| 3 | **F46：重复 CC66 错误捕获新音符**；`fix/dev-audit-fixes` | 踏板保持按下时的重复消息会前移捕获边界，让后来音符错误延音 | 只在 CC66 从抬起变为按下时更新捕获序号；复用 `test_synth_reset_cc`，覆盖重复按下值及真正抬起/再按下；与 #1880 的踏板释放转交分别验证 |
-| 4 | **F19：SF2 固定力度 0 被忽略**；`fix/dev-audit-fixes` | 合法固定 velocity=0 应覆盖输入力度，否则力度相关调制和音色不符；核心条件改动 +1/−1 | 仅提取有效值判定，不夹带越界值钳制；精简现有 209 行 SF2 重写/渲染夹具，核对可复用的 voice 测试；检查实际力度为 0 及调制结果，不能把它当作 MIDI Note Off 或一律断言静音 |
+| 1 | **启动时采样率变化后更新 IIR 表**；[fix/dev-initial-rate-iir-table](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-initial-rate-iir-table) | 仍用旧采样率的滤波表会改变截止频率响应和音色；生产 +1 | 保留一行重建；入口为 JACK 创建时的采样率匹配，不使用已废弃的公开 setter。测试增量从 63 行减至 40 行，比较 44.1↔48 kHz 切换与直接创建的非静音 PCM；原 dev 历史保留并合入当前上游 |
+| 2 | **F31：CC121 后 Breath Sync 漏发音**；[fix/dev-breath-sync-reset](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-breath-sync-reset) | 控制器复位后旧气息状态未清零，新气息到达时等待音符不会启动；生产移动 1 行 | 从审计包单独提取。现有 `test_synth_reset_cc` 增量 21 行，省去先播放并释放旧音符的准备，直接验证等待与气息重新启动 |
+| 3 | **F46：重复 CC66 按下消息错误捕获新音符**；[fix/dev-sostenuto-repeat](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-repeat) | 踏板保持按下时的重复消息会前移捕获边界，让后来音符错误延音 | 保留逐声道旧值传递，仅在按下边沿捕获；生产 +9/−7，无新增状态字段。现有踏板用例补 8 行，替代审计稿的独立 helper 与 voice 遍历；另验证全局 CC 逐声道转发、抬起后再按下，以及与 #1880 的组合 |
+| 4 | **F19：SF2 固定力度 0 被忽略**；[fix/dev-fixed-velocity-zero](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-fixed-velocity-zero) | 固定 velocity=0 应覆盖输入力度，否则力度相关调制和音色不符 | 仅改 `> 0` 为 `>= 0`，并注释 -1/0 的区别，生产 +2/−1；不夹带越界钳制。用 `test_modulator` 的 24 行增量替代 209 行 SF2 重写夹具，直接检查 -1、0、1、127 的实际力度与调制输出，不假设零力度必定静音 |
+
+本轮验证：四个分支分别在 Linux Debug + UBSan/float-cast-overflow 配置下 **46/46 全量通过**；保留新测试、仅链接原版生产对象时，四项均在预期回归断言处失败。IIR 和 F19 的 float DSP 定向回归也通过。CC66 与 #1880 的组合和全局控制器用例使用仓库外的定向 probe，未加入提交，也未修改已开放 PR。F19 的依据为 [SoundFont 2.04 §8.1.2 第 47 项正文](https://musescore.org/sites/musescore.org/files/2023-01/sfspec24.pdf#page=36) 及项目已有 generator 定义（范围 0–127，默认 -1）。下一步只需按已约定流程核对提交内容、整理单提交 PR 分支；本轮未创建新 PR。
 
 **音频正确性后备：** F18 unpitched SF2 根音回退（合法 originalPitch=255 的音高与自定义调音；现有夹具 74 行，保留非静音及 root=60 音频等价检查）；F49 自定义调音跨音区时单音连奏保留旧音区声音；`fix/dev-dattorro-sample-rate` 的混响采样率切换。Dattorro 先核对当前调用路径、状态重建和音频连续性，再决定最小修复范围。
 
@@ -31,14 +33,16 @@
 
 ## 审计前的积压与当前工作分支
 
-本表同时列出审计前的独立修复、性能和 CI 工作。生产差异只计 `src`；CI 差异计相关工作流/工具。所有数值相对各分支与声明上游 `c7ba7b49` 的 merge-base；仍需在最终 rebase 时重新检查。
+本表同时列出审计前的独立修复、已从审计包提取的修复、性能和 CI 工作。生产差异只计 `src`；CI 差异计相关工作流/工具。所有数值相对各分支与声明上游 `c7ba7b49` 的 merge-base；仍需在最终 rebase 时重新检查。
 
 | 工作分支 | 内容 | review 规模 | 生产/CI 差异 |
 |---|---|---|---|
 | [fix/dev-all-notes-off-mono-keys](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-all-notes-off-mono-keys) | All Notes Off 清除 mono held keys；已提 #1879 | M | +7 / −0 |
 | [fix/dev-basic-channel-count-bounds](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-basic-channel-count-bounds) | basic channel 数量校验与加法溢出 | M | +2 / −8 |
+| [fix/dev-breath-sync-reset](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-breath-sync-reset) | F31：CC121 复位 Breath Sync 的上一气息值；本轮已 review | S | +1 / −1 |
 | [fix/dev-dattorro-sample-rate](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-dattorro-sample-rate) | Dattorro 采样率变化时重建状态 | M | +25 / −2 |
 | [fix/dev-dither-table-init](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-dither-table-init) | 共享 S16 dither 表并发初始化 | M | +20 / −19 |
+| [fix/dev-fixed-velocity-zero](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-fixed-velocity-zero) | F19：固定力度 0 覆盖输入力度；本轮已 review | S | +2 / −1 |
 | [fix/dev-initial-rate-iir-table](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-initial-rate-iir-table) | 采样率变化后更新 IIR 查表 | M | +1 / −0 |
 | [fix/dev-jack-rate-change](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-jack-rate-change) | JACK 采样率变化时停止不匹配渲染 | L | +48 / −18 |
 | [fix/dev-midi-track-count](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-midi-track-count) | MIDI 轨道数符号扩展与边界 | S | +6 / −1 |
@@ -53,6 +57,7 @@
 | [fix/dev-smf-sysex-continuations](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-smf-sysex-continuations) | SMF SysEx 续包与 escaped MIDI 时序 | L | +120 / −55 |
 | [fix/dev-timer-thread-handle-release](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-timer-thread-handle-release) | timer join 后释放线程句柄 | S | +3 / −1 |
 | [fix/dev-sostenuto-sustain-handoff](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-sustain-handoff) | CC66 抬起时转交仍按下的 sustain；已提 #1880 | M | +7 / −2 |
+| [fix/dev-sostenuto-repeat](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-repeat) | F46：重复 CC66 不重新捕获后来音符；本轮已 review | S | +9 / −7 |
 | [fix/dev-audit-fixes](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-audit-fixes) | 审计混合包：51 项成立问题，待按主题拆分 | L | 混合/重构包，见下文 |
 | [perf/dev-iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-iir-stable-block) | double IIR 稳态四采样展开（W4） | L | +129 / −0 |
 | [perf/dev-midi-track-merge](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-midi-track-merge) | MIDI 跨轨事件 heap merge 备选实现；随 player 搁置 | L | +84 / −58 |
