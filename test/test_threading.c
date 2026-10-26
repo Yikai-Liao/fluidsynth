@@ -100,8 +100,35 @@ void test_atomic_inc(void)
     delete_fluid_cond_mutex(data.mutex);
 }
 
+/* Keep a timer running until the controlling thread deletes it. */
+static int count_timer_callbacks(void *data, unsigned int msec)
+{
+    fluid_atomic_int_t *callbacks = data;
+    fluid_atomic_int_inc(callbacks);
+    return TRUE;
+}
+
+/* Stopping a live timer must synchronize its exit before freeing it. */
+static void test_timer_stop(void)
+{
+    fluid_atomic_int_t callbacks;
+    fluid_timer_t *timer;
+    int i;
+
+    fluid_atomic_int_set(&callbacks, 0);
+    timer = new_fluid_timer(1, count_timer_callbacks, &callbacks, TRUE, FALSE, FALSE);
+    TEST_ASSERT(timer != NULL);
+    for(i = 0; i < 1000 && fluid_atomic_int_get(&callbacks) == 0; i++)
+    {
+        fluid_msleep(1);
+    }
+    delete_fluid_timer(timer);
+    TEST_ASSERT(fluid_atomic_int_get(&callbacks) > 0);
+}
+
 int main(void)
 {
     test_atomic_inc();
+    test_timer_stop();
     return EXIT_SUCCESS;
 }

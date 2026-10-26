@@ -66,7 +66,7 @@ struct _fluid_timer_t
     fluid_timer_callback_t callback;
     void *data;
     fluid_thread_t *thread;
-    int cont;
+    fluid_atomic_int_t cont;
     int auto_destroy;
 };
 
@@ -1004,7 +1004,7 @@ fluid_timer_run(void *data)
     /* keep track of the start time for absolute positioning */
     start = fluid_curtime();
 
-    while(timer->cont)
+    while(fluid_atomic_int_get(&timer->cont))
     {
         cont = (*timer->callback)(timer->data, fluid_curtime() - start);
 
@@ -1054,7 +1054,7 @@ new_fluid_timer(int msec, fluid_timer_callback_t callback, void *data,
     timer->msec = msec;
     timer->callback = callback;
     timer->data = data;
-    timer->cont = TRUE ;
+    fluid_atomic_int_set(&timer->cont, TRUE);
     timer->thread = NULL;
     timer->auto_destroy = auto_destroy;
 
@@ -1091,7 +1091,7 @@ delete_fluid_timer(fluid_timer_t *timer)
 
     auto_destroy = timer->auto_destroy;
 
-    timer->cont = 0;
+    fluid_atomic_int_set(&timer->cont, FALSE);
     fluid_timer_join(timer);
 
     /* Shouldn't access timer now if auto_destroy enabled, since it has been destroyed */
