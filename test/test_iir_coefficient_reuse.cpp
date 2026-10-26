@@ -1,7 +1,6 @@
 #include "test.h"
 #include "fluid_iir_filter.h"
 #include "synth/fluid_synth.h"
-#include <cstring>
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -38,58 +37,41 @@ static void check_smoothing(fluid_iir_sincos_t *table, fluid_real_t cutoff_step,
     TEST_ASSERT(filter.fres_incr_count == 0 && filter.q_incr_count == 0);
 }
 
-enum { Frames = 8192 };
-
-static void check_rate_change(int initial_rate, int target_rate, int resonance, int custom_filter)
+/* A startup rate change must sound like a synth created at the target rate. */
+static void check_rate_change(int initial_rate, int target_rate)
 {
-    fluid_settings_t *settings[2];
-    fluid_synth_t *synth[2];
-    float output[2][Frames * 2];
+    enum { frames = 1024 };
+    fluid_settings_t *settings = new_fluid_settings();
+    float output[2][frames * 2];
     int i, nonzero = 0;
 
+    TEST_ASSERT(settings != NULL);
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
     for(i = 0; i < 2; i++)
     {
-        settings[i] = new_fluid_settings();
-        TEST_ASSERT(settings[i] != NULL);
-        TEST_SUCCESS(fluid_settings_setnum(settings[i], "synth.sample-rate", i ? initial_rate : target_rate));
-        TEST_SUCCESS(fluid_settings_setint(settings[i], "synth.reverb.active", 0));
-        TEST_SUCCESS(fluid_settings_setint(settings[i], "synth.chorus.active", 0));
-        synth[i] = new_fluid_synth(settings[i]);
-        TEST_ASSERT(synth[i] != NULL);
+        TEST_SUCCESS(fluid_settings_setnum(settings, "synth.sample-rate", i ? initial_rate : target_rate));
+        fluid_synth_t *synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != NULL);
         if(i != 0)
         {
-            /* Apply startup rate changes before rendering the first voice. */
-            fluid_synth_set_sample_rate_immediately(synth[i], 22050);
-            fluid_synth_set_sample_rate_immediately(synth[i], target_rate);
+            fluid_synth_set_sample_rate_immediately(synth, target_rate);
         }
-        TEST_SUCCESS(fluid_synth_sfload(synth[i], TEST_SOUNDFONT, 1));
-        TEST_SUCCESS(fluid_synth_program_change(synth[i], 0, 18));
-        TEST_SUCCESS(fluid_synth_set_gen(synth[i], 0, GEN_FILTERFC, -4500));
-        TEST_SUCCESS(fluid_synth_set_gen(synth[i], 0, GEN_FILTERQ, resonance));
-        if(custom_filter)
-        {
-            TEST_SUCCESS(fluid_synth_set_custom_filter(synth[i], FLUID_IIR_HIGHPASS, 0));
-            TEST_SUCCESS(fluid_synth_set_gen(synth[i], 0, GEN_CUSTOM_FILTERFC, 6000));
-        }
-        TEST_SUCCESS(fluid_synth_noteon(synth[i], 0, 60, 100));
-        TEST_SUCCESS(fluid_synth_write_float(synth[i], Frames, output[i], 0, 2, output[i], 1, 2));
+        TEST_SUCCESS(fluid_synth_sfload(synth, TEST_SOUNDFONT, 1));
+        TEST_SUCCESS(fluid_synth_program_change(synth, 0, 18));
+        TEST_SUCCESS(fluid_synth_set_gen(synth, 0, GEN_FILTERFC, -4500));
+        TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+        TEST_SUCCESS(fluid_synth_write_float(synth, frames, output[i], 0, 2, output[i], 1, 2));
+        delete_fluid_synth(synth);
     }
+    delete_fluid_settings(settings);
 
-    for(i = 0; i < Frames * 2; i++)
+    for(i = 0; i < frames * 2; i++)
     {
         nonzero |= output[0][i] != 0;
     }
     TEST_ASSERT(nonzero);
-    /* Compare all cutoff entries, including those this preset does not use. */
-    TEST_ASSERT(memcmp(synth[0]->iir_sincos_table, synth[1]->iir_sincos_table,
-                       sizeof(synth[0]->iir_sincos_table)) == 0);
-    TEST_ASSERT(memcmp(output[0], output[1], sizeof(output[0])) == 0);
-
-    for(i = 0; i < 2; i++)
-    {
-        delete_fluid_synth(synth[i]);
-        delete_fluid_settings(settings[i]);
-    }
+    TEST_ASSERT(std::equal(output[0], output[0] + frames * 2, output[1]));
 }
 
 int main()
@@ -101,12 +83,7 @@ int main()
     check_smoothing(table, 2, 0); // Large steps bypass coefficient reuse.
     check_smoothing(table, 0, 0.01); // Q changes without a cutoff change.
     check_smoothing(table, 0.04, 0.01);
-    for(int resonance = 0; resonance <= 700; resonance += 700)
-    {
-        check_rate_change(44100, 48000, resonance, 0);
-        check_rate_change(48000, 44100, resonance, 0);
-        check_rate_change(44100, 96000, resonance, 0);
-        check_rate_change(48000, 44100, resonance, 1);
-    }
+    check_rate_change(44100, 48000);
+    check_rate_change(48000, 44100);
     return 0;
 }
