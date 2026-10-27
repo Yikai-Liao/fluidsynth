@@ -163,7 +163,8 @@ static inline void fluid_iir_filter_calculate_coefficients(R fres,
  * - dsp_hist2: same
  */
 // Specialize the loop to remove the cache check when coefficient reuse is disabled.
-template<bool GAIN_NORM, bool AMPLIFY, enum fluid_iir_filter_type TYPE, bool REUSE_COEFFICIENTS>
+template<bool GAIN_NORM, bool AMPLIFY, enum fluid_iir_filter_type TYPE,
+         bool REUSE_COEFFICIENTS, bool STABLE_COEFFICIENTS = false>
 static void
 fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID_RESTRICT dsp_buf, unsigned int count)
 {
@@ -200,8 +201,35 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
 
         /* filter (implement the voice filter according to SoundFont standard) */
 
-        unsigned int dsp_i;
-        for (dsp_i = 0; dsp_i < count; dsp_i++)
+        unsigned int dsp_i = 0;
+        /* Expand four states while coefficients are fixed; the scalar loop handles the remainder. */
+        if(STABLE_COEFFICIENTS && count >= 4)
+        {
+            const fluid_real_t a = -fluid_real_t(dsp_a1), b = -fluid_real_t(dsp_a2);
+            /* Keep feedback polynomials in double to limit error at low cutoff and high Q. */
+            const double p2 = double(a) * a + b, p3 = a * (p2 + b);
+            for(; dsp_i + 4 <= count; dsp_i += 4)
+            {
+                const fluid_real_t h1 = dsp_hist1, h2 = dsp_hist2;
+                const fluid_real_t x0 = dsp_buf[dsp_i], x1 = dsp_buf[dsp_i + 1];
+                const fluid_real_t x2 = dsp_buf[dsp_i + 2], x3 = dsp_buf[dsp_i + 3];
+                const fluid_real_t w[6] = {h2, h1,
+                    fluid_real_t(x0 + a * h1 + b * h2),
+                    fluid_real_t(x1 + a * x0 + p2 * h1 + (a * b) * h2),
+                    fluid_real_t(x2 + p2 * x0 + a * x1 + p3 * h1 + (b * p2) * h2),
+                    fluid_real_t(x3 + p3 * x0 + p2 * x1 + a * x2
+                                 + (a * p3 + b * p2) * h1 + (b * p3) * h2)};
+                for(unsigned int j = 0; j < 4; ++j)
+                {
+                    const fluid_real_t sample = dsp_b02 * (w[j + 2] + w[j]) + dsp_b1 * w[j + 1];
+                    dsp_buf[dsp_i + j] = dsp_amp * sample;
+                    dsp_amp += dsp_amp_incr;
+                }
+                dsp_hist2 = w[4];
+                dsp_hist1 = w[5];
+            }
+        }
+        for (; dsp_i < count; dsp_i++)
         {
             /* The filter is implemented in Direct-II form. */
             fluid_real_t dsp_centernode = dsp_buf[dsp_i] - dsp_a1 * dsp_hist1 - dsp_a2 * dsp_hist2;
@@ -233,7 +261,7 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
                 dsp_buf[dsp_i] = sample;
             }
 
-            if(fres_incr_count > 0 || q_incr_count > 0)
+            if(!STABLE_COEFFICIENTS && (fres_incr_count > 0 || q_incr_count > 0))
             {
                 if(fres_incr_count > 0)
                 {
@@ -291,7 +319,7 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
     }
 }
 
-/* Reuse only for fixed-Q ramps whose per-sample cutoff change is below one table step. */
+/* Select the stable loop, or reuse coefficients within fixed-Q cutoff ramps. */
 template<bool GAIN_NORM, bool AMPLIFY, enum fluid_iir_filter_type TYPE>
 static void
 fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID_RESTRICT dsp_buf, unsigned int count)
@@ -300,6 +328,12 @@ fluid_iir_filter_apply_local(fluid_iir_filter_t *iir_filter, fluid_real_t *FLUID
             && std::abs(static_cast<IIR_COEFF_T>(iir_filter->fres_incr)) < CENTS_STEP)
     {
         fluid_iir_filter_apply_samples<GAIN_NORM, AMPLIFY, TYPE, true>(iir_filter, dsp_buf, count);
+    }
+    else if(GAIN_NORM && AMPLIFY && TYPE == FLUID_IIR_LOWPASS
+            && iir_filter->type == TYPE && iir_filter->fres_incr_count == 0
+            && iir_filter->q_incr_count == 0)
+    {
+        fluid_iir_filter_apply_samples<GAIN_NORM, AMPLIFY, TYPE, false, true>(iir_filter, dsp_buf, count);
     }
     else
     {
