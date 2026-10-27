@@ -18,7 +18,7 @@
 
 - 先跟进现有开放 PR：#1879 Mono 清键、#1884 SF3 x87 构建兼容。当前没有安排新增边际修复 PR。
 - 现有证据不足以列出三个“普通 MIDI、常用音色、默认播放下常见且严重”的剩余渲染缺陷。#1879 需 Mono 与清键事件；IIR 启动问题需 JACK 协商前后采样率不同，不能写成普通离线渲染普遍受影响。
-- 重复 CC66、SF2 固定力度 0、Breath Sync 均保留为低优先级候选。没有发生率或常用资产证据支持把它们称为常见问题；Breath Sync 是需显式启用的 FluidSynth 模式，不是默认启用的 MIDI 事件。
+- **重复 CC66（F46）提高优先级（2026-10-28 用户决定）**：已有真实 MIDI＋MuseScore MS Basic 音源的原生播放证据，列入下一批优先考虑提交的修复 PR。修复保留在 `fix/dev-sostenuto-repeat`（`54817529`），尚未提上游 PR；此调整不代表授权立即提交。SF2 固定力度 0、Breath Sync 仍为低优先级候选；Breath Sync 需显式启用。单个真实样本不等于高发生率。
 - 播放器控制、跨轨排序/seek、heap merge、F35 继续搁置，沿用 2026-10-26 的决定；本次未恢复这些任务。
 - **DLS 大重构往后放**，完整保留原版与 minimal 版分支，不自动推进 review 或 PR。
 - **Android 等待用户有空 review**。当前瓶颈是用户自己的审核时间，不是要求继续补实现或催促上游；迁移与独立 probe 均先保留。
@@ -55,7 +55,7 @@
 |---|---|---:|---:|---|
 | 启动采样率变化后 IIR 表未更新；`fix/dev-initial-rate-iir-table` | JACK 初次连接时 synth/device 速率不同；滤波响应与按目标速率创建的 synth 不同 | +1/−0 | +40 | 实现低；需区分滤波表修复与默认 Dattorro 的换率限制。条件性候选，暂不提 |
 | F31 Breath Sync 复位；`fix/dev-breath-sync-reset` | 显式启用气息同步 Mono，CC121 后等待音符漏启动 | +1/−1 | +21 | 低；特殊模式，后放 |
-| F46 重复 CC66；`fix/dev-sostenuto-repeat` | Sostenuto 保持按下时重复发按下值，错误捕获后来的音符 | +9/−7 | +8 | 低至中；需核对逐声道转发和按下边沿。不同于已合并 #1880 的释放交接，后放 |
+| F46 重复 CC66；`fix/dev-sostenuto-repeat` | Sostenuto 保持按下时重复发按下值，错误捕获后来的音符 | +9/−7 | +8 | 提高至下一批优先考虑；真实 MIDI＋MS Basic 已复现。提交前重查基线、逐声道转发与边沿测试；尚未授权立即提 PR |
 | F19 固定力度 0；`fix/dev-fixed-velocity-zero` | SF2 区域显式设固定 velocity=0 时，力度相关调制错误；不等于必定静音 | +2/−1 | +24 | 低；合法但较少见的音色参数，后放 |
 
 2026-10-27 在独立 worktree 中以 `18bcb76f` 的生产源码导入现有回归：Mono 清键、重复 CC66、Breath Sync、固定力度 0 和 IIR 启动换率五项均在各自预期断言处失败；合并应用已有五项诊断修复后均通过。配置为 Linux RelWithDebInfo、double、OpenMP 关闭；这只是五个定向探针，不是当前分支全量测试、真实 JACK 设备验证或常见程度调查。原四项 dev 的 2026-10-26 Debug UBSan/float-cast-overflow 46/46 等结果仍是历史证据，未当作本次全量重测。
@@ -90,7 +90,7 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 | [fix/dev-smf-sysex-continuations](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-smf-sysex-continuations) | SMF SysEx 续包与 escaped MIDI 时序 | L | +120 / −55 |
 | [fix/dev-timer-thread-handle-release](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-timer-thread-handle-release) | timer join 后释放线程句柄 | S | +3 / −1 |
 | [fix/dev-sostenuto-sustain-handoff](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-sustain-handoff) | CC66 抬起时转交仍按下的 sustain；#1880 merged，dev 仅保留历史 | M | +7 / −2 |
-| [fix/dev-sostenuto-repeat](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-repeat) | F46：重复 CC66 不重新捕获后来音符；已 review，暂缓提交 | S | +9 / −7 |
+| [fix/dev-sostenuto-repeat](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-repeat) | F46：重复 CC66 不重新捕获后来音符；已 review，用户提高至下一批优先考虑，尚未提 PR | S | +9 / −7 |
 | [fix/dev-audit-fixes](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-audit-fixes) | 审计混合包：51 项成立问题，待按主题拆分 | L | 混合/重构包，见下文 |
 | [perf/iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/iir-stable-block) | 精简 double W4，单提交暂存；float 统一实现继续验证，PR 延后 | S | +43 / −5 |
 | [perf/dev-iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-iir-stable-block) | 旧 double W4 与历史证据保留；由精简分支承接，不重复排 PR | L | +129 / −0 |
