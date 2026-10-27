@@ -5,12 +5,12 @@
 ## 分支约定与当前阶段
 
 - `fix/dev-xxx`、`perf/dev-xxx`、`ci/dev-xxx`、`refactor/dev-xxx`：未完成工作，完整保留 Git 提交历史，允许继续迭代。
-- 去掉 `dev-` 的对应分支：review 完成后基于当时的上游，整理为一个完整提交，再提 PR。开发分支不提前 squash。
+- 去掉 `dev-` 的对应分支：review 完成后基于当时的上游，整理为一个完整提交。可以先存入待办，等用户安排后再提 PR；开发分支不提前 squash。
 - 已有开放 PR 的 head 分支保留，避免影响 PR；目前共 2 个（#1879、#1884），见“已提上游的工作”。已合并 PR 的现存分支仅保留历史，不再计入待 review 工作。
 - `archive/previous-work`：集中保留旧分支的完整提交历史及原名称映射。原来的日期分支、重复版本和已停止实验分支从分支列表清理；所有原始提交仍可追溯。
 - 分支结构已整理完成。All Notes Off 已提 #1879，仍开放；踏板转交 #1880 和零 tempo #1881 已合并。其余 dev 分支的完成程度分别记录，不能因本次状态更新而视为已完成测试精简或 rebase。审计包按主题拆分；DLS 按整体重构系列 review。
 
-远端现有 **38 个分支：29 个 dev 分支、2 个开放 PR 分支、4 个已合并 PR 的保留分支，以及 master / todo / archive/previous-work**。dev 分支中也保留了已合并主题的旧历史，因此分支数量不等于待修问题或待提 PR 数量。本次更新仅修改 `todo` 文档，不删除、重写或推送任何代码/PR 分支。
+远端现有 **39 个分支：29 个 dev 分支、1 个暂存的非 dev 性能分支、2 个开放 PR 分支、4 个已合并 PR 的保留分支，以及 master / todo / archive/previous-work**。dev 分支中也保留了已合并主题的旧历史，因此分支数量不等于待修问题或待提 PR 数量。本次新增 `perf/iir-stable-block` 并更新 `todo`，其余代码/PR 分支保留。
 
 ## 当前取舍：减少上游审核压力
 
@@ -23,7 +23,18 @@
 - **DLS 大重构往后放**，完整保留原版与 minimal 版分支，不自动推进 review 或 PR。
 - **Android 等待用户有空 review**。当前瓶颈是用户自己的审核时间，不是要求继续补实现或催促上游；迁移与独立 probe 均先保留。
 - **Windows CI 精简以后再说**，先接受现有运行速度，不为局部 CI 加速增加审核负担。
-- **double IIR W4 保留为性能候选**，尚未安排提交。它是剩余非正确性工作中已有真实端到端收益证据的一项；下面明确旧数据的范围，不能把旧结果当作当前 master 的收益。
+- **IIR W4 已单提交暂存，过几天再安排 PR**，减少同时进行的上游审核工作。当前保存的是 double 版本；用户随后要求研究同一套 W4 在 float/double 下均取得收益，正在用经精度收敛检查的 MPFR 参考做 float 精度消融。不能把旧端到端结果当作当前实现的收益。
+
+### IIR W4：已保存的精简分支与后续验证
+
+- 分支：[perf/iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/iir-stable-block)，不带 `dev-`；当前提交 [`665ece6e`](https://github.com/Yikai-Liao/fluidsynth/commit/665ece6e67abcd6a8179c9fc1083c57d0ecc3f11) 直接基于 `18bcb76f`，只领先上游一个提交，没有创建 PR。
+- 保存范围：只修改 `src/rvoice/fluid_iir_filter_impl.cpp`，+43/−5，净增 38 行；W4 核心 29 行，没有新增生产断言。旧 dev 分支的 +129 行版本与历史数据保留，不另排一个 PR。
+- 当前分支仍是 **double-only**。64 样本 `stable-mid` micro 的耗时比以原始未展开实现为 1：GCC 精简版 0.647、旧 W4 0.710；Clang 精简版 0.641、旧 W4 0.632。Clang 的两版差异未得到统计确认。覆盖了四组稳定参数、短块、尾部及平滑回退；不据此宣称端到端收益。
+- float 目前被 `WITH_FLOAT` 排除；GCC/Clang float 编译的 `.text` 与原实现相同，不能宣称 float 加速。后续目标是 **同一套展开公式、尾部和状态写回同时支持 float/double**，不维护两份独立内核。若全 float 精度不足，逐组检查展开系数、历史值及最终状态，测量少量 double 局部变量的精度/速度取舍。
+- 准确性 Oracle：同一组已经量化为 float 的滤波系数、同一输入和初始状态，在 MPFR 中逐样本递推，中途不截回 float，并提高 MPFR 精度检查参考收敛。分别比较原实现与候选到该参考的误差；候选与原 float 的输出差异另作兼容性指标，不把不同直接当作更差，不重新用高精度设计系数。
+- 已有验证：GCC/Clang double 的独立标量探针、启用原有断言的探针通过；float 编译及 `.text` 比较通过。独立测试与实验脚本留在本地证据目录，未把旧的 318 行探针或实验产物装入代码提交。
+- 证据目录：`/root/code/fluidsynth-iir-compact-20261027/compact-delivery/`（本次 double 的配对 micro 数据和报告），同目录树的 `compact-delivery-mca/`、`compact-delivery-validation/` 保留汇编/PMU/MCA 与验证；`float-study/` 保留正在进行的 MPFR 和统一精度候选调查。
+- 再提 PR 前：完成 float 统一实现的精度/速度判断，精简并移植必要的自动回归测试，核对届时上游，按最终源码重查 PCM 与完整渲染收益；Clang 极短块的兼容性/速度取舍单列。用户安排后再提 PR，不自动创建或按日期催审。
 
 ### IIR W4 的历史收益与限制
 
@@ -55,7 +66,7 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 
 ## 审计前的积压与当前工作分支
 
-本表同时列出审计前的独立修复、已从审计包提取的修复、性能和 CI 工作。生产差异只计 `src`；CI 差异计相关工作流/工具。所有数值相对各分支与声明上游 `c7ba7b49` 的 merge-base；仍需在最终 rebase 时重新检查。
+本表同时列出审计前的独立修复、已从审计包提取的修复、性能和 CI 工作。生产差异只计 `src`；CI 差异计相关工作流/工具。除精简 IIR 分支以 `18bcb76f` 为基线外，数值相对各分支与声明上游 `c7ba7b49` 的 merge-base；仍需在最终 rebase 时重新检查。
 
 | 工作分支 | 内容 | review 规模 | 生产/CI 差异 |
 |---|---|---|---|
@@ -81,7 +92,8 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 | [fix/dev-sostenuto-sustain-handoff](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-sustain-handoff) | CC66 抬起时转交仍按下的 sustain；#1880 merged，dev 仅保留历史 | M | +7 / −2 |
 | [fix/dev-sostenuto-repeat](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-repeat) | F46：重复 CC66 不重新捕获后来音符；已 review，暂缓提交 | S | +9 / −7 |
 | [fix/dev-audit-fixes](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-audit-fixes) | 审计混合包：51 项成立问题，待按主题拆分 | L | 混合/重构包，见下文 |
-| [perf/dev-iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-iir-stable-block) | double IIR 稳态四采样展开（W4）；保留性能候选 | L | +129 / −0 |
+| [perf/iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/iir-stable-block) | 精简 double W4，单提交暂存；float 统一实现继续验证，PR 延后 | S | +43 / −5 |
+| [perf/dev-iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-iir-stable-block) | 旧 double W4 与历史证据保留；由精简分支承接，不重复排 PR | L | +129 / −0 |
 | [perf/dev-midi-track-merge](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-midi-track-merge) | MIDI 跨轨事件 heap merge 备选实现；随 player 搁置 | L | +84 / −58 |
 | [ci/dev-windows-build](https://github.com/Yikai-Liao/fluidsynth/tree/ci/dev-windows-build) | Windows CI 子模块与 MSYS2 依赖精简；以后再说 | L | +27 / −12 |
 | [ci/dev-android-migration](https://github.com/Yikai-Liao/fluidsynth/tree/ci/dev-android-migration) | Android CI 迁移与构建/测试工具整合；等用户有空 review | L | +647 / −751 |
@@ -91,7 +103,7 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 
 ## 需要保留的区别与依赖
 
-- `perf/dev-iir-stable-block` 是尚未提 PR 的 double-only W4 优化，生产 +129、已有测试 +318。它与已合并的 IIR 系数复用 #1867 不同。历史报告有通过的质量与性能门槛，但后续仍需精简/整合测试，并基于当前上游重新核对；不直接沿用旧基线的性能结论。
+- `perf/iir-stable-block` 是基于 `18bcb76f` 的精简 W4 单提交快照；当前仅优化 double，float 统一实现正在验证。`perf/dev-iir-stable-block` 的 +129 行生产代码、+318 行旧测试和历史端到端证据继续保留。两者是同一项待办，与已合并的系数复用 #1867 不同；最终提 PR 前仍需整合最小测试并重查 PCM、完整渲染及届时上游。
 - `ci/dev-windows-build` 是尚未提 PR 的 Windows CI 整理，单个 workflow +27/−12。既有多个开发提交在 dev 分支完整保留。
 - Android 迁移整合稿在 `ci/dev-android-migration`；独立 API 35 developer probe 在 `ci/dev-android-developer-probe`。旧的 cicd-work、maintainability、superbuild 版本在归档保留，先比较差异再决定是否还要移植；不将同一迁移重复算多项 PR。
 - `fix/dev-player-track-order` 与 `perf/dev-midi-track-merge` 是正确性方案与 heap 备选实现；需要比较后决定最终实现，不能重复宣传同一修复。
