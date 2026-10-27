@@ -418,3 +418,14 @@ N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音
 - **根因：** [fluid_rvoice.c:748–770](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice.c#L748-L770) 仅在 `countinc!=0` 时更新滑音；零时长分支没有清除此前的 `pitchoffset/pitchinc`。新分配声部初值为0，复用的Mono/Legato声部则保留旧值。
 - **条件/负向对照：** 依赖滑音尚未结束且后续按键复用同一声部。MS Basic program19 的60→64→67及60→64→62控制在新键上的实测偏移均为0，**未复现此问题**；不能宣称所有音色均受影响。没有自然曲库触发或发生率统计。与N20提前消费CC84、N18换预设、N02调制更新、F49调音选区及#1879清键不同。独立复核已接受GeneralUser场景。
 - **证据：** 上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`，未修改引擎。`portamento_zero.c`、`portamento_zero_results.txt`、`portamento_one_ms_results.txt`；公开音频测试 `portamento_zero_audio.py`及结果；MS Basic负向控制 `portamento_zero_ms_basic_results.txt`、`portamento_zero_within_zone_ms_basic.txt`、`portamento_one_ms_within_zone_ms_basic.txt`（文件名within_zone只是尝试意图，不证明实际复用）。GeneralUser SHA256 `e5d3617c427e94fe388980d83bc955359047a53842b60ffe5558df8bc19c0300`。
+
+
+### N12 补充：Qsynth 的实际主增益调用路径（源码证据，非现场复现）
+
+只读核对官方 Qsynth v1.0.6，固定提交 `ca7af9dff09a7a50f2a7a0a4218cce0bcf77a288`：其 [Master Gain 控件](https://github.com/rncbc/qsynth/blob/ca7af9dff09a7a50f2a7a0a4218cce0bcf77a288/src/qsynthMainForm.ui#L103-L119)范围允许0；数值除以100后经更新定时器，调用[现有 synth 的 fluid_synth_set_gain](https://github.com/rncbc/qsynth/blob/ca7af9dff09a7a50f2a7a0a4218cce0bcf77a288/src/qsynthMainForm.cpp#L2430-L2438)。[增益更新路径](https://github.com/rncbc/qsynth/blob/ca7af9dff09a7a50f2a7a0a4218cce0bcf77a288/src/qsynthMainForm.cpp#L2766-L2787)没有停播、reset 或销毁驱动，控件在 synth 存在时可用。因此“播放时把 Master Gain 转到0，再调回”有具体真实宿主的源码路径支持，不只是人为想象的 API 组合。
+
+此处不等于已在 Qsynth 界面、真实设备或某首实际曲目中复现；是否恰有仍保持的声音、安装的 FluidSynth 版本及使用频率均未现场核实。也不把该控件称为已验证的独立 mute 按钮。MuseScore 普通音量滑块的前述阴性调用链结论不变。
+
+### 二次契约审查补充
+
+对本轮记录另做只读源码、完整 API 警告及历史 issue/PR 复核，未发现新的足以撤销已编号条目的反证。仍应区分：N07 混合渲染 API 连续性、N10/N11 参数原值写回的状态连续性、N12 输出增益恢复、N15 频率原值写回相位连续性均含契约语义推断，不包装成文档逐字承诺；N16 有多输出默认单效果组的公开配置依据，但没有 Apple 硬件验证。N09 只主张公共 width 定义与实际缩放不一致，不要求不同混响引擎的听感相同。已知 #964、#1695 等继续不计新增。
