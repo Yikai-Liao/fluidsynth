@@ -309,3 +309,10 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - 合法公开 API 添加同一双极 CC14→pan 的两个调制器，amount 均为 250，一个 linear、一个 absolute。CC14=0 时两者应抵消；实际添加顺序使 pan 从控制组 −25 变为 −525（右声道无声）或 475（偏右），两次添加均成功。
 - [SF2.04 规范 §9.5](https://www.synthfont.com/sfspec24.pdf)第 54 页明确把 transform 纳入调制器身份，并禁止将不同身份的 amount 直接合并。[`fluid_mod_test_identity`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_mod.c#L750-L759)遗漏 transform，导致默认调制器合并路径混淆二者。
 - 验证使用正常音源与自定义合法调制器，没有改造音源文件；已检查的 GeneralUser/MS Basic 未提供此 transform 组合，不声称默认音色或真实曲目命中。与 F13 的旧地址问题不同。
+
+#### N14｜切换鼓组后，排他类别错误截断上一 preset 的声音（中优先级）
+
+- 官方 MS Basic.sf3，默认鼓声道9：program0 Standard 演奏 open hi-hat/key46，100ms 后以普通 `fluid_synth_program_change` 切换 program56 Marching Snare，再演奏 cymbal/key74。两者恰好都使用 exclusiveClass1，但属于不同 preset；旧踩镲被强制缩短并提前结束。
+- [SF2 规范 §8.1.3、generator57](https://musescore.org/sites/musescore.org/files/2023-01/sfspec24.pdf)将排他类别作用域限定在同一个 preset。[匹配代码](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L5465-L5493)只检查声道、类别和 note-on 分组 ID，未区分声音所属 preset。
+- 原生 PCM 与公开 voice getter 验证：旧声音的 exclusiveClass 从1变0，volEnvRelease 从5830变−2000，随后0.5秒内结束。只切 program、不发第二音时旧声音继续；第二音改放另一个明确选择相同鼓组的声道时旧声音也继续。后一控制与出错组的混音 RMS 分别为0.00338003和0.00282601；根因依据是状态与生命周期，不仅是整体音量差。普通 program-change 与 `program_select` 两套流程的三组 PCM 均逐位一致，已独立复核。
+- 需要旧声音仍在响时切换到复用相同排他编号的另一个 preset；固定鼓组播放不受此项影响。尚无真实 MIDI 曲库命中率证据，不称为所有普通播放普遍发生。不同于 F40 的非法极端类别与 F49/N02 的连奏问题；未修改生产源码。
