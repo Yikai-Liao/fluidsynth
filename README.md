@@ -386,3 +386,13 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 已只读追踪 MuseScore 开发提交 `7a43b88219259fecc44a23cdeccd5489dc042fc8` 对应 `muse_framework` 子模块 `ecdc6e7ef87b41c3fd2ce4e9df39343640862c4f`：普通轨道/主音量滑块通过控制节点对合成后的音频乘增益，[输出处理代码](https://github.com/musescore/muse_framework/blob/ecdc6e7ef87b41c3fd2ce4e9df39343640862c4f/framework/audio/engine/internal/nodes/automationcontrolnode.cpp#L119-L138)不调用 FluidSynth 主增益 API。[SoundFont 包装器](https://github.com/musescore/muse_framework/blob/ecdc6e7ef87b41c3fd2ce4e9df39343640862c4f/framework/audio/engine/internal/synthesizers/fluidsynth/fluidsynth.cpp)仅初始化固定 `synth.gain=4.8`，没有 `fluid_synth_set_gain` 调用。因此不能拿该版本 MuseScore 普通音量滑块当 N12 的现实触发实例。静音按钮有节点停用/解除静音后 seek 逻辑，不保证所有持续音保留，也不能混同 N12。此为源码核对，未做 UI 或发布版本验证；该框架随附的是适配的 FluidSynth 2.3.3，不等于本轮受测上游 SHA。
 
 N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音、再恢复增益才进入已测条件。外部混音器静音以及本轮 CC7 静音/恢复控制不属于该路径；暂不把它列为已证实常见宿主问题。
+
+#### N19｜演奏中配置 custom filter 后，活动音符持续旁路（中优先级，显式 API 场景）
+
+- **条件：** 普通 SoundFont/音符，通过 `fluid_synth_set_custom_filter()` 在活动音符上启用滤波、切换 low/high-pass，或写回原配置。custom filter 默认关闭，属于应用显式使用功能，不能称为自然 MIDI 文件普遍命中。
+- **基线：** 上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`、Debug double；VintageDreamsWaves-v2.sf2，关闭 reverb/chorus 分离干声，channel0 `GEN_CUSTOM_FILTERFC=7000`、`GEN_CUSTOM_FILTERQ=0`，Note On60/100。flags=0，Q 使用默认 centibel 转换，0 对应正常非共振 Q，不是 `FLUID_IIR_Q_ZERO_OFF`，也不是非法参数。
+- **预期：** [公开 API 8310–8342](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L8310-L8342) 配置独立 low/high-pass 并报告成功，且实现明确遍历现有 voices。启用或切换类型应让活动音符使用该滤波器；写回原配置不应永久关闭滤波。
+- **实测：** 渲染8192帧后调用 setter，再渲染8192帧。原本关闭→启用 LOWPASS 的整个后段与保持关闭的对照逐位相同；原本 LOWPASS→同值 LOWPASS、LOWPASS→HIGHPASS，在丢开1024帧过渡后也都与关闭对照逐位相同，而与保持 LOWPASS 的对照最大差=`0.0549271926`。保持配置不动的重跑逐位相同；同值配置后额外写回同一个 Q=0，则过渡后恢复与正常 LOWPASS 逐位相同。可见不是普通系数平滑误差，而是 Q 更新丢失造成持续旁路。
+- **源码原因：** [`fluid_voice_set_custom_filter:2079–2082`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_voice.c#L2079-L2082) 仅调用 filter init；[`fluid_iir_filter.c:25–49`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_iir_filter.c#L25-L49) 对启用类型执行 reset，把 `last_q` 清为0，却没有重新应用当前 Q generator；[`fluid_iir_filter_impl.cpp:172`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_iir_filter_impl.cpp#L172-L175) 对 `last_q<Q_MIN` 直接旁路。新音符初始化时会更新 Q，所以主要影响已有活动音符。
+- **去重及限制：** 原51项、custom-filter 上游 issues/PR 检索未发现相同修复；相关功能PR331/1469/1567并非此问题。与已知启动采样率 IIR 查表更新不同。未验证应用使用率或自然曲库发生率；只记录，不修复。
+- 六组模式均已独立复跑，所有 API 返回成功；未修改生产源码。
