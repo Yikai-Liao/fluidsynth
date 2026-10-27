@@ -298,7 +298,7 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - [输出 level API](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L6680-L6700)进入[无条件参数重建](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_chorus.c#L788-L793)，[重建函数](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_chorus.c#L510-L562)重置调制中心与振荡器初相位，而非只改变输出幅度。
 - 涉及宿主/API/界面调整 chorus 参数；普通 MIDI CC93 控制的是发送量，不能直接算作本问题触发。与 N10 的延迟线位置重置是不同根因。
 
-#### N12｜主增益降为零后，仍按住的音符永久消失（普通操作候选，优先于特殊引擎问题）
+#### N12｜主增益降为零后，仍按住的音符永久消失（条件性宿主 API 问题）
 
 - GeneralUser 与官方 MS Basic 的 Organ/program19，按住 key60 发声 1 秒，将主增益设为 0 持续 100 ms，再恢复 0.2：活跃 voice 从 1 变 0，之后 PCM 完全无声。未静音、CC7 静音后恢复，以及主增益仅降至 `1e-5` 的控制均保留声音。这里没有 note-off 或复音数压力。
 - [文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/fluidsettings.xml#L147-L156)将 gain 描述为实时主输出增益，合法范围含 0。[voice 增益处理](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_voice.c#L1879-L1898)把零夹至极小正值；[噪声门限](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice.c#L870-L884)随之提高，[静音裁剪](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice.c#L51-L94)永久结束声音，没有考虑之后恢复增益。
@@ -380,3 +380,9 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - 同根额外后果（已独立复核）：上述流程再释放key62、等待11.15秒使全部旧声音结束，切回program19并重新note60；Mono/CC68调用成功，但首个新音符没有voice，4096帧PCM严格为0；普通Poly同流程正常发声，能量0.1159562303372396。旧zone残留的ignore在`fluid_defsfont.c:2050–2061`第一次查询时才被消费，跳过本应发声的区域。不另计第二个问题。
 - 已独立复跑 Poly、Mono 与 CC68 三组，检查同时间窗 PCM 和 voice 生命周期；未修改生产源码或音源。
 - 范围：无真实曲库发生率统计；不混淆F49自定义调音跨区域或N02键号modulator未刷新，也不同于跨preset exclusiveClass。没有修改SoundFont或实现修复。
+
+### N12 的实际宿主边界补充
+
+已只读追踪 MuseScore 开发提交 `7a43b88219259fecc44a23cdeccd5489dc042fc8` 对应 `muse_framework` 子模块 `ecdc6e7ef87b41c3fd2ce4e9df39343640862c4f`：普通轨道/主音量滑块通过控制节点对合成后的音频乘增益，[输出处理代码](https://github.com/musescore/muse_framework/blob/ecdc6e7ef87b41c3fd2ce4e9df39343640862c4f/framework/audio/engine/internal/nodes/automationcontrolnode.cpp#L119-L138)不调用 FluidSynth 主增益 API。[SoundFont 包装器](https://github.com/musescore/muse_framework/blob/ecdc6e7ef87b41c3fd2ce4e9df39343640862c4f/framework/audio/engine/internal/synthesizers/fluidsynth/fluidsynth.cpp)仅初始化固定 `synth.gain=4.8`，没有 `fluid_synth_set_gain` 调用。因此不能拿该版本 MuseScore 普通音量滑块当 N12 的现实触发实例。静音按钮有节点停用/解除静音后 seek 逻辑，不保证所有持续音保留，也不能混同 N12。此为源码核对，未做 UI 或发布版本验证；该框架随附的是适配的 FluidSynth 2.3.3，不等于本轮受测上游 SHA。
+
+N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音、再恢复增益才进入已测条件。外部混音器静音以及本轮 CC7 静音/恢复控制不属于该路径；暂不把它列为已证实常见宿主问题。
