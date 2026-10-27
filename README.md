@@ -347,3 +347,12 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - 预期与边界：SF2 的 freqVibLFO 参数描述频率；公开 generator API 描述实时 offset，不是重置振荡器。认为不改变频率的原值写回应保持同一演奏波形，是由参数语义与正/负方向对照支持的契约推断；文档没有单独承诺相位连续性。本次直接动态验证 vibrato LFO，modulation LFO 仅共享源码路径，未另算一个问题。
 - 发生率限制：检查的 MS Basic、GeneralUser 及本地 SF2 样本没有非零频率目的地22/24的 modulator；没有真实 MIDI 自然命中证据，API/NRPN 的使用频率未统计。PCM差异不是主观听感评级。
 - 已独立复核正常 API、等价 NRPN 和上升段阴性对照，未修改生产代码。
+
+#### N16｜CoreAudio 多输出的 FX 数量不匹配导致静音（中优先级，待真实平台验证）
+
+- **条件：** CoreAudio、`synth.audio-channels=3`、`synth.audio-groups=3`，保持默认 `synth.effects-groups=1`；设备支持对应的六声道输出。合法多输出设置，不涉及异常输入。
+- **预期及源码：** [CoreAudio 多输出实现](https://github.com/FluidSynth/fluidsynth/pull/1081) 的用途是按 MIDI channel 路由到多组硬件输出。驱动读取 stereo-pair 数并乘二（[348–355](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/drivers/fluid_coreaudio.c#L348-L355)），设置非交错 Float32 多声道格式（[429–435](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/drivers/fluid_coreaudio.c#L429-L435)）。三个普通 MIDI channel 的音符应能在三组输出发声，而不应要求增加独立效果器组。
+- **静态原因：** [callback 548–559](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/drivers/fluid_coreaudio.c#L548-L559) 清空输出后，把硬件 mono buffer 数同时作为 `nfx` 和 `nout`；六声道时 `nfx=6`。但默认一个效果组仅提供四个 mono FX buffers，[process 4490–4495](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L4490-L4495) 拒绝该组合。callback 忽略失败返回并报告 `noErr`，留下全部零输出。
+- **功能验证（非真实 Apple 硬件测试）：** 从该 SHA 原样提取 callback 函数体，在 Linux 上仅用等价 CoreAudio 结构类型和正常非交错 buffer 几何调用，链接同 SHA 的原生 synth 库。每个 mono buffer 均分配完整 8192 帧、设置一个声道；普通 VintageDreamsWaves-v2.sf2，各 MIDI channel Note On `60+i/100`。1/2 stereo pairs + effects-groups=1 所有输出非零；3/4 pairs + effects-groups=1 所有输出 RMS 精确为 0；3/4 pairs + effects-groups=2 恢复非零。所有 callback status 均为 0。该验证覆盖 callback 参数生成、库拒绝和静音结果，但没有在 macOS 或真实 CoreAudio 设备上运行，设备协商路径尚未实测。
+- **去重及频率：** 上游 CoreAudio callback/effects 检索未找到对应修复；不是普通双声道播放普遍故障，也不能从 MIDI 曲库推算发生率。仅限多输出 CoreAudio 主机配置，保持中优先级且保留平台验证限制。
+- 已独立检查抽取回调与六组正常缓冲几何实验；未修改生产源码。平台验证范围严格限于上述内容。
