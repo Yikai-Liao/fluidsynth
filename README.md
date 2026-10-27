@@ -356,3 +356,13 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - **功能验证（非真实 Apple 硬件测试）：** 从该 SHA 原样提取 callback 函数体，在 Linux 上仅用等价 CoreAudio 结构类型和正常非交错 buffer 几何调用，链接同 SHA 的原生 synth 库。每个 mono buffer 均分配完整 8192 帧、设置一个声道；普通 VintageDreamsWaves-v2.sf2，各 MIDI channel Note On `60+i/100`。1/2 stereo pairs + effects-groups=1 所有输出非零；3/4 pairs + effects-groups=1 所有输出 RMS 精确为 0；3/4 pairs + effects-groups=2 恢复非零。所有 callback status 均为 0。该验证覆盖 callback 参数生成、库拒绝和静音结果，但没有在 macOS 或真实 CoreAudio 设备上运行，设备协商路径尚未实测。
 - **去重及频率：** 上游 CoreAudio callback/effects 检索未找到对应修复；不是普通双声道播放普遍故障，也不能从 MIDI 曲库推算发生率。仅限多输出 CoreAudio 主机配置，保持中优先级且保留平台验证限制。
 - 已独立检查抽取回调与六组正常缓冲几何实验；未修改生产源码。平台验证范围严格限于上述内容。
+
+#### N17｜MIDI router 的负倍率规则把音符映射高一个半音（条件性，中优先级）
+
+- **触发条件：** 应用启用合法的自定义 router 负倍率，例如反向键盘 `router_par1 0 127 -1 127`。默认直通规则不受影响；不是普通 SMF 默认播放问题，未统计实际使用率。
+- **预期依据：** [官方命令文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/fluidsynth.1) 及 [rule API 注释](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/midi/fluid_midi_router.c#L432-L469) 定义先乘 `mul` 再加 `add`；未禁止负倍率。整数输入 60 应映射为 `60×(-1)+127=67`，不存在浮点舍入歧义。
+- **实测：** 正常 public API 规则/Note On 输入 60→68、64→64（应63）、127→1（应0）；输入0、1同时映射127。无操作规则、+12移调与固定键67的控制组全部符合预期。
+- **音频验证：** 原生 MuseScore `MS Basic.sf3` flute/program73、velocity100、效果关闭：输入60经此规则的PCM与直接播放68逐样本完全相等，与应有67不同；稳态频谱峰416Hz对393Hz。反向旋律实际错高半音，并且边缘键发生重合。
+- **原因：** [router.c:729–782](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/midi/fluid_midi_router.c#L729-L782) 对 channel/param1/param2 都先无条件加0.5再转整数，负乘积向零截断，产生+1误差。这里仅对音符param1的声音影响作实测，不把其余同根字段另计问题。
+- **去重：** 不同于 F01 的跨通道 pending-note 记录；本测试没有规则清除中的待释放音符、没有重叠音符。独立复核已接受。只建立外部测试，未修改引擎。
+- **基线与证据：** 上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`；音色SHA256 `5ea2375e8bd7d8e71def1036978c1621e85b66934169b6a2744b27b9b3c2d99c`。`router_negative_scale.py` / `router_negative_scale_results.json` / `router_positive_controls.json`；`router_negative_audio.py` / `router_negative_audio_results.json`。音频测试是明确标注的合成有效控制序列，不计自然曲库命中。
