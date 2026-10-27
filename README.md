@@ -275,3 +275,37 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - **Symusic：** 已实际使用0.6.0，单进程扫描全部17,261文件用时13.13秒。Lakh 加载成功17,032、拒绝224；其 Score 中5,053文件含CC121（29.67%）。但在共同成功的16,981文件中，原始事件有5,365文件含CC121、Score仅5,045：320个原始阳性被曲谱表示省略。独立核对例为10cc/Dreadlock Holiday.mid：原第10轨无音符但有9条CC121，Score未保留该控制轨。因此 Symusic 适合快筛，不能仅凭 Score 阴性排除原始控制器/RPN/SysEx 条件；精确事件统计保留原始事件兜底。未把该语义差别认定为 Symusic 缺陷。
 - **交付与范围：** 可复用双层扫描器已打包，含脚本、依赖、复现说明、来源/hash清单、逐文件CSV、汇总和解析器比较；16项状态检查、10个真实文件打包烟测、断点续跑与ZIP校验通过。无 MIDI/SoundFont/PCM 版权载荷或生产修改。7份代表/近似命中文件已完成原生 player + MS Basic 输出检查，均有限非零音频；这不等于全曲库音质验证。
 - **后续取舍：** 按用户要求，继续发现其他普通合法场景的渲染问题；常见程度只保留快速筛查和少量关键对照，不为单项发生率无限延长验证。尚未证明的影响直接注明。多效果组、多个输出与渲染API切换属于宿主配置条件，不能从 MIDI 文件出现率推导发生率。
+
+### N09–N13：补充确认的音频状态与参数问题
+
+共同基线仍为 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。以下均使用合法输入，已独立复跑控制用例并核对源码；未改生产代码或尝试修复。不以构造用例代替真实曲目发生率。
+
+#### N09｜Signalsmith 混响 width 被缩小 100 倍（中优先级，需选择该引擎）
+
+- 公共[设置文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/fluidsettings.xml#L454-L461)规定 width=1 为完整立体声展开，推荐范围 0–1；[Signalsmith 实现](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rev_signalsmith.cpp#L119-L127)却先除以 100。
+- 普通音色演奏时，width=1 的左右差信号幅度仅为 width=100 的约 1%；默认 width=0.8 仅约 0.8%。width=0 为单声道，中央信号不变，五档结果符合错误混合比例。不是不同混响算法音色差异的主观判断。
+- 仅影响显式选择 `smith` 的路径，不声称默认混响引擎受影响或真实曲库常见。
+
+#### N10｜Lexverb 调整输出 level 时重置延迟线位置（中优先级，需选择该引擎）
+
+- 相同新建 synth、相同 MIDI 与渲染时间；播放后读取当前 level，再原值写回。Lexverb 下一段输出从首帧起改变，最大差约 0.006401、差值 RMS 约 0.001370；未调用 setter 的重复控制，以及 dat/free/smith 的原值写回控制均逐位一致。
+- [参数更新](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rev_lexverb.cpp#L67-L88)每次重新调用延迟线 `set_buffer`；[后者](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rev_filters.h#L88-L100)即使长度不变也重置读写位置和上一输出，改变现有尾音状态。
+- 将 level 减半也出现超出纯增益变化的差异，但以“原值写回仍改变声音”为主要证据，避免把正常平滑过渡误报。需要实时 API/界面控制，不是默认 MIDI 播放必发。
+
+#### N11｜chorus 输出 level setter 重启调制相位（中优先级）
+
+- 默认 chorus 实现，普通音色、CC93=127。播放后将当前 level 原值写回，下一段最大 PCM 差约 0.027724、差值 RMS 约 0.007265；不调用 setter 的同时间控制逐位一致。仅减半 level 也不等价于保持原状态的半幅输出。
+- [输出 level API](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L6680-L6700)进入[无条件参数重建](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_chorus.c#L788-L793)，[重建函数](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_chorus.c#L510-L562)重置调制中心与振荡器初相位，而非只改变输出幅度。
+- 涉及宿主/API/界面调整 chorus 参数；普通 MIDI CC93 控制的是发送量，不能直接算作本问题触发。与 N10 的延迟线位置重置是不同根因。
+
+#### N12｜主增益降为零后，仍按住的音符永久消失（普通操作候选，优先于特殊引擎问题）
+
+- GeneralUser 与官方 MS Basic 的 Organ/program19，按住 key60 发声 1 秒，将主增益设为 0 持续 100 ms，再恢复 0.2：活跃 voice 从 1 变 0，之后 PCM 完全无声。未静音、CC7 静音后恢复，以及主增益仅降至 `1e-5` 的控制均保留声音。这里没有 note-off 或复音数压力。
+- [文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/fluidsettings.xml#L147-L156)将 gain 描述为实时主输出增益，合法范围含 0。[voice 增益处理](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_voice.c#L1879-L1898)把零夹至极小正值；[噪声门限](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice.c#L870-L884)随之提高，[静音裁剪](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice.c#L51-L94)永久结束声音，没有考虑之后恢复增益。
+- “恢复音量应恢复仍按住的音符”基于输出增益语义；文档并未单独承诺 mute/unmute 行为。普通音量滑块操作可触发，但未测实际应用频率。与 F38 的非法 NaN 增益不同；MS Basic 结果仅为补充控制用例。
+
+#### N13｜不同 transform 的调制器被错误合并（中优先级，罕见合法配置）
+
+- 合法公开 API 添加同一双极 CC14→pan 的两个调制器，amount 均为 250，一个 linear、一个 absolute。CC14=0 时两者应抵消；实际添加顺序使 pan 从控制组 −25 变为 −525（右声道无声）或 475（偏右），两次添加均成功。
+- [SF2.04 规范 §9.5](https://www.synthfont.com/sfspec24.pdf)第 54 页明确把 transform 纳入调制器身份，并禁止将不同身份的 amount 直接合并。[`fluid_mod_test_identity`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_mod.c#L750-L759)遗漏 transform，导致默认调制器合并路径混淆二者。
+- 验证使用正常音源与自定义合法调制器，没有改造音源文件；已检查的 GeneralUser/MS Basic 未提供此 transform 组合，不声称默认音色或真实曲目命中。与 F13 的旧地址问题不同。
