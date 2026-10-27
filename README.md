@@ -408,3 +408,13 @@ N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音
 - **证据：** 上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。`ptc_noteoff_consumption.py`、`ptc_noteoff_consumption_results.json`、`ptc_noteoff_consumption_ms_basic_results.json`；补充对照 `portamento_normal_controls_results.json`。MS Basic SHA256 `5ea2375e8bd7d8e71def1036978c1621e85b66934169b6a2744b27b9b3c2d99c`。以上均为明确标注的合成有效消息序列，不计入自然 MIDI 比例。
 
 - **真实语料快查（不重跑全曲）：** 本批 Lakh 16,985 个成功扫描文件中，61个含 CC84（约0.359%，共2,437条）；这些文件无 CC126，唯一 CC68 同现为 Blind Guardian/Time What Is Time.mid 的 CC68=1（关闭），未检出 CC68 开启。按默认初始通道状态和已扫描控制器条件，没有找到 N20 所需 Mono/连奏前置条件；此为条件筛查阴性，不是已经做过61首原生音频对照。外部宿主预先设置 Mono 属于不同场景，不能据这批文件推断其发生率。
+
+#### N21｜滑音时间改为0后，复用声部仍带着上一段滑音偏移（条件性，中优先级）
+
+- **正常输入场景：** GeneralUser GS 2.0.1 organ/program19；CC68=127、CC65=127；CC5=8、CC37=0（自动模式切换为线性1024ms）。按60，100ms后按64，再过100ms把 CC5 置0，按67。没有程序切换、CC84、调音或清键。
+- **预期依据：** [FluidPolyMono §3.4.9](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/polymono/FluidPolyMono-0004.pdf) 说明时间为0时滑音不可感知；[当前设置文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/fluidsettings.xml#L388-L401) 将线性时间定义为 `CC5*128+CC37` 毫秒。因此下一音符应立即到达其目标音高，而非继续近一秒的旧滑音。
+- **决定性实测：** 所有输入都经公开 API，读取声部状态仅作诊断。旧滑音在64上剩余偏移−360.906516音分；时间归零并按67、再渲染64帧后，目标键已变为67，但偏移仍为−360.339943音分、旧增量仍为0.566572音分/块。相同前史只把新时间改为1ms的控制组，64帧后偏移为0。原音色带八度移调，所以声部目标pitch=5500；问题是额外遗留约−3.6半音，不是这个音色自身的移调。
+- **声音影响：** 本应立即到位的新音符错低数个半音并继续滑动。公开API渲染对照在最后按键前PCM完全一致，之后不同；但0ms与1ms本来可能有很小过渡差异，不能仅凭PCM不相等判错，主要依据是持续数百音分的旧状态。
+- **根因：** [fluid_rvoice.c:748–770](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice.c#L748-L770) 仅在 `countinc!=0` 时更新滑音；零时长分支没有清除此前的 `pitchoffset/pitchinc`。新分配声部初值为0，复用的Mono/Legato声部则保留旧值。
+- **条件/负向对照：** 依赖滑音尚未结束且后续按键复用同一声部。MS Basic program19 的60→64→67及60→64→62控制在新键上的实测偏移均为0，**未复现此问题**；不能宣称所有音色均受影响。没有自然曲库触发或发生率统计。与N20提前消费CC84、N18换预设、N02调制更新、F49调音选区及#1879清键不同。独立复核已接受GeneralUser场景。
+- **证据：** 上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`，未修改引擎。`portamento_zero.c`、`portamento_zero_results.txt`、`portamento_one_ms_results.txt`；公开音频测试 `portamento_zero_audio.py`及结果；MS Basic负向控制 `portamento_zero_ms_basic_results.txt`、`portamento_zero_within_zone_ms_basic.txt`、`portamento_one_ms_within_zone_ms_basic.txt`（文件名within_zone只是尝试意图，不证明实际复用）。GeneralUser SHA256 `e5d3617c427e94fe388980d83bc955359047a53842b60ffe5558df8bc19c0300`。
