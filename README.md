@@ -1,6 +1,6 @@
 # FluidSynth fork 待办
 
-更新：2026-10-27；上游核对基线 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。此 `todo` 分支是独立根历史，只放任务记录，与 FluidSynth 代码历史没有公共祖先。代码工作在自己的 `origin` fork；`upstream` 远程仅用于获取基线和核对合并状态。
+更新：2026-10-28；上游核对基线 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。此 `todo` 分支是独立根历史，只放任务记录，与 FluidSynth 代码历史没有公共祖先。代码工作在自己的 `origin` fork；`upstream` 远程仅用于获取基线和核对合并状态。
 
 ## 分支约定与当前阶段
 
@@ -23,18 +23,18 @@
 - **DLS 大重构往后放**，完整保留原版与 minimal 版分支，不自动推进 review 或 PR。
 - **Android 等待用户有空 review**。当前瓶颈是用户自己的审核时间，不是要求继续补实现或催促上游；迁移与独立 probe 均先保留。
 - **Windows CI 精简以后再说**，先接受现有运行速度，不为局部 CI 加速增加审核负担。
-- **IIR W4 已单提交暂存，过几天再安排 PR**，减少同时进行的上游审核工作。当前保存的是 double 版本；用户随后要求研究同一套 W4 在 float/double 下均取得收益，正在用经精度收敛检查的 MPFR 参考做 float 精度消融。不能把旧端到端结果当作当前实现的收益。
+- **IIR W4 已单提交暂存，过几天再安排 PR**，减少同时进行的上游审核工作。已完成同一套内核支持 float/double 的精度与代表性 micro 验证，并调查真实 MIDI/SoundFont 渲染中短于 64 样本的调用比例；当前提交与结论见下文。没有把历史端到端数字当作当前实现收益。
 
 ### IIR W4：已保存的精简分支与后续验证
 
-- 分支：[perf/iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/iir-stable-block)，不带 `dev-`；当前提交 [`665ece6e`](https://github.com/Yikai-Liao/fluidsynth/commit/665ece6e67abcd6a8179c9fc1083c57d0ecc3f11) 直接基于 `18bcb76f`，只领先上游一个提交，没有创建 PR。
-- 保存范围：只修改 `src/rvoice/fluid_iir_filter_impl.cpp`，+43/−5，净增 38 行；W4 核心 29 行，没有新增生产断言。旧 dev 分支的 +129 行版本与历史数据保留，不另排一个 PR。
-- 当前分支仍是 **double-only**。64 样本 `stable-mid` micro 的耗时比以原始未展开实现为 1：GCC 精简版 0.647、旧 W4 0.710；Clang 精简版 0.641、旧 W4 0.632。Clang 的两版差异未得到统计确认。覆盖了四组稳定参数、短块、尾部及平滑回退；不据此宣称端到端收益。
-- float 目前被 `WITH_FLOAT` 排除；GCC/Clang float 编译的 `.text` 与原实现相同，不能宣称 float 加速。后续目标是 **同一套展开公式、尾部和状态写回同时支持 float/double**，不维护两份独立内核。若全 float 精度不足，逐组检查展开系数、历史值及最终状态，测量少量 double 局部变量的精度/速度取舍。
+- 分支：[perf/iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/iir-stable-block)，不带 `dev-`；当前提交 [`707b52d6`](https://github.com/Yikai-Liao/fluidsynth/commit/707b52d64443ffdd5550b6be948214a907852ceb) 是统一 float/double 实现，直接基于 `18bcb76f`，只领先上游一个提交，没有创建 PR。
+- 保存范围：只修改 `src/rvoice/fluid_iir_filter_impl.cpp`，+39/−5，净增 34 行；一个共享内核、无按精度分开的副本，没有新增生产断言。旧 dev 分支的 +129 行版本与历史数据保留，不另排一个 PR。
+- 同一 W4 公式和尾部同时支持 float/double。代表性 64 样本固定系数 micro 的候选/原始耗时比（15 对配对测量，95% CI）为：float GCC 0.862（0.815–0.913）、float Clang 0.837（0.810–0.865）、double GCC 0.677（0.632–0.724）、double Clang 0.649（0.594–0.708）；这些是 micro 结果，不是完整渲染收益。
+- float 的全精度展开会在低截止频率、高 Q 反馈下显著偏离 MPFR 参考。按用户要求的同一原始 float 系数/输入/状态、无中途 float 截断的 MPFR 递推 oracle 定位后，最终共享内核只将 `p2`、`p3` 两个多项式中间量保留为 double，float 状态与其余 R 运算保持原类型。384 个长序列覆盖上下文中最终输出和末态与最终候选逐位一致；参考 128/256 位的最大相对 RMS 差为 `3.053e-34`。
 - 准确性 Oracle：同一组已经量化为 float 的滤波系数、同一输入和初始状态，在 MPFR 中逐样本递推，中途不截回 float，并提高 MPFR 精度检查参考收敛。分别比较原实现与候选到该参考的误差；候选与原 float 的输出差异另作兼容性指标，不把不同直接当作更差，不重新用高精度设计系数。
-- 已有验证：GCC/Clang double 的独立标量探针、启用原有断言的探针通过；float 编译及 `.text` 比较通过。独立测试与实验脚本留在本地证据目录，未把旧的 318 行探针或实验产物装入代码提交。
-- 证据目录：`/root/code/fluidsynth-iir-compact-20261027/compact-delivery/`（本次 double 的配对 micro 数据和报告），同目录树的 `compact-delivery-mca/`、`compact-delivery-validation/` 保留汇编/PMU/MCA 与验证；`float-study/` 保留正在进行的 MPFR 和统一精度候选调查。
-- 再提 PR 前：完成 float 统一实现的精度/速度判断，精简并移植必要的自动回归测试，核对届时上游，按最终源码重查 PCM 与完整渲染收益；Clang 极短块的兼容性/速度取舍单列。用户安排后再提 PR，不自动创建或按日期催审。
+- 已有验证：GCC/Clang 与 float/double 的四种组合均完成 release 构建，原有独立标量探针（count 0–64）和启用原有断言的验证通过。独立探针与实验脚本留在本地证据目录，未把旧的 318 行探针或实验产物装入代码提交。
+- 证据目录：`/root/code/fluidsynth-iir-compact-20261027/compact-delivery/` 保留初版 double 的配对 micro 数据；`float-study/` 保留 MPFR、精度消融及最终速度证据；`real-length-study/` 记录真实曲目长度分布和原始计数。
+- 真实长度采样覆盖 7 组 MIDI/SoundFont 组合；各自 float/double 共 14 次完整离线渲染，所有短于 64 样本调用合计占活跃 IIR 调用约 `0.01025%`，处理样本约 `0.00433%`。因此不增加专门的短块生产特化；本次未把 instrumented profile 时间用于性能结论。再提 PR 前仍需精简必要的自动回归测试、核对届时上游，并按最终源码复查 PCM 与完整渲染收益。用户安排后再提 PR，不自动创建或按日期催审。
 
 ### IIR W4 的历史收益与限制
 
