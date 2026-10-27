@@ -396,3 +396,15 @@ N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音
 - **源码原因：** [`fluid_voice_set_custom_filter:2079–2082`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_voice.c#L2079-L2082) 仅调用 filter init；[`fluid_iir_filter.c:25–49`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_iir_filter.c#L25-L49) 对启用类型执行 reset，把 `last_q` 清为0，却没有重新应用当前 Q generator；[`fluid_iir_filter_impl.cpp:172`](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_iir_filter_impl.cpp#L172-L175) 对 `last_q<Q_MIN` 直接旁路。新音符初始化时会更新 Q，所以主要影响已有活动音符。
 - **去重及限制：** 原51项、custom-filter 上游 issues/PR 检索未发现相同修复；相关功能PR331/1469/1567并非此问题。与已知启动采样率 IIR 查表更新不同。未验证应用使用率或自然曲库发生率；只记录，不修复。
 - 六组模式均已独立复跑，所有 API 返回成功；未修改生产源码。
+
+#### N20｜Mono/Legato 的 Note Off 提前消耗 CC84，滑音应用到错误事件（条件性，中优先级）
+
+- **合法场景：** CC68=127 启用单音连奏，依次按住60和67；发送 CC84=72，松开67后再按69。松开67会返回仍按住的60，但不应消耗原本留给下一条收到的 Note On 的 CC84。
+- **预期依据：** MIDI1.0 详细规范4.2.1第16–17页明确规定 CC84 仅作用于匹配通道下一条收到的 Note On，并在该 Note On 后复位。[MMA 原文镜像](https://www.seriesten.org/docs/protocols/MIDI_1.0_Detailed_Specification.pdf)。[FluidSynth PolyMono 文档 §3.4.11](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/polymono/FluidPolyMono-0004.pdf) 也将其描述为下一音符的起始滑音键。
+- **实测：** 通过公开 API 发送上述事件，`fluid_synth_get_cc(...,84)` 在松开67前为72，松开后变为内部已消费值255；期间没有收到新 Note On。将相同 CC84 延后到松开67之后、按69之前的诊断对照，触发前 PCM 逐样本相等，之后不同。GeneralUser flute 最大差0.06929、差值RMS0.01966；官方原生 MS Basic SF3 flute 最大差0.05815、RMS0.01672。所有测试使用正常控制值与现成音色，没有改引擎。
+- **音频影响与限制：** 返回旧按键时提前发生由CC84指定起点的滑音，后续真实 Note On 又失去该一次性指定。PCM差值包含两段连奏路径的累积差异，不单独归因为下一条Note On，也不把差值大小当主观严重性。需要单音/CC68、仍按住旧键及特定合法消息顺序；没有自然曲库命中或发生率证明。
+- **原因：** [fluid_synth_monopoly.c:398–423](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth_monopoly.c#L398-L423) 的 Note Off 回退进入通用 legato 路径；[同文件:169–179、658](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth_monopoly.c#L169-L179) 无条件消费 PTC，没有区分外部 Note On 与内部 Note Off 回退。
+- **去重与状态：** 不同于 F49 调音选区、N02 键号调制器、N18 换预设、#1879 清键；本例没有调音、程序更换或清键。独立复核已接受。正常对照还验证了 CC84 优先于 CC65 开关、源键 Note Off 不关闭已重定向的目标键、目标键 Note Off 能释放声音。
+- **证据：** 上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。`ptc_noteoff_consumption.py`、`ptc_noteoff_consumption_results.json`、`ptc_noteoff_consumption_ms_basic_results.json`；补充对照 `portamento_normal_controls_results.json`。MS Basic SHA256 `5ea2375e8bd7d8e71def1036978c1621e85b66934169b6a2744b27b9b3c2d99c`。以上均为明确标注的合成有效消息序列，不计入自然 MIDI 比例。
+
+- **真实语料快查（不重跑全曲）：** 本批 Lakh 16,985 个成功扫描文件中，61个含 CC84（约0.359%，共2,437条）；这些文件无 CC126，唯一 CC68 同现为 Blind Guardian/Time What Is Time.mid 的 CC68=1（关闭），未检出 CC68 开启。按默认初始通道状态和已扫描控制器条件，没有找到 N20 所需 Mono/连奏前置条件；此为条件筛查阴性，不是已经做过61首原生音频对照。外部宿主预先设置 Mono 属于不同场景，不能据这批文件推断其发生率。
