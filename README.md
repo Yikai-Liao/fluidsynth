@@ -201,3 +201,32 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 | [F52](https://github.com/Yikai-Liao/fluidsynth/blob/0b8c7240de5d1e331dec71b68438cd63ed36c17e/audit-report/report.md#L304) | 极端 DLS gain 取负发生有符号整数溢出 | 3 | DLS 整体 L | `test_dls_parser` |
 
 F26：撤回基线归因；见报告更正及已合并 #1868。
+
+
+## 2026-10-28 夜间音频正确性排查（进行中，仅记录，不修复）
+
+核对上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`，本批于北京时间 01:40 确认。仅追加此前清单之外的问题；未修改生产源码、未发上游 issue/PR。Linux Debug、double、OpenMP 关闭，使用普通合法 MIDI/API 与原版 GeneralUser GS 2.0.1。以下三项已完成独立复核；没有将定向测试通过等同于全量通过，也未证明真实曲库发生率。P1/P2 是本轮使用场景排序，不是安全严重度。
+
+### N01 / P1：CC121 错误清除声道 RPN 调音，后续新音符失去移调
+
+- **场景与影响：** 标准 RPN 0,2 设置粗调，或 0,1 设置微调，再发送 Reset All Controllers（CC121）。已有音符保留调音，但后续新音符回到未调音音高，可导致旋律意外移调或与持续和声失谐。无需 Mono、特殊引擎模式或定制音色；需先调音后复位，不能称为所有普通 MIDI 都受影响。
+- **预期依据：** [MIDI RP-015](https://midi.org/response-to-reset-all-controllers) 要求保留 registered/non-registered 参数值，复位的是参数选择器；[RFC6295 A.4.2.1](https://www.rfc-editor.org/rfc/rfc6295.html#appendix-A.4.2.1) 明确说明同一规则。本项测试为 SF2，不涉及 DLS2 例外。
+- **原因：** [fluid_chan.c:127–132](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_chan.c#L127-L132) 在区分 CC121 复位范围前无条件清零全部 channel generator；[CC121 调用处](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L2002-L2007) 不保留调音值。[RPN 调音赋值](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L2111-L2118) 正是这些 generator。
+- **验证：** GeneralUser Flute（零基 program73），key69、velocity100、44.1kHz，关闭效果隔离音高。粗调 +12 的 channel getter 在 CC121 前后从12变0；微调 +50 cents 从50变0。微调参考与持有音符的1秒窗口主峰均453Hz，复位后新音符440Hz；参考与持有音符 PCM 完全一致。频谱分辨率1Hz，不以此宣称样本绝对调律精度。公开 API 流程和实际 PCM 已独立重跑。
+- **去重/边界：** 不同于 F31 气息同步、F32 sequencer 消息、F49 连奏选区及 #1879 清键。相关五项既有 controller/tuning/voice 测试通过，但未覆盖此场景。尚无真实设备或曲库发生率统计；不把同根的其他 NRPN 参数另计新问题。
+
+### N02 / P2：连奏复用 voice 时，键号调制声像停留在上一音符
+
+- **场景：** 原版 GeneralUser GS 2.0.1，bank0/program6 Harpsichord；CC126=1，默认 multi-retrigger；key60/velocity100 渲染4410帧，再重叠按 key64。44.1kHz，无自定义调音或人工调制器。Poly 模式下显式 CC68=127 也复现；普通 Poly 且未开连奏不受影响。
+- **实际/预期：** 既有 key→pan 调制 amount250，应从 key60 的 −15.625 变为 key64 的0；两个复用 voice 的 key 已为64，pan.mod 却仍 −15.625。发送数值未变的 CC10=64 才修正为0。全新 synth、相同事件和相同4410帧窗口 A/B，仅 B 在第二个 note-on 后补同值 CC10：前段能量相同，后段右/左能量比从0.539979dB变为0.941670dB。这是声像数值变化证据，不是主观可闻性结论。
+- **原因：** [fluid_voice.c:1283–1315](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_voice.c#L1283-L1315) 在更新 key/vel 后仅按 velocity 重算通用调制器，再单独更新部分键号缩放与 pitch，遗漏通用 key 调制源；函数注释承诺更新 key/vel 相关生成器。与 velocity 共用目的地的 key 调制可能间接刷新，不能称全部 key 调制失效。[SF2 2.04 §8.2.1](https://www.synthfont.com/sfspec24.pdf) 定义 note-on key 调制源。
+- **验证/去重：** 同时核对实际音频与 voice 状态，并独立重跑。Church Organ program19 的60→62也复现；48→60跨区域例不触发。不重复 F49 的自定义调音跨区域问题。属于真实常用资产中的合法连奏条件，但未证明高发生率；未测 float/设备或全量回归。
+
+### N03 / P2：单个效果组关闭后，独立 wet 输出仍漏出左声道原始发送量
+
+- **场景：** `synth.effects-groups=2`，组0混响或合唱关闭，组1同效果开启；新建 synth 后仅 channel0 播放普通音符，CC91/93=127；`fluid_synth_process` 使用8个清零独立效果缓冲、2个干声缓冲，渲染8192帧。全部 API 成功，无旧尾音，组1无音符。
+- **预期/实测：** 关闭组的左右 wet 输出应为零。[原 API 讨论](https://github.com/FluidSynth/fluidsynth/pull/673#issuecomment-723129007) 区分关闭与原样 bypass。GeneralUser 的关闭组混响左 RMS=0.0061446049、合唱左 RMS=0.0043832512，右均为0；两个组全关时严格为零，全开时正常双声道 wet，所有对照干声一致。上游 VintageDreamsWaves-v2.sf2 亦复现。客户端混回 wet 时会多叠加左声道干声，改变音量与声像。
+- **原因：** [mixer:307–322](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice_mixer.c#L307-L322) 按“任一组开启”的全局标志建立所有组原始 mono send；[混响205–207](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice_mixer.c#L205-L207) / [合唱241–243](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice_mixer.c#L241-L243) 跳过关闭组却未清除原始左输入，最终被作为 wet 交付。
+- **范围：** 独立重跑六种条件确认，现有清单无重复；需要显式多组与独立效果输出，不是默认单组播放的普遍问题。`write_float` 内混效果路径不受此项直接影响。未测 JACK 实设备、float、OpenMP；不涉及 LADSPA 或非法输入。
+
+以上为已核实问题记录，不代表修复已实施。后续排查继续在本节追加，未证实线索不列为确认缺陷。
