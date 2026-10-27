@@ -230,3 +230,37 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - **范围：** 独立重跑六种条件确认，现有清单无重复；需要显式多组与独立效果输出，不是默认单组播放的普遍问题。`write_float` 内混效果路径不受此项直接影响。未测 JACK 实设备、float、OpenMP；不涉及 LADSPA 或非法输入。
 
 以上为已核实问题记录，不代表修复已实施。后续排查继续在本节追加，未证实线索不列为确认缺陷。
+
+### N04–N08：补充确认的条件性渲染问题
+
+共同基线：上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`，Linux Debug double；合法事件、正常音源和串行公开 API。已独立复核，未修改生产代码、未尝试修复。以下不是默认播放普遍受影响的结论；MuseScore `MS Basic.sf3` 的补充用例均为人工构造控制实验，不计作真实 MIDI 曲库自然命中。
+
+#### N04｜MTS 声道掩码未隔离共享调音（中优先级）
+
+- 仅向 MIDI 声道 1 发送 +50 cents 的 Scale/Octave Tuning，未选的声道 2 也变调。GeneralUser Flute/key69 的主峰由 440 Hz 变为 453 Hz；实时、非实时消息均复现，音符均在消息后启动。官方 MS Basic 补充用例亦复现。
+- [MTS 规范](https://midi.org/midi-tuning-updated-specification)第 6–7 页规定逐声道位掩码。[处理器](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L2652-L2666)先替换共享 tuning 0/0，再检查掩码；[替换逻辑](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L7289-L7330)传播至所有引用旧调音的声道。
+- 需要专门的 MTS 调音消息；显式使用其他调音的声道不能笼统算作受影响。与 F18、F49 不同。
+
+#### N05｜实时调音漏更新踏板保持的声音（中优先级）
+
+- 同一音符收到实时 +50 cents 调音：手指仍按键时由 440 Hz 更新至 453 Hz；已经松键、由 sustain 或 sostenuto 保持时仍为 440 Hz。GeneralUser 与官方 MS Basic 补充用例均复现。
+- [MTS 规范](https://midi.org/midi-tuning-updated-specification)要求更新已经发声的音符。[调音更新](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L7349-L7364)仅筛选 `fluid_voice_is_on`，而[该谓词](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_voice.c#L1601-L1620)排除已收到 note-off 的声音。
+- 需要实时调音与踏板延音组合；不是 N04 的跨声道污染，也不代表所有调音 API 均已测试。
+
+#### N06｜多输出 limiter 只处理第一对声道（中优先级）
+
+- 显式设置 `synth.audio-groups=2`、`synth.audio-channels=2`、`synth.limiter.active=1`；效果器关闭，两组演奏同一和弦。以合法输出上限 0.1 测试：第一对受限并增加 221 帧延迟，第二对与未开启 limiter 的输出逐位相同。官方 MS Basic 补充用例第二对峰值仍为 0.28473/0.25976，首对约为 0.1。
+- [设置文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/fluidsettings.xml#L164-L204)描述末端输出限幅与 look-ahead 延迟；[调用处](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_rvoice_mixer.c#L271-L279)只传入第一对缓冲区，未遍历其他组。
+- 后续干声输出既不限幅又与首对错位；这不是独立 wet 输出不进入 limiter 的设计限制。仅验证内存多声道输出，未验证物理设备；MIDI 文件本身不能开启此宿主配置。
+
+#### N07｜顺序切换渲染 API 丢失缓冲余样（罕见，低实际优先级）
+
+- 同一线程、效果器关闭：先 `fluid_synth_process` 输出 65 帧，再 `fluid_synth_write_float` 输出 63 帧。第二次实际输出与连续参考的第 128–190 帧完全一致，而非第 65–127 帧，跳过 63 帧。仅用其中一种 API，以及 64 帧边界切换，均与参考逐位一致。
+- [process 尾部](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L4618-L4627)只更新 `cur`；[write 路径](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L4765-L4785)依据未同步的 `curmax` 决定重新渲染。
+- [合成线程文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/doc/usage/synth_context.txt)未禁止串行混用，但也没有明确承诺混合 API 的连续性；预期基于连续渲染契约推断。应用中途切换渲染接口的实际需求未证实，不能宣传为常见播放错误。
+
+#### N08｜进入 sustain 阶段后调整 sustain level 不生效（中优先级，发生率未证实）
+
+- GeneralUser Organ/program19 持续发声 1 秒后，以 `fluid_synth_set_gen` 或正常 SF2 NRPN 增加 `GEN_VOLENVSUSTAIN` 偏移 240：调用成功、参数更新，但包络保持 1，后续同时间窗能量与未修改控制组完全相同。相同偏移在 note-on 前设置时包络为 0.76，确认参数本身有效。
+- [公开 API 文档](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_synth.c#L7770-L7785)明确说明立即应用于当前和后续声音；[实现](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/synth/fluid_voice.c#L1080-L1088)仅更新 decay 阶段边界，已进入 sustain 的包络不跟随。
+- 需要实时 API/NRPN 调整该参数；没有常用曲库自然命中证据，也未声称在 MS Basic 复现。只记录“不响应实时变化”，不将历史 EMU 包络缩放近似另算新问题。
