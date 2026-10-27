@@ -366,3 +366,17 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 - **原因：** [router.c:729–782](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/midi/fluid_midi_router.c#L729-L782) 对 channel/param1/param2 都先无条件加0.5再转整数，负乘积向零截断，产生+1误差。这里仅对音符param1的声音影响作实测，不把其余同根字段另计问题。
 - **去重：** 不同于 F01 的跨通道 pending-note 记录；本测试没有规则清除中的待释放音符、没有重叠音符。独立复核已接受。只建立外部测试，未修改引擎。
 - **基线与证据：** 上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`；音色SHA256 `5ea2375e8bd7d8e71def1036978c1621e85b66934169b6a2744b27b9b3c2d99c`。`router_negative_scale.py` / `router_negative_scale_results.json` / `router_positive_controls.json`；`router_negative_audio.py` / `router_negative_audio_results.json`。音频测试是明确标注的合成有效控制序列，不计自然曲库命中。
+
+#### N18｜Mono／CC68 切换音色后叠加旧音色，切回时首音漏发（中优先级）
+
+**优先级：中等条件性问题；真实普通音色，无自定义调音或 modulator，但需要显式 Mono 或 CC68 连奏和演奏期间 Program Change。**
+
+- 基线：上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`，未修改生产源码，Debug double / no OpenMP，GeneralUser GS 2.0.1，44.1kHz，关闭效果器。
+- 流程：program19 Church Organ，note60/velocity100，渲染4096帧；Program Change73 Flute，再 note62/velocity100，渲染4096帧；释放旧 key60，保持新 key62，再渲染120×4096帧（约11.15秒）。PC和note调用均成功。
+- 普通 Poly 控制：旧 Organ 维持原 key60，不被新音符改调，收到 off60 后结束；后期只剩 Flute62，双声道末4096帧与相同时间线的仅Flute参考逐位一致。
+- CC126=1、默认 multi-retrigger，或 Poly 下 CC68=127：旧 Organ voice被改为key62，仍保留原Organ sample，同时分配新Flute62；off60后11.15秒仍是两种音色一起发新key62。与仅Flute参考相比，末窗8192个样本全部不同，最大差0.024141151458024979、差值RMS=0.0099215758816053011。
+- 预期边界：Program Change允许已经发声的旧音符保持原音色；问题不是旧尾音继续发声，而是旧音色被重新定到新key并与新程序同时发声。本项不称“所有键松开后无限挂音”；主对照窗口内新key62仍按着。
+- 根因：`src/synth/fluid_synth_monopoly.c:670–719` 仅凭旧voice的key/velocity区域决定复用，没有确认该区域属于当前preset；把旧zone标为ignore后，又调用新preset的note-on，新preset不会消费旧zone的ignore请求。
+- 同根额外后果（已独立复核）：上述流程再释放key62、等待11.15秒使全部旧声音结束，切回program19并重新note60；Mono/CC68调用成功，但首个新音符没有voice，4096帧PCM严格为0；普通Poly同流程正常发声，能量0.1159562303372396。旧zone残留的ignore在`fluid_defsfont.c:2050–2061`第一次查询时才被消费，跳过本应发声的区域。不另计第二个问题。
+- 已独立复跑 Poly、Mono 与 CC68 三组，检查同时间窗 PCM 和 voice 生命周期；未修改生产源码或音源。
+- 范围：无真实曲库发生率统计；不混淆F49自定义调音跨区域或N02键号modulator未刷新，也不同于跨preset exclusiveClass。没有修改SoundFont或实现修复。
