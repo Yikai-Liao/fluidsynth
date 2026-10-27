@@ -334,3 +334,16 @@ F26：撤回基线归因；见报告更正及已合并 #1868。
 ## 无异常基线与 RPN 近似命中
 
 `native-panel/00.json`–`06.json`：4 首分层选取的普通文件与 3 首 RPN→CC121 近似命中文件，全部以原生 SMF player + MS Basic 完成播放，PCM 有限且非零。3 首近似命中文件在非零调音被 CC121 重置后均没有同通道后续 Note On，故不计 N01 自然命中。7/7 成功仅验证管线及这几项检查，不代表全曲所有渲染行为正确。
+
+#### N15｜原值写回 LFO 频率反转下降方向（中优先级）
+
+**优先级：中等；需实时频率 API / SF2 NRPN，不宣称普通文件默认播放普遍触发。**
+
+- 基线：上游 `18bcb76f48bd24a383bff19240dc39dd3a9d4651` 未修改，Debug double / no OpenMP；原版 GeneralUser GS 2.0.1 Flute（bank0/program73），44.1kHz，混响和合唱关闭。
+- 用例：CC1=127，note69/velocity100，先渲染4096帧。读取 `GEN_VIBLFOFREQ` 声道 offset=0，再通过 `fluid_synth_set_gen()` 把原值0写回（返回成功）；与不调用 setter 的同时间线、新 synth 对照比较接下来4096帧双声道 PCM。两次未改参数对照逐位相同。
+- 实测：写回前振荡值0.205624、increment=−0.0284822、freq generator值−884、mod=0、nrpn=0、vibrato深度49.6094 cents。原值写回仍改变8188/8192个样本，最大差0.06803024560213089、差值RMS=0.024798774866253329、参考RMS=0.019046271648827204。这不是 setter 改变频率数值的正常结果。
+- 阶段对照：只渲染2048帧、LFO处于上升段时（increment为正），同样原值写回与对照逐位一致。等价正常 SF2 NRPN：CC99=120、98=24、38=0、6=64，四个调用均成功，offset仍为0，也产生相同差异。没有添加自定义 modulator 或改写音源。
+- 源码原因：`src/synth/fluid_voice.c` 的 GEN_VIBLFOFREQ / GEN_MODLFOFREQ 分支每次从频率算出正 increment；[fluid_lfo.c:3–8](https://github.com/FluidSynth/fluidsynth/blob/18bcb76f48bd24a383bff19240dc39dd3a9d4651/src/rvoice/fluid_lfo.c#L3-L8) 不保留振荡器原方向，直接赋值。正常振荡更新在 `fluid_lfo.h` 中通过改变 increment 符号维护三角波方向，因此下降段被错误切成上升段。
+- 预期与边界：SF2 的 freqVibLFO 参数描述频率；公开 generator API 描述实时 offset，不是重置振荡器。认为不改变频率的原值写回应保持同一演奏波形，是由参数语义与正/负方向对照支持的契约推断；文档没有单独承诺相位连续性。本次直接动态验证 vibrato LFO，modulation LFO 仅共享源码路径，未另算一个问题。
+- 发生率限制：检查的 MS Basic、GeneralUser 及本地 SF2 样本没有非零频率目的地22/24的 modulator；没有真实 MIDI 自然命中证据，API/NRPN 的使用频率未统计。PCM差异不是主观听感评级。
+- 已独立复核正常 API、等价 NRPN 和上升段阴性对照，未修改生产代码。
