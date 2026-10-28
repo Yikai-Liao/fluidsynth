@@ -1,0 +1,39 @@
+{
+  "baseline_commit": "f784f7833acbd07181ea3d3bd6b0d16253b883f4",
+  "after": "baseline plus fix.patch",
+  "fix_patch_sha256": "568c5ac4d217297351916de0eae7cbad8b58475c1d4d63c06312b8d84a99a34b",
+  "source_sha256": {
+    "src/rvoice/fluid_lfo.c": {
+      "before": "fb48bfd8317c491af99d5b64c18ed2957fa0cca90da7e3bfc104c8ba839bb6b3",
+      "after": "56d9e065c781d58b7f813541b22dcfe6f73a0164beff39abce48425365116b23"
+    },
+    "src/rvoice/fluid_lfo.h": {
+      "before": "04a2a29337271b8c8c13b237a0d4740770460335e62f941e195b749bfbae5dae",
+      "after": "ea03f0187f60d6a8d87bfebf2fe2815013ce00e12277a043f14e603120e87a29"
+    },
+    "src/rvoice/fluid_rvoice.c": {
+      "before": "e135a7702f4445f9626dc4ea092579e5109ace08070cb31f4202a858b047f822",
+      "after": "e135a7702f4445f9626dc4ea092579e5109ace08070cb31f4202a858b047f822"
+    },
+    "src/synth/fluid_voice.c": {
+      "before": "6e1df81d887e582ad26c7ca13ecc90e020b2caac502f05cabd9d4e52c9604504",
+      "after": "6e1df81d887e582ad26c7ca13ecc90e020b2caac502f05cabd9d4e52c9604504"
+    }
+  },
+  "capture_source_sha256": "6d6a90271b003241b7e2e5915eb0d07ef953c8102188b4fcf9a60730eaa66c4d",
+  "python_packages": {
+    "numpy": "2.5.4",
+    "matplotlib": "3.11.2"
+  },
+  "compiler": "gcc (Debian 14.2.0-19) 14.2.0",
+  "build": {
+    "type": "RelWithDebInfo",
+    "samples": "double",
+    "openmp": false,
+    "signalsmith": false,
+    "native_dls": false,
+    "effects": false,
+    "sample_rate": 48000,
+    "block_frames": 64
+  }
+}

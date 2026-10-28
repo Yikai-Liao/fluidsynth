@@ -1,0 +1,37 @@
+{
+  "soundfont_sha256": "37570538713ec8edf31c2d69ce22f2100b252bdd838d8e9d4efccb970e7f9b78",
+  "sample_rate": 48000,
+  "block_frames": 64,
+  "traces": {
+    "dense-before": {
+      "csv_sha256": "4edf00a1aa1fc27bfc9a571590731e415696c2f33587839b17711dc91073196d",
+      "csv_gz_sha256": "da31c4d352e89b1c458c57eee1723fbc0b814b73e02db75515bf0e89bc147e07",
+      "binary_sha256": "394ca260bc0379893756474da06d9dd610d8d336852843aa1d2dcbcb2da8f7e2",
+      "fixed_depth": false
+    },
+    "dense-after": {
+      "csv_sha256": "82788bca4d9c1c5e3c825e8ddc6ac17e3717f7f8a35b24e97f3b92cbef72b463",
+      "csv_gz_sha256": "27f110790589a39ea60c99f871afe5d016139c187cfeeed0926396edeefb0ea5",
+      "binary_sha256": "494e2824064e7d344f973d92b46592dfcf84ca3c5a1a24e05f326be11f35833c",
+      "fixed_depth": false
+    },
+    "sparse-before": {
+      "csv_sha256": "bcbca98b609f77fb9d4c00100f224cf62784f0fa4310a17ca07d92923fab625e",
+      "csv_gz_sha256": "4832c937fef9c7967e5f371545617d27ab8e270293882734ce8ab80270ef0574",
+      "binary_sha256": "394ca260bc0379893756474da06d9dd610d8d336852843aa1d2dcbcb2da8f7e2",
+      "fixed_depth": false
+    },
+    "sparse-after": {
+      "csv_sha256": "e3fc81a09645994a5cfd8b697fb207e42798d2bc866509d4e2145ee3c7d94ef9",
+      "csv_gz_sha256": "0c0922f27bac957803d41282a6d8b963a0b94087fee64bc51cab7570b218b27c",
+      "binary_sha256": "494e2824064e7d344f973d92b46592dfcf84ca3c5a1a24e05f326be11f35833c",
+      "fixed_depth": false
+    },
+    "sparse-fixed-depth": {
+      "csv_sha256": "0792142bb9d1b71c33c2aee5a640a1e751856f6d038b2c0169b2b19f3f74e7b2",
+      "csv_gz_sha256": "98551c8e13e25a6c5fd27b0c5d2b1161b4db4944832f9ae0001d3fa4d652b342",
+      "binary_sha256": "494e2824064e7d344f973d92b46592dfcf84ca3c5a1a24e05f326be11f35833c",
+      "fixed_depth": true
+    }
+  }
+}

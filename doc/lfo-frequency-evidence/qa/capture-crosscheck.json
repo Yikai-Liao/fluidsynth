@@ -1,0 +1,23 @@
+{
+  "before": {
+    "time": true,
+    "cc": true,
+    "event": true,
+    "val": true,
+    "increment": true,
+    "depth": true,
+    "ticks": true,
+    "delay": true
+  },
+  "after": {
+    "time": true,
+    "cc": true,
+    "event": true,
+    "val": true,
+    "increment": true,
+    "depth": true,
+    "ticks": true,
+    "delay": true
+  },
+  "fixed_depth_lfo_unchanged": true
+}

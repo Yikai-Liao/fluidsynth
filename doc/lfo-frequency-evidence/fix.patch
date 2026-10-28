@@ -1,0 +1,14 @@
+diff --git a/src/rvoice/fluid_lfo.c b/src/rvoice/fluid_lfo.c
+index ae21cdd0..c8683999 100644
+--- a/src/rvoice/fluid_lfo.c
++++ b/src/rvoice/fluid_lfo.c
+@@ -8 +8,2 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_lfo_set_incr)
+-    lfo->increment = increment;
++    /* Preserve the triangle direction when updating its frequency (#1310). */
++    lfo->increment = lfo->increment < 0.0f ? -increment : increment;
+diff --git a/src/rvoice/fluid_lfo.h b/src/rvoice/fluid_lfo.h
+index 4ce68e77..ced08e69 100644
+--- a/src/rvoice/fluid_lfo.h
++++ b/src/rvoice/fluid_lfo.h
+@@ -40,0 +41 @@ fluid_lfo_reset(fluid_lfo_t *lfo)
++    lfo->increment = 0.0f;
