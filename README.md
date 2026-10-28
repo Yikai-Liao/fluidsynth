@@ -471,3 +471,36 @@ N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音
 - **实际通过的检查：** 单独一行修复 Release 44/44；120 行批处理原型叠加此修复的 Release 44/44、ASan＋UBSan 44/44（LSan 关闭）。后两项是组合版本验证，不冒称单独修复的 sanitizer 结果，也不代表全平台或 unsigned-char 配置已经覆盖。
 - **定向回归：** 在现有 `test_voice_reuse_gain.c` 增加35行，验证无效起始键255不会访问 voice pool；有效 PTC=60 仍释放相应 voice、设置 `fromkey_portamento=60` 并消费 CC84。负向对照将 voice pool 故意设为 NULL 来检查“不应访问”：旧 char 实现退出 −11（SIGSEGV），int 修复退出0。这个崩溃是测试夹具刻意捕获多余访问，不是普通播放会崩溃的证据。含测试补丁 SHA256：`80d679b7b22e18d2e51e89fe80be8e75794213718e2ff20852b79a2ccd9959e7`。
 - **仍待补足：** 单独修复相对未修改上游的配对性能、PCM 与更全面的模式/键边界验证；不把批处理叠加修复的单次诊断计时写成独立修复或通用性能收益。上述全套测试通过不替代这些专项验证。候选仍仅本地保留，本次只补充 `todo` 文档，未推送引擎代码或创建 PR。
+
+## 三项独立 dev 快照已保存（2026-10-28）
+
+按用户安排保留开发历史，不提前整理成最终 PR 分支；下列三个提交均**直接且仅以上游 `f784f7833acbd07181ea3d3bd6b0d16253b883f4` 为父提交**，彼此不叠加。没有夹带 IIR W4、atomic、DLS 或其他优化，没有创建 PR。此前“候选仅本地”的状态由本节更新；原始120行版本单独保存，后续继续优化也不覆盖这个快照。
+
+| 分支 | 已验证远端提交 | 生产差异 | 测试差异 |
+|---|---|---|---|
+| [fix/dev-legato-invalid-note-sentinel](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-legato-invalid-note-sentinel) | [031121d2](https://github.com/Yikai-Liao/fluidsynth/commit/031121d2a945c3cc13e87f13e802884c1e74c25b) | 1文件 +1/−1，char→int | 现有 reuse_gain +35 |
+| [perf/dev-lowest-free-voice](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-lowest-free-voice) | [2b896710](https://github.com/Yikai-Liao/fluidsynth/commit/2b8967109310bd1bc3dcc81a549c5c9f3ed947f1) | 2文件 +21/−0 | 现有 reuse_gain +56/−2 |
+| [perf/dev-same-key-event-batch](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-same-key-event-batch) | [30f5a9a8](https://github.com/Yikai-Liao/fluidsynth/commit/30f5a9a8db11e28973d81674548c8a2ddb11a019) | 6文件 +120/−0 | 现有 callback +42、reuse_gain +106 |
+
+### 语义与验证记录
+
+- **哨兵修复：** 上节根因、负向对照及 PTC60 副作用测试继续适用。独立 Release 44/44；不要把组合版本的 sanitizer 结果写成独立分支结果。
+- **最低空槽游标：** `free_voice_hint` 是最低 AVAILABLE 槽位的下界，不是活动声部计数。找到空槽后保留该索引而非递增，保持“已分配但未 start”再次分配的原有行为；primary 完成并 stop 后降低下界，逻辑缩容时夹紧。没有空槽时仍执行原完整溢出评分/偷音路径，保留评分、同分选择顺序与失败行为。连续初填可摊销到 O(P＋分配次数)，不宣称任意完成/复用交错或满池分配都为 O(1)。本机 LP64 探针 synth=96,392、voice=4,744字节，加入int利用既有对齐填充，实测尺寸不变；不是全架构保证。
+- **游标回归：** 对原扫描 oracle 核对未 start 复用、最低空洞、逻辑缩容、实际扩容、普通复用、满池受害者、两个 rvoice 均忙时失败。独立 Release 44/44；批处理＋哨兵＋游标组合 Release 44/44、ASan＋UBSan 44/44（LSan关闭）。独立游标分支未宣称完成 sanitizer 全套。
+- **120行批处理：** 保留同键事件批次的实现和原回退路径。现有测试覆盖同一原生 timer 边界下快路径与原数组回退的逐样本 PCM、回调数量/顺序，以及 sustain、generator、All Sounds Off、队列处理、polyphony改变和已进行的release在后续批次重新处理。最终 Release 44/44、ASan＋UBSan 44/44（LSan关闭）。这仍是 dev 版本，不等于完成最终上游 review。
+- 三份最终 diff 均通过 `git diff --check`；发布前核对每个修改文件的基线 blob 与官方 f784 一致，发布后回读远端父提交、完整树差异与每个修改文件 blob，确认没有多余文件。作者为 Yikai Liao。构建为本地 Linux GCC；不把本地检查当作 Windows/macOS 等全部平台通过。
+- 完整“生产＋测试”补丁 SHA256：哨兵 `80d679b7b22e18d2e51e89fe80be8e75794213718e2ff20852b79a2ccd9959e7`；游标 `a6d309f863d8f5977d24cc50f105e0c21f6e7230275cc6a54dd440ab44faf582`；原120行版本 `feedffd4c48bc070dd8aba602f1b4ca57b638ac4aeb1e953ad5bb1a587b6a541`。上述固定提交保存实际源码与测试，不依赖临时工作目录才能找回。
+
+### 短片段诊断结果归档：不是三个独立分支的通用收益
+
+保留本轮已测数值以免丢失，但不把它们当稳定 benchmark。输入为从 Lightstorm 派生的60ms稠密片段，原生 sample-clock 离线渲染，44.1kHz、polyphony=65,535；以下仅渲染前1,024或2,304帧，不是完整原曲，也不是保留原曲全部前史。诊断构建有计数观测；每格为一次观测，运行间波动明显，未做配对多轮中位数或置信区间。
+
+| 渲染窗口 | 未改上游 | 仅120行批处理 | 批处理＋哨兵 | 批处理＋哨兵＋游标 |
+|---|---:|---:|---:|---:|
+| 1核，1,024帧（约23.22ms音频） | 33.139328s | 9.297991s | 3.252293s | 0.788754s |
+| 4核，2,304帧（约52.24ms音频） | 120.258126s | 35.884194s | 20.190051s | 1.957146s |
+
+- **表中后两列是组合实现，不是独立哨兵/游标分支的收益。** 即使最后一列也远慢于实时：音频秒/墙钟秒约0.02944和0.02669；没有宣称已经实时播放。独立哨兵/游标相对未改上游的稳定配对性能仍待测。
+- 四个版本在相同窗口 PCM 逐bit一致且有限。1,024帧PCM SHA256为 `8c3996e7b022be82557d8d6b3160058c7a581ec46c38cf790b765dbfb357ece6`；2,304帧为 `9b2ca8ff3f791dd58686eafe5cbb36df42656b7910566bb9d75ec65fc0d2c512`。事件/起音/最终声部计数一致；NoteOn失败、write失败、队列满警告为0。各版本均有相同的7,677/15,279次 NoteOff失败返回，不能包装成所有事件都成功。
+- 诊断源码/计数结果与本地原始日志继续保留；公开分支只包含项目源码和回归测试，不上传第三方 MIDI、SoundFont、PCM、二进制或内部笔记。上述表格是整理后的证据摘要，不用诊断库替代实际分支源码。
+- 发布后已确认三个 SHA 各触发9项 push workflow；本节写入时仍有排队/执行中的 CI，不能视为远端全绿。此次目标是保留独立 dev 快照与证据；后续迭代沿用正常提交，不强推覆盖历史。
