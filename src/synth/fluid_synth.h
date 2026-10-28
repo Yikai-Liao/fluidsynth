@@ -124,6 +124,7 @@ struct _fluid_synth_t
 {
     fluid_rec_mutex_t mutex;           /**< Lock for public API */
     int use_mutex;                     /**< Use mutex for all public API functions? */
+    int note_batch; /* 0: fallback, 1: prepare lazily, 2: eligible lists ready */
     int public_api_count;              /**< How many times the mutex is currently locked */
 
     fluid_settings_t *settings;        /**< the synthesizer settings */
@@ -324,6 +325,7 @@ int fluid_synth_noteoff_monopoly(fluid_synth_t *synth, int chan, int key, char M
 fluid_voice_t *
 fluid_synth_alloc_voice_LOCAL(fluid_synth_t *synth, fluid_sample_t *sample, int chan, int key, int vel, fluid_zone_range_t *zone_range);
 
+int fluid_synth_note_batch_ready(fluid_synth_t *synth, fluid_channel_t *channel);
 void fluid_synth_release_voice_on_same_note_LOCAL(fluid_synth_t *synth, int chan, int key);
 
 #ifdef __cplusplus

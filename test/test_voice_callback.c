@@ -2,6 +2,7 @@
 #include "test.h"
 #include "fluidsynth.h"
 #include "fluid_midi.h"
+#include "synth/fluid_synth.h"
 
 enum { Polyphony = 64 };
 
@@ -9,6 +10,36 @@ static int noteoff_count = 0;
 static int finished_count = 0;
 static void *noteoff_data_received = NULL;
 static void *finished_data_received = NULL;
+
+#if FLUID_THREAD_SAFE_CAPABLE
+struct timer_lock_test {
+    fluid_synth_t *synth;
+    int done;
+};
+
+static fluid_thread_return_t query_from_other_thread(void *data)
+{
+    struct timer_lock_test *test = data;
+    TEST_ASSERT(fluid_synth_get_polyphony(test->synth) == Polyphony);
+    fluid_atomic_int_set(&test->done, 1);
+    return FLUID_THREAD_RETURN_VALUE;
+}
+
+/* Timer callbacks were never invoked under a whole-batch API mutex. */
+static int timer_waits_for_api(void *data, unsigned int msec)
+{
+    struct timer_lock_test *test = data;
+    fluid_thread_t *thread = new_fluid_thread("timer-api", query_from_other_thread,
+                                             test, 0, FALSE);
+    int i;
+    TEST_ASSERT(thread != NULL);
+    for(i = 0; i < 2000 && !fluid_atomic_int_get(&test->done); ++i) fluid_msleep(1);
+    TEST_ASSERT(fluid_atomic_int_get(&test->done)); /* Fail, rather than deadlock. */
+    fluid_thread_join(thread);
+    delete_fluid_thread(thread);
+    return 0;
+}
+#endif
 
 static void voice_callback(const fluid_voice_t *voice, int reason, void *data)
 {
@@ -91,6 +122,17 @@ int main(void)
 
     synth = new_fluid_synth(settings);
     TEST_ASSERT(synth != NULL);
+
+#if FLUID_THREAD_SAFE_CAPABLE
+    {
+        struct timer_lock_test test = { synth, 0 };
+        fluid_sample_timer_t *timer = new_fluid_sample_timer(synth, timer_waits_for_api, &test);
+        TEST_ASSERT(timer != NULL);
+        TEST_SUCCESS(fluid_synth_process(synth, 64, 0, NULL, 0, NULL));
+        TEST_ASSERT(fluid_atomic_int_get(&test.done));
+        delete_fluid_sample_timer(synth, timer);
+    }
+#endif
 
     sfont_id = fluid_synth_sfload(synth, TEST_SOUNDFONT, 1);
     TEST_ASSERT(sfont_id != FLUID_FAILED);

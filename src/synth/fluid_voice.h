@@ -76,6 +76,8 @@ struct _fluid_voice_t
 					   it's used for noteoff's  */
     unsigned int start_time;
     fluid_channel_t *channel;
+    fluid_voice_t *note_batch_next;
+    fluid_voice_t **note_batch_prev;
 
     /* basic parameters */
     fluid_real_t output_rate;        /* the sample rate of the synthesizer (dupe in rvoice) */
@@ -128,6 +130,7 @@ fluid_voice_t *new_fluid_voice(fluid_rvoice_eventhandler_t *handler, fluid_real_
 void delete_fluid_voice(fluid_voice_t *voice);
 
 void fluid_voice_start(fluid_voice_t *voice);
+void fluid_voice_note_batch_link(fluid_voice_t *voice);
 void  fluid_voice_calculate_gen_pitch(fluid_voice_t *voice);
 
 int fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,

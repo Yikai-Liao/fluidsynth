@@ -243,6 +243,8 @@ new_fluid_voice(fluid_rvoice_eventhandler_t *handler, fluid_real_t output_rate, 
     voice->vel = 0;
     voice->eventhandler = handler;
     voice->channel = NULL;
+    voice->note_batch_next = NULL;
+    voice->note_batch_prev = NULL;
     voice->sample = NULL;
     voice->overflow_sample = NULL;
     voice->output_rate = output_rate;
@@ -271,6 +273,37 @@ delete_fluid_voice(fluid_voice_t *voice)
     FLUID_FREE(voice->overflow_rvoice);
     FLUID_FREE(voice->rvoice);
     FLUID_FREE(voice);
+}
+
+/* Eligibility is API-side only. Unordered insertion is O(1); callback/verbose
+ * paths retain the original array scan, so cross-voice order is unobservable. */
+static void fluid_voice_note_batch_unlink(fluid_voice_t *voice)
+{
+    if(voice->note_batch_prev != NULL)
+    {
+        *voice->note_batch_prev = voice->note_batch_next;
+        if(voice->note_batch_next != NULL)
+            voice->note_batch_next->note_batch_prev = voice->note_batch_prev;
+        voice->note_batch_prev = NULL;
+    }
+}
+
+void fluid_voice_note_batch_link(fluid_voice_t *voice)
+{
+    fluid_voice_t **head;
+    fluid_voice_note_batch_unlink(voice);
+    if(voice->channel == NULL || voice->channel->synth->note_batch != 2 ||
+       !fluid_voice_is_playing(voice) || voice->key >= 128) return;
+    if(voice->callback != NULL || voice->status != FLUID_VOICE_ON)
+    {
+        voice->channel->synth->note_batch = 0;
+        return;
+    }
+    head = &voice->channel->note_batch_heads[!fluid_voice_is_on(voice)][voice->key];
+    voice->note_batch_next = *head;
+    voice->note_batch_prev = head;
+    if(*head != NULL) (*head)->note_batch_prev = &voice->note_batch_next;
+    *head = voice;
 }
 
 /* fluid_voice_init
@@ -313,6 +346,7 @@ fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
         fluid_voice_off(voice);
     }
 
+    fluid_voice_note_batch_unlink(voice);
     voice->zone_range = inst_zone_range; /* Instrument zone range for legato */
     voice->id = id;
     voice->chan = fluid_channel_get_num(channel);
@@ -367,6 +401,7 @@ fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
     UPDATE_RVOICE_GENERIC_I2(fluid_rvoice_buffers_set_mapping, &voice->rvoice->buffers, 0, i);
     UPDATE_RVOICE_GENERIC_I2(fluid_rvoice_buffers_set_mapping, &voice->rvoice->buffers, 1, i + 1);
 
+    fluid_voice_note_batch_link(voice);
     return FLUID_OK;
 }
 
@@ -457,6 +492,7 @@ void fluid_voice_start(fluid_voice_t *voice)
 #endif
 
     voice->status = FLUID_VOICE_ON;
+    fluid_voice_note_batch_link(voice);
 
     /* Increment voice count */
     voice->channel->synth->active_voice_count++;
@@ -1293,6 +1329,8 @@ void fluid_voice_update_portamento(fluid_voice_t *voice, int fromkey, int tokey)
 void fluid_voice_update_multi_retrigger_attack(fluid_voice_t *voice,
         int tokey, int vel)
 {
+    voice->channel->synth->note_batch = 0;
+    fluid_voice_note_batch_unlink(voice);
     voice->key = tokey;  /* new note */
     voice->vel = vel; /* new velocity */
     /* Updates generators dependent of velocity */
@@ -1327,6 +1365,7 @@ fluid_voice_release(fluid_voice_t *voice)
 {
     unsigned int at_tick = fluid_channel_get_min_note_length_ticks(voice->channel);
     UPDATE_RVOICE_I1(fluid_rvoice_noteoff, at_tick);
+    fluid_voice_note_batch_unlink(voice);
     voice->has_noteoff = 1; // voice is marked as noteoff occurred
 
     if(voice->callback != NULL)
@@ -1355,11 +1394,13 @@ fluid_voice_noteoff(fluid_voice_t *voice)
             channel->sostenuto_orderid > voice->id)
     {
         // Sostenuto depressed after note
+        channel->synth->note_batch = 0;
         voice->status = FLUID_VOICE_HELD_BY_SOSTENUTO;
     }
     /* Or sustain a note under Sustain pedal */
     else if(fluid_channel_sustained(channel))
     {
+        channel->synth->note_batch = 0;
         voice->status = FLUID_VOICE_SUSTAINED;
     }
     /* Or force the voice to release stage */
@@ -1436,6 +1477,7 @@ void fluid_voice_overflow_rvoice_finished(fluid_voice_t *voice)
  */
 void fluid_voice_off(fluid_voice_t *voice)
 {
+    if(voice->channel != NULL) voice->channel->synth->note_batch = 0;
     UPDATE_RVOICE0(fluid_rvoice_voiceoff); /* request to finish the voice */
 }
 
@@ -1451,6 +1493,7 @@ fluid_voice_stop(fluid_voice_t *voice)
 {
     fluid_profile(FLUID_PROF_VOICE_RELEASE, voice->ref, 0, 0);
 
+    fluid_voice_note_batch_unlink(voice);
     voice->chan = NO_CHANNEL;
 
     /* Decrement the reference count of the sample, to indicate
@@ -1665,6 +1708,7 @@ void fluid_voice_set_callback(fluid_voice_t *voice, fluid_voice_callback_t callb
 
     fluid_return_if_fail(voice != NULL);
 
+    if(voice->channel != NULL) voice->channel->synth->note_batch = 0;
     voice->callback = callback;
     voice->callback_data = data;
 

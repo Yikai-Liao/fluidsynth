@@ -550,6 +550,16 @@ int fluid_synth_noteoff_monopoly(fluid_synth_t *synth, int chan, int key,
         channel->key_mono_sustained = INVALID_NOTE; /* no mono note sustained */
     }
 
+    if(!Mono && (unsigned int)key < 128 && fluid_synth_note_batch_ready(synth, channel))
+    {
+        while((voice = channel->note_batch_heads[0][key]) != NULL)
+        {
+            fluid_voice_noteoff(voice);
+            status = FLUID_OK;
+        }
+        return status;
+    }
+
     /* noteoff for all voices with same chan and same key */
     for(i = 0; i < synth->polyphony; i++)
     {

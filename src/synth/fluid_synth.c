@@ -744,6 +744,7 @@ new_fluid_synth(fluid_settings_t *settings)
     fluid_rec_mutex_init(synth->mutex);
     fluid_settings_getint(settings, "synth.threadsafe-api", &synth->use_mutex);
     synth->public_api_count = 0;
+    synth->note_batch = 0;
 
     synth->settings = settings;
 
@@ -3973,6 +3974,8 @@ fluid_synth_update_polyphony_LOCAL(fluid_synth_t *synth, int new_polyphony)
     fluid_voice_t *voice;
     int i;
 
+    synth->note_batch = 0;
+
     if(new_polyphony > synth->nvoice)
     {
         /* Create more voices */
@@ -5130,6 +5133,14 @@ fluid_synth_check_finished_voices(fluid_synth_t *synth)
     }
 }
 
+/* Do not drain finished voices or flush staged events at this boundary. */
+static void fluid_synth_set_note_batch(fluid_synth_t *synth, int state)
+{
+    if(synth->use_mutex) fluid_rec_mutex_lock(synth->mutex);
+    synth->note_batch = state;
+    if(synth->use_mutex) fluid_rec_mutex_unlock(synth->mutex);
+}
+
 /**
  * Process all waiting events in the rvoice queue.
  * Make sure no (other) rendering is running in parallel when
@@ -5137,6 +5148,7 @@ fluid_synth_check_finished_voices(fluid_synth_t *synth)
  */
 void fluid_synth_process_event_queue(fluid_synth_t *synth)
 {
+    fluid_synth_set_note_batch(synth, 0);
     fluid_rvoice_eventhandler_dispatch_all(synth->eventhandler);
 }
 
@@ -5155,6 +5167,8 @@ fluid_synth_render_blocks(fluid_synth_t *synth, int blockcount)
     /* Assign ID of synthesis thread */
 //  synth->synth_thread_id = fluid_thread_get_id ();
 
+    fluid_synth_set_note_batch(synth, 0); /* Nested rendering invalidates an outer batch. */
+
     fluid_check_fpe("??? Just starting up ???");
 
     fluid_rvoice_eventhandler_dispatch_all(synth->eventhandler);
@@ -5169,7 +5183,9 @@ fluid_synth_render_blocks(fluid_synth_t *synth, int blockcount)
 
     for(i = 0; i < blockcount; i++)
     {
+        fluid_synth_set_note_batch(synth, 1);
         fluid_sample_timer_process(synth);
+        fluid_synth_set_note_batch(synth, 0);
         fluid_synth_add_ticks(synth, FLUID_BUFSIZE);
 
         /* If events have been queued waiting for fluid_rvoice_eventhandler_dispatch_all()
@@ -7056,6 +7072,35 @@ static int fluid_synth_chorus_get_param(fluid_synth_t *synth, int fx_group,
     FLUID_API_RETURN(FLUID_OK);
 }
 
+/* Only native pre-DSP timer batches can omit redundant releases. The caller
+ * already holds the API mutex; arbitrary timer callbacks remain unlocked. */
+int fluid_synth_note_batch_ready(fluid_synth_t *synth, fluid_channel_t *channel)
+{
+    int i;
+    if(!synth->note_batch) return FALSE;
+    if(synth->verbose || synth->polyphony != synth->nvoice ||
+       fluid_channel_is_playing_mono(channel) ||
+       fluid_channel_sustained(channel) || fluid_channel_sostenuto(channel) ||
+       !(synth->msgs_note_cut_mode == FLUID_MSGS_DISABLED ||
+         (synth->msgs_note_cut_mode == FLUID_MSGS_DRUM_CUT &&
+          channel->channel_type == CHANNEL_TYPE_MELODIC)))
+    {
+        synth->note_batch = 0;
+        return FALSE;
+    }
+    if(synth->note_batch == 1)
+    {
+        for(i = 0; i < synth->midi_channels; ++i)
+            FLUID_MEMSET(synth->channel[i]->note_batch_heads, 0,
+                         sizeof(synth->channel[i]->note_batch_heads));
+        for(i = 0; i < synth->nvoice; ++i) synth->voice[i]->note_batch_prev = NULL;
+        synth->note_batch = 2;
+        for(i = 0; i < synth->polyphony && synth->note_batch; ++i)
+            fluid_voice_note_batch_link(synth->voice[i]);
+    }
+    return synth->note_batch == 2;
+}
+
 /*
  * If the same note is hit twice on the same channel, then the older
  * voice process is advanced to the release stage.  Using a mechanical
@@ -7074,11 +7119,26 @@ fluid_synth_release_voice_on_same_note_LOCAL(fluid_synth_t *synth, int chan,
 
     /* storeid is a parameter for fluid_voice_init() */
     synth->storeid = synth->noteid++;
+    if(synth->noteid == 0) synth->note_batch = 0;
 
     /* for "monophonic playing" key is the previous sustained note
       if it exists (0 to 127) or INVALID_NOTE otherwise */
     if(key == INVALID_NOTE)
     {
+        return;
+    }
+
+    if((unsigned int)key < 128 && fluid_synth_note_batch_ready(synth, synth->channel[chan]))
+    {
+        for(i = 0; i < 2; ++i)
+        {
+            fluid_voice_t *next;
+            for(voice = synth->channel[chan]->note_batch_heads[i][key]; voice; voice = next)
+            {
+                next = voice->note_batch_next;
+                if(voice->id != synth->noteid) fluid_voice_noteoff(voice);
+            }
+        }
         return;
     }
 

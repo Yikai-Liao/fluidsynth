@@ -83,6 +83,7 @@ struct _fluid_channel_t
 {
     fluid_synth_t *synth;                 /**< Parent synthesizer instance */
     int channum;                          /**< MIDI channel number */
+    fluid_voice_t *note_batch_heads[2][128]; /* ON / released candidates */
 
     /* Poly Mono variables see macro access description */
     int mode;								/**< Poly Mono mode */
