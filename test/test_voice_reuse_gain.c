@@ -1,5 +1,7 @@
 #include "test.h"
 #include "fluidsynth.h"
+#include "synth/fluid_synth.h"
+#include "synth/fluid_chan.h"
 
 /* Two blocks cover the gain ramp and its steady state. */
 enum { Frames = 128, SampleFrames = 256, Channels = 2 };
@@ -26,6 +28,96 @@ static void stop_voice(fluid_synth_t *synth)
     TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
     TEST_SUCCESS(fluid_synth_process(synth, Frames, 0, NULL, 0, NULL));
     TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
+/* Candidate order/membership must match the old raw-channel array scan. */
+static void check_channel_index(fluid_synth_t *synth)
+{
+    int chan, i, next;
+    for(chan = 0; chan < synth->midi_channels; chan++)
+    {
+        next = fluid_channel_next_voice(synth->channel[chan], 0);
+        for(i = 0; i < synth->polyphony; i++)
+        {
+            if(chan == NO_CHANNEL || synth->voice[i]->chan == chan)
+            {
+                TEST_ASSERT(next == i);
+                next = fluid_channel_next_voice(synth->channel[chan], i + 1);
+            }
+        }
+        TEST_ASSERT(next == -1);
+    }
+}
+
+struct modulation_probe { fluid_synth_t *synth; int calls; };
+static double shrink_on_modulation(const fluid_mod_t *mod, int value, int range,
+                                   int is_src1, void *data)
+{
+    struct modulation_probe *probe = data;
+    TEST_ASSERT(fluid_mod_get_amount(mod) == ++probe->calls);
+    TEST_SUCCESS(fluid_synth_set_polyphony(probe->synth, 2));
+    return 0;
+}
+
+static void test_channel_index(fluid_settings_t *settings, fluid_sample_t *sample)
+{
+    fluid_synth_t *synth;
+    fluid_voice_t *voice;
+    int i;
+    fluid_mod_t mod = {0};
+    struct modulation_probe probe;
+    TEST_SUCCESS(fluid_sample_set_loop(sample, 8, 240));
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.polyphony", 96));
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.midi-channels", 256));
+    synth = new_fluid_synth(settings);
+    TEST_ASSERT(synth != NULL);
+    voice = fluid_synth_alloc_voice(synth, sample, 2, -1, 100);
+    TEST_ASSERT(voice != NULL && fluid_synth_get_active_voice_count(synth) == 0);
+    TEST_SUCCESS(fluid_synth_pitch_bend(synth, 2, 12288)); /* unstarted, invalid key */
+    TEST_ASSERT(voice->gen[GEN_FINETUNE].mod != 0);
+    TEST_SUCCESS(fluid_synth_cc(synth, 2, 121, 0));
+    TEST_ASSERT(voice->gen[GEN_FINETUNE].mod == 0);
+    TEST_SUCCESS(fluid_synth_set_polyphony(synth, 129)); /* grow with live membership */
+    check_channel_index(synth);
+    for(i = 0; i < 65; i++) /* sparse channels crossing word boundaries */
+    {
+        voice = fluid_synth_alloc_voice(synth, sample, i % 3, 60, 100);
+        TEST_ASSERT(voice != NULL);
+        fluid_voice_gen_set(voice, GEN_SAMPLEMODE, 1);
+        fluid_synth_start_voice(synth, voice);
+    }
+    TEST_SUCCESS(fluid_synth_pitch_bend(synth, 1, 12288));
+    for(i = 0; i < 65; i++)
+        TEST_ASSERT((synth->voice[i]->gen[GEN_FINETUNE].mod != 0) == (i % 3 == 1));
+    /* A custom mapping callback may shrink the logical pool mid-iteration. */
+    probe.synth = synth;
+    probe.calls = 0;
+    fluid_mod_set_source1(&mod, FLUID_MOD_PITCHWHEEL, FLUID_MOD_CUSTOM);
+    fluid_mod_set_dest(&mod, GEN_PAN);
+    fluid_mod_set_custom_mapping(&mod, shrink_on_modulation, &probe);
+    for(i = 0; i < 2; i++)
+    {
+        fluid_mod_set_amount(&mod, i + 1);
+        fluid_voice_add_mod(synth->voice[1 + 3 * i], &mod, FLUID_VOICE_ADD);
+    }
+    TEST_SUCCESS(fluid_synth_pitch_bend(synth, 1, 9000));
+    TEST_ASSERT(probe.calls == 1); /* slot1 first; slot4 now outside polyphony */
+    synth->voice[1]->mod_count--;
+    synth->voice[4]->mod_count--;
+    TEST_SUCCESS(fluid_synth_set_polyphony(synth, 33));
+    check_channel_index(synth);
+    TEST_SUCCESS(fluid_synth_set_polyphony(synth, 65));
+    check_channel_index(synth);
+    TEST_SUCCESS(fluid_synth_system_reset(synth));
+    check_channel_index(synth); /* reset must not erase pending membership */
+    TEST_SUCCESS(fluid_synth_process(synth, 256, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+    check_channel_index(synth);
+    TEST_SUCCESS(fluid_synth_set_polyphony(synth, 1));
+    synth->voice[0]->gen[GEN_FINETUNE].mod = 1;
+    TEST_SUCCESS(fluid_synth_pitch_bend(synth, 255, 12288)); /* NO_CHANNEL fallback */
+    TEST_ASSERT(synth->voice[0]->gen[GEN_FINETUNE].mod == 0);
+    delete_fluid_synth(synth);
 }
 
 int main(void)
@@ -81,6 +173,7 @@ int main(void)
     }
 
     delete_fluid_synth(synth);
+    test_channel_index(settings, sample);
     delete_fluid_sample(sample);
     delete_fluid_settings(settings);
     return EXIT_SUCCESS;

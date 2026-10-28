@@ -83,6 +83,9 @@ struct _fluid_channel_t
 {
     fluid_synth_t *synth;                 /**< Parent synthesizer instance */
     int channum;                          /**< MIDI channel number */
+    uint32_t *voice_bits;                /**< Assigned slots, including unstarted/invalid-key voices */
+    int voice_bit_words;
+    int voice_index_count;
 
     /* Poly Mono variables see macro access description */
     int mode;								/**< Poly Mono mode */
@@ -146,6 +149,9 @@ struct _fluid_channel_t
 fluid_channel_t *new_fluid_channel(fluid_synth_t *synth, int num);
 void fluid_channel_init_ctrl(fluid_channel_t *chan, int is_all_ctrl_off);
 void delete_fluid_channel(fluid_channel_t *chan);
+int fluid_channel_reserve_voice_index(fluid_channel_t *chan, int polyphony);
+void fluid_channel_index_voice(fluid_channel_t *chan, int index, int present);
+int fluid_channel_next_voice(fluid_channel_t *chan, int first);
 void fluid_channel_reset(fluid_channel_t *chan);
 int fluid_channel_set_preset(fluid_channel_t *chan, fluid_preset_t *preset);
 void fluid_channel_set_sfont_bank_prog(fluid_channel_t *chan, int sfont,

@@ -55,11 +55,91 @@ new_fluid_channel(fluid_synth_t *synth, int num)
     chan->channum = num;
     chan->preset = NULL;
     chan->tuning = NULL;
+    chan->voice_bits = NULL;
+    chan->voice_bit_words = 0;
+    chan->voice_index_count = 0;
+    if(fluid_channel_reserve_voice_index(chan, synth->polyphony) != FLUID_OK)
+    {
+        FLUID_FREE(chan);
+        return NULL;
+    }
 
     fluid_channel_init(chan);
     fluid_channel_init_ctrl(chan, 0);
 
     return chan;
+}
+
+/* Capacity only grows, just like the synth's voice objects. A failed realloc
+ * leaves the previous index usable; partial growth of other channels is safe. */
+int fluid_channel_reserve_voice_index(fluid_channel_t *chan, int polyphony)
+{
+    int words = polyphony / 32 + (polyphony % 32 != 0);
+    uint32_t *bits;
+    if(words <= chan->voice_bit_words)
+    {
+        return FLUID_OK;
+    }
+    bits = FLUID_REALLOC(chan->voice_bits, words * sizeof(*bits));
+    if(bits == NULL)
+    {
+        return FLUID_FAILED;
+    }
+    FLUID_MEMSET(bits + chan->voice_bit_words, 0,
+                 (words - chan->voice_bit_words) * sizeof(*bits));
+    chan->voice_bits = bits;
+    chan->voice_bit_words = words;
+    return FLUID_OK;
+}
+
+void fluid_channel_index_voice(fluid_channel_t *chan, int index, int present)
+{
+    uint32_t *word, mask;
+    if(index < 0)
+    {
+        return; /* Standalone voice, not a slot in this synth. */
+    }
+    word = &chan->voice_bits[index / 32];
+    mask = (uint32_t)1 << (index % 32);
+    if(((*word & mask) != 0) != present)
+    {
+        *word ^= mask;
+        chan->voice_index_count += present ? 1 : -1;
+    }
+}
+
+int fluid_channel_next_voice(fluid_channel_t *chan, int first)
+{
+    int limit = chan->synth->polyphony;
+    /* Raw channel 255 also matches CLEAN/OFF voices through NO_CHANNEL.
+     * Preserve that original full-scan behavior rather than reinterpret it. */
+    if(chan->channum == NO_CHANNEL)
+    {
+        return first < limit ? first : -1;
+    }
+    if(chan->voice_index_count == 0)
+    {
+        return -1;
+    }
+    while(first < limit)
+    {
+        uint32_t bits = chan->voice_bits[first / 32] >> (first % 32);
+        if(bits != 0)
+        {
+#if defined(__GNUC__) || defined(__clang__)
+            first += __builtin_ctz(bits);
+#else
+            while(!(bits & 1))
+            {
+                bits >>= 1;
+                first++;
+            }
+#endif
+            return first < limit ? first : -1;
+        }
+        first = (first / 32 + 1) * 32;
+    }
+    return -1;
 }
 
 static void
@@ -226,6 +306,7 @@ delete_fluid_channel(fluid_channel_t *chan)
 {
     fluid_return_if_fail(chan != NULL);
 
+    FLUID_FREE(chan->voice_bits);
     FLUID_FREE(chan);
 }
 

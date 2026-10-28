@@ -1116,6 +1116,7 @@ new_fluid_synth(fluid_settings_t *settings)
         {
             goto error_recovery;
         }
+        synth->voice[i]->voice_index = i;
     }
 
     /* sets a default basic channel */
@@ -3039,7 +3040,8 @@ fluid_synth_modulate_voices_LOCAL(fluid_synth_t *synth, int chan, int is_cc, int
     fluid_voice_t *voice;
     int i;
 
-    for(i = 0; i < synth->polyphony; i++)
+    for(i = fluid_channel_next_voice(synth->channel[chan], 0); i >= 0;
+            i = fluid_channel_next_voice(synth->channel[chan], i + 1))
     {
         voice = synth->voice[i];
 
@@ -3064,7 +3066,8 @@ fluid_synth_modulate_voices_all_LOCAL(fluid_synth_t *synth, int chan)
     fluid_voice_t *voice;
     int i;
 
-    for(i = 0; i < synth->polyphony; i++)
+    for(i = fluid_channel_next_voice(synth->channel[chan], 0); i >= 0;
+            i = fluid_channel_next_voice(synth->channel[chan], i + 1))
     {
         voice = synth->voice[i];
 
@@ -3971,12 +3974,18 @@ static int
 fluid_synth_update_polyphony_LOCAL(fluid_synth_t *synth, int new_polyphony)
 {
     fluid_voice_t *voice;
+    fluid_voice_t **new_voices;
     int i;
 
     if(new_polyphony > synth->nvoice)
     {
+        for(i = 0; i < synth->midi_channels; i++)
+        {
+            if(fluid_channel_reserve_voice_index(synth->channel[i], new_polyphony) != FLUID_OK)
+                return FLUID_FAILED;
+        }
         /* Create more voices */
-        fluid_voice_t **new_voices = FLUID_REALLOC(synth->voice,
+        new_voices = FLUID_REALLOC(synth->voice,
                                      sizeof(fluid_voice_t *) * new_polyphony);
 
         if(new_voices == NULL)
@@ -3995,6 +4004,7 @@ fluid_synth_update_polyphony_LOCAL(fluid_synth_t *synth, int new_polyphony)
                 return FLUID_FAILED;
             }
 
+            synth->voice[i]->voice_index = i;
             fluid_voice_set_custom_filter(synth->voice[i], synth->custom_filter_type, synth->custom_filter_flags);
         }
 

@@ -243,6 +243,7 @@ new_fluid_voice(fluid_rvoice_eventhandler_t *handler, fluid_real_t output_rate, 
     voice->vel = 0;
     voice->eventhandler = handler;
     voice->channel = NULL;
+    voice->voice_index = -1;
     voice->sample = NULL;
     voice->overflow_sample = NULL;
     voice->output_rate = output_rate;
@@ -313,12 +314,15 @@ fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
         fluid_voice_off(voice);
     }
 
+    if(voice->channel != NULL)
+        fluid_channel_index_voice(voice->channel, voice->voice_index, FALSE);
     voice->zone_range = inst_zone_range; /* Instrument zone range for legato */
     voice->id = id;
     voice->chan = fluid_channel_get_num(channel);
     voice->key = (unsigned char) key;
     voice->vel = (unsigned char) vel;
     voice->channel = channel;
+    fluid_channel_index_voice(channel, voice->voice_index, TRUE);
     voice->mod_count = 0;
     voice->start_time = start_time;
     voice->has_noteoff = 0;
@@ -1451,6 +1455,7 @@ fluid_voice_stop(fluid_voice_t *voice)
 {
     fluid_profile(FLUID_PROF_VOICE_RELEASE, voice->ref, 0, 0);
 
+    fluid_channel_index_voice(voice->channel, voice->voice_index, FALSE);
     voice->chan = NO_CHANNEL;
 
     /* Decrement the reference count of the sample, to indicate
