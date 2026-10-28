@@ -53,7 +53,7 @@ static int fluid_player_reset(fluid_player_t *player);
 static int fluid_player_load(fluid_player_t *player, fluid_playlist_item *item);
 static void fluid_player_advancefile(fluid_player_t *player);
 static void fluid_player_playlist_load(fluid_player_t *player, unsigned int msec);
-static void fluid_player_update_tempo(fluid_player_t *player);
+static void fluid_player_update_tempo(fluid_player_t *player, int tick);
 
 static fluid_midi_file *new_fluid_midi_file(const char *buffer, size_t length);
 static void delete_fluid_midi_file(fluid_midi_file *mf);
@@ -1638,7 +1638,14 @@ fluid_track_send_events(fluid_track_t *track,
         {
             /* memorize the tempo change value coming from the MIDI file */
             fluid_atomic_int_set(&player->miditempo, event->param1);
-            fluid_player_update_tempo(player);
+            if(fluid_atomic_int_get(&player->sync_mode))
+            {
+                fluid_player_update_tempo(player, seeking ? -1 : (int)track->ticks);
+                if(!seeking)
+                {
+                    ticks = player->cur_ticks;
+                }
+            }
         }
 
         fluid_track_next_event(track);
@@ -1722,6 +1729,8 @@ new_fluid_player(fluid_synth_t *synth)
     player->deltatime = 4.0;
     player->cur_msec = 0;
     player->cur_ticks = 0;
+    player->start_msec = 0;
+    player->start_ticks = 0;
     player->end_msec = -1;
     player->end_pedals_disabled = 0;
     player->last_callback_ticks = -1;
@@ -2031,7 +2040,7 @@ fluid_player_load(fluid_player_t *player, fluid_playlist_item *item)
     }
 
     player->division = fluid_midi_file_get_division(midifile);
-    fluid_player_update_tempo(player);  // Update deltatime
+    fluid_player_update_tempo(player, -1);  // Update deltatime
     /*FLUID_LOG(FLUID_DBG, "quarter note division=%d\n", player->division); */
 
     if(fluid_midi_file_load_tracks(midifile, player) != FLUID_OK)
@@ -2190,7 +2199,7 @@ fluid_player_callback(void *data, unsigned int msec)
         deltatime = fluid_atomic_float_get(&player->deltatime);
         player->cur_ticks = (player->start_ticks
                              + (int)((double)(player->cur_msec - player->start_msec)
-                                     / deltatime + 0.5)); /* 0.5 to average overall error when casting */
+                                     / deltatime));
 
         seek_ticks = fluid_atomic_int_get(&player->seek_ticks);
         if(seek_ticks >= 0)
@@ -2422,8 +2431,9 @@ int fluid_player_set_loop(fluid_player_t *player, int loop)
 /**
  * update the MIDI player internal deltatime dependent of actual tempo.
  * @param player MIDI player instance
+ * @param tick File tempo position, or -1 to preserve the current tick position
  */
-static void fluid_player_update_tempo(fluid_player_t *player)
+static void fluid_player_update_tempo(fluid_player_t *player, int tick)
 {
     int tempo; /* tempo in micro seconds by quarter note */
     float deltatime;
@@ -2450,10 +2460,25 @@ static void fluid_player_update_tempo(fluid_player_t *player)
         deltatime = (float)tempo / (float)player->division / (float)1000.0;
     }
 
-    fluid_atomic_float_set(&player->deltatime, deltatime);
+    if(tick >= 0)
+    {
+        /* File tempo changes take effect at their musical position, not at
+         * the rounded time at which the timer happens to deliver them. */
+        player->start_msec += (tick - player->start_ticks)
+                             * (double)fluid_atomic_float_get(&player->deltatime);
+        player->start_ticks = tick;
+    }
+    else
+    {
+        /* An API tempo change preserves the current fractional tick. */
+        player->start_msec = player->cur_msec
+            - (player->cur_msec - player->start_msec) * deltatime
+              / fluid_atomic_float_get(&player->deltatime);
+    }
 
-    player->start_msec = player->cur_msec;
-    player->start_ticks = player->cur_ticks;
+    fluid_atomic_float_set(&player->deltatime, deltatime);
+    player->cur_ticks = player->start_ticks
+        + (int)((player->cur_msec - player->start_msec) / deltatime);
 
     FLUID_LOG(FLUID_DBG,
               "tempo=%d, tick time=%f msec, cur time=%d msec, cur tick=%d",
@@ -2545,7 +2570,7 @@ int fluid_player_set_tempo(fluid_player_t *player, int tempo_type, double tempo)
     }
 
     /* update deltatime depending of current tempo */
-    fluid_player_update_tempo(player);
+    fluid_player_update_tempo(player, -1);
 
     return FLUID_OK;
 }
@@ -2562,7 +2587,7 @@ int fluid_player_set_midi_tempo(fluid_player_t *player, int tempo)
 {
     player->miditempo = tempo;
 
-    fluid_player_update_tempo(player);
+    fluid_player_update_tempo(player, -1);
     return FLUID_OK;
 }
 

@@ -303,11 +303,11 @@ struct _fluid_player_t
     char use_system_timer;   /* if zero, use sample timers, otherwise use system clock timer */
     char reset_synth_between_songs; /* 1 if system reset should be sent to the synth between songs. */
     fluid_atomic_int_t seek_ticks; /* new position in tempo ticks (midi ticks) for seeking */
-    int start_ticks;          /* the number of tempo ticks passed at the last tempo change */
+    int start_ticks;          /* the tick position of the clock anchor */
     int cur_ticks;            /* the number of tempo ticks passed */
     int last_callback_ticks;  /* the last tick number that was passed to player->tick_callback */
     int begin_msec;           /* the time (msec) of the beginning of the file */
-    int start_msec;           /* the start time of the last tempo change */
+    double start_msec;        /* the fractional time (msec) of the clock anchor */
     unsigned int cur_msec;    /* the current time */
     int end_msec;             /* when >=0, playback is extended until this time (for, e.g., reverb) */
     char end_pedals_disabled; /* 1 once the pedals have been released after the last midi event, 0 otherwise */
