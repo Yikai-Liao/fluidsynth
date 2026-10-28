@@ -5500,7 +5500,13 @@ fluid_synth_kill_by_exclusive_class_LOCAL(fluid_synth_t *synth,
     /* Kill all notes on the same channel with the same exclusive class */
     for(i = 0; i < synth->polyphony; i++)
     {
-        fluid_voice_t *existing_voice = synth->voice[i];
+        fluid_voice_t *existing_voice;
+        if(new_voice->chan != NO_CHANNEL &&
+           (i = fluid_channel_next_voice(new_voice->channel, i)) < 0)
+        {
+            break;
+        }
+        existing_voice = synth->voice[i];
 
         /* If voice is playing, on the same channel, has same exclusive
          * class and is not part of the same noteon event (voice group), then kill it */

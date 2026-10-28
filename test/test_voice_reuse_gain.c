@@ -120,6 +120,49 @@ static void test_channel_index(fluid_settings_t *settings, fluid_sample_t *sampl
     delete_fluid_synth(synth);
 }
 
+static void test_exclusive_channels(fluid_settings_t *settings, fluid_sample_t *sample)
+{
+    fluid_synth_t *synth;
+    fluid_voice_t *voices[5], *voice, *sentinel;
+    int i;
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.polyphony", 16));
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.midi-channels", 256));
+    synth = new_fluid_synth(settings);
+    TEST_ASSERT(synth != NULL);
+    for(i = 0; i < 5; i++)
+    {
+        voices[i] = fluid_synth_alloc_voice(synth, sample, i == 1, 60, 100);
+        TEST_ASSERT(voices[i] != NULL);
+        voices[i]->id = i == 3 ? 2 : 1;
+        fluid_synth_start_voice(synth, voices[i]); /* start before assigning class */
+        fluid_voice_gen_set(voices[i], GEN_EXCLUSIVECLASS, i == 2 ? 7.5f : 7);
+    }
+    fluid_voice_gen_set(voices[4], GEN_EXCLUSIVECLASS, 0);
+    voices[4]->gen[GEN_EXCLUSIVECLASS].mod = 7; /* effective class, not just val */
+    fluid_voice_noteoff(voices[4]); /* released but still playing must be visited */
+    voice = fluid_synth_alloc_voice(synth, sample, 0, 61, 100);
+    TEST_ASSERT(voice != NULL);
+    voice->id = 2;
+    fluid_voice_gen_set(voice, GEN_EXCLUSIVECLASS, 7.5f); /* new class truncates to 7 */
+    fluid_synth_start_voice(synth, voice);
+    for(i = 0; i < 5; i++)
+        TEST_ASSERT((voices[i]->gen[GEN_VOLENVRELEASE].val == -2000) == (i == 0 || i == 4));
+    TEST_ASSERT(voices[4]->gen[GEN_EXCLUSIVECLASS].mod == 7);
+
+    sentinel = fluid_synth_alloc_voice(synth, sample, 255, 62, 100);
+    TEST_ASSERT(sentinel != NULL);
+    sentinel->id = 3;
+    fluid_synth_start_voice(synth, sentinel);
+    fluid_voice_gen_set(sentinel, GEN_EXCLUSIVECLASS, 9);
+    voice = fluid_synth_alloc_voice(synth, sample, 255, 63, 100);
+    TEST_ASSERT(voice != NULL);
+    voice->id = 4;
+    fluid_voice_gen_set(voice, GEN_EXCLUSIVECLASS, 9);
+    fluid_synth_start_voice(synth, voice);
+    TEST_ASSERT(sentinel->gen[GEN_EXCLUSIVECLASS].val == 0); /* raw255 fallback */
+    delete_fluid_synth(synth);
+}
+
 int main(void)
 {
     fluid_settings_t *settings = new_fluid_settings();
@@ -174,6 +217,7 @@ int main(void)
 
     delete_fluid_synth(synth);
     test_channel_index(settings, sample);
+    test_exclusive_channels(settings, sample);
     delete_fluid_sample(sample);
     delete_fluid_settings(settings);
     return EXIT_SUCCESS;
