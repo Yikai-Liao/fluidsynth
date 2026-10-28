@@ -153,6 +153,7 @@ struct _fluid_synth_t
     float gain;                        /**< master gain */
     fluid_channel_t **channel;         /**< the channels */
     int nvoice;                        /**< the length of the synthesis process array (max polyphony allowed) */
+    int free_voice_hint;               /**< Lower bound of the first available voice */
     fluid_voice_t **voice;             /**< the synthesis voices */
     int active_voice_count;            /**< count of active voices */
     unsigned int noteid;               /**< the id is incremented for every new note. it's used for noteoff's  */

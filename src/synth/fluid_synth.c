@@ -4002,6 +4002,10 @@ fluid_synth_update_polyphony_LOCAL(fluid_synth_t *synth, int new_polyphony)
     }
 
     synth->polyphony = new_polyphony;
+    if(synth->free_voice_hint > new_polyphony)
+    {
+        synth->free_voice_hint = new_polyphony;
+    }
 
     /* turn off any voices above the new limit */
     for(i = synth->polyphony; i < synth->nvoice; i++)
@@ -5105,6 +5109,10 @@ fluid_synth_check_finished_voices(fluid_synth_t *synth)
             {
                 fluid_voice_unlock_rvoice(synth->voice[j]);
                 fluid_voice_stop(synth->voice[j]);
+                if(synth->free_voice_hint > j)
+                {
+                    synth->free_voice_hint = j;
+                }
                 break;
             }
             else if(synth->voice[j]->overflow_rvoice == fv)
@@ -5313,6 +5321,18 @@ fluid_synth_free_voice_by_kill_LOCAL(fluid_synth_t *synth)
     fluid_voice_t *voice;
     int best_voice_index = -1;
     unsigned int ticks = fluid_synth_get_ticks(synth);
+
+    /* Keep the lowest free slot, including voices allocated but not started.
+     * Score overflow victims only when the pool really is full. */
+    for(i = synth->free_voice_hint; i < synth->polyphony; i++)
+    {
+        if(_AVAILABLE(synth->voice[i]))
+        {
+            synth->free_voice_hint = i;
+            return synth->voice[i];
+        }
+    }
+    synth->free_voice_hint = synth->polyphony;
 
     for(i = 0; i < synth->polyphony; i++)
     {
