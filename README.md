@@ -504,3 +504,30 @@ N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音
 - 四个版本在相同窗口 PCM 逐bit一致且有限。1,024帧PCM SHA256为 `8c3996e7b022be82557d8d6b3160058c7a581ec46c38cf790b765dbfb357ece6`；2,304帧为 `9b2ca8ff3f791dd58686eafe5cbb36df42656b7910566bb9d75ec65fc0d2c512`。事件/起音/最终声部计数一致；NoteOn失败、write失败、队列满警告为0。各版本均有相同的7,677/15,279次 NoteOff失败返回，不能包装成所有事件都成功。
 - 诊断源码/计数结果与本地原始日志继续保留；公开分支只包含项目源码和回归测试，不上传第三方 MIDI、SoundFont、PCM、二进制或内部笔记。上述表格是整理后的证据摘要，不用诊断库替代实际分支源码。
 - 发布后已确认三个 SHA 各触发9项 push workflow；本节写入时仍有排队/执行中的 CI，不能视为远端全绿。此次目标是保留独立 dev 快照与证据；后续迭代沿用正常提交，不强推覆盖历史。
+
+## 通道索引与 exclusive 扫描：独立开发分支及依赖（2026-10-28）
+
+用户要求继续分别保存并更新待办；本次只保存以下两个主题，没有将已有120行批处理、空槽游标、哨兵修复、W4 或 atomic 混入。
+
+| 分支 | 固定提交 / 父提交 | 增量范围 |
+|---|---|---|
+| [perf/dev-channel-voice-index](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-channel-voice-index) | [20bbca67](https://github.com/Yikai-Liao/fluidsynth/commit/20bbca67893c20d5b48e157280f8764fc6d2b3e0) / pristine `f784f7833acbd07181ea3d3bd6b0d16253b883f4` | 5个生产文件 +106/−3；现有 reuse_gain 测试 +93 |
+| [perf/dev-exclusive-channel-scan](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-exclusive-channel-scan) | [24530a25](https://github.com/Yikai-Liao/fluidsynth/commit/24530a2589622635f28cab26566db7a3cf9fec2f) / 上述 `20bbca67` | **依赖通道索引**；自身仅 fluid_synth.c +7/−1、现有 reuse_gain 测试 +44 |
+
+exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把它说成只改7行且独立于通道索引。两个 dev 分支分别保留，不强推、不创建 PR；继续迭代时保留上述固定提交。
+
+### 作用与兼容边界
+
+- 通道索引用每通道 bitset 标记**已分配到该通道的槽位**，包括未 start 和无效键 voice，而非仅活跃发声列表。Pitch bend/CC 调制和全部调制更新仍按原槽位升序处理；原始通道255与 `NO_CHANNEL` 重合的行为保留完整扫描回退。回调中缩小 polyphony 时重新检查逻辑边界。
+- 位图随 voice 初始化/换通道和 stop 维护；容量增长失败保留原索引，已分配槽位扩容与缩容都在测试内。索引增加每通道位图内存，不把“只遍历该通道”说成没有内存成本，也不承诺所有负载都加速。
+- exclusive 优化仅借用此索引缩小候选集合，保留原 exclusiveClass 比较、同 note-on 分组排除、原始顺序和 raw255 回退。它不修复已有跨 preset exclusiveClass 语义问题，不顺带改变音符或调制行为。
+
+### 实际交付源码的验证
+
+- 从 pristine f784 重新移植：生产新增/删除行逐行对照已审查的增量完全一致，只去掉原实验堆叠版本的上下文；没有复制完整堆叠测试文件。通道测试自行设置 sample loop，exclusive 测试显式设置256通道，不依赖此前空槽/批处理测试的隐含初始化。
+- **通道索引独立树：Release 44/44、ASan＋UBSan 44/44；exclusive-on-index 树：Release 44/44、ASan＋UBSan 44/44。** LSan 关闭；Linux GCC、double、OpenMP启用，无 fast-math；sanitizer 为 Debug、`-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer`。这次是实际发布源码的独立构建结果，不借用早先堆叠版本45/45。
+- 定向检查：候选顺序/成员与原 raw-channel 数组扫描一致；未 start/无效键调制、CC121、稀疏通道跨位图word、带成员扩容、回调中缩容、恢复容量、reset及完成回收、raw255。exclusive 检查不同通道不受影响、同note-on分组排除、effective class（含mod）、分数class原比较语义、released但仍playing声部和raw255。
+- 两树 `git diff --check` 干净；独立复核源码与测试通过。发布后回读远端唯一父提交、全部修改文件 blob 和树差异，确认每树只涉及预期5个生产文件及1个现有测试文件。
+- 移植后完整“生产＋测试”补丁 SHA256：通道索引 `9efcf2c55c89af74451212081120d4251ce23dc232dbf1c875d064eb584df160`；exclusive-on-index 相对 pristine 的完整补丁 `24a154bb6ada37e6cbcf5d7c8618227f43187cb8303f5581f75177b22ef91fa0`。实际源码和回归用例以以上固定远端提交为准。
+- **性能边界：** 此次独立移植未重新测量端到端性能，不将实验堆叠版本的加速数字归给这两个独立提交；也不把测试通过当作所有曲目逐bit PCM证明。后续 benchmark 必须明确是否叠加其他优化。
+- 两个新SHA各已触发9项 push workflow，记录时排队/执行中。前三分支已经发现 Windows mingw32 在未改动的 `fluid_sffile.c:2631` 触发既有 `SF3 sample conversion requires float-precision evaluation` 编译guard；各自其他11个Windows构建job成功。最低空槽分支另有 macOS26 MacPorts 依赖安装报 `Port libsndfile not found`，尚未进入项目构建/测试。不能把这些失败统称本轮优化回归或声称CI全绿；未为消除CI红灯混入修复，其他任务仍按实际状态核查。
