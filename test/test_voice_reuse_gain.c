@@ -1,5 +1,8 @@
 #include "test.h"
 #include "fluidsynth.h"
+#include "sfloader/fluid_sfont.h"
+#include "synth/fluid_chan.h"
+#include "synth/fluid_synth.h"
 
 /* Two blocks cover the gain ramp and its steady state. */
 enum { Frames = 128, SampleFrames = 256, Channels = 2 };
@@ -26,6 +29,36 @@ static void stop_voice(fluid_synth_t *synth)
     TEST_SUCCESS(fluid_synth_all_sounds_off(synth, 0));
     TEST_SUCCESS(fluid_synth_process(synth, Frames, 0, NULL, 0, NULL));
     TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
+static int empty_noteon(fluid_preset_t *preset, fluid_synth_t *synth,
+                        int chan, int key, int vel)
+{
+    return FLUID_OK;
+}
+
+static void test_legato_fromkey(fluid_synth_t *synth, fluid_sample_t *sample)
+{
+    fluid_channel_t *channel = synth->channel[0];
+    fluid_preset_t preset = {0}, *saved_preset = channel->preset;
+    fluid_voice_t **voices = synth->voice, *voice;
+    preset.noteon = empty_noteon;
+    channel->preset = &preset;
+    /* An invalid fromkey must not inspect any voice: char must not turn 255
+     * into -1, which the INVALID_NOTE comparison would treat as valid. */
+    synth->voice = NULL;
+    TEST_SUCCESS(fluid_synth_noteon_monopoly_legato(synth, 0, INVALID_NOTE, 61, 100));
+    synth->voice = voices;
+    TEST_ASSERT(synth->fromkey_portamento == INVALID_NOTE);
+
+    voice = start_voice(synth, sample, 0);
+    fluid_channel_set_cc(channel, PORTAMENTO_CTRL, 60);
+    TEST_SUCCESS(fluid_synth_noteon_monopoly_legato(synth, 0, INVALID_NOTE, 61, 100));
+    TEST_ASSERT(!fluid_voice_is_on(voice));
+    TEST_ASSERT(synth->fromkey_portamento == 60);
+    TEST_ASSERT(fluid_channel_get_cc(channel, PORTAMENTO_CTRL) == INVALID_NOTE);
+    channel->preset = saved_preset;
+    stop_voice(synth);
 }
 
 int main(void)
@@ -80,6 +113,8 @@ int main(void)
         TEST_ASSERT(audible_samples > 0);
     }
 
+    stop_voice(synth);
+    test_legato_fromkey(synth, sample);
     delete_fluid_synth(synth);
     delete_fluid_sample(sample);
     delete_fluid_settings(settings);
