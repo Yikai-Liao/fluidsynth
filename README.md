@@ -464,3 +464,10 @@ N12 必须直接将 FluidSynth 增益设为0、继续渲染仍在保持的声音
 - **后果：** 普通 Poly、没有有效 legato 起始键时，本应跳过的 [legato 声部搜索](https://github.com/FluidSynth/fluidsynth/blob/f784f7833acbd07181ea3d3bd6b0d16253b883f4/src/synth/fluid_synth_monopoly.c#L658-L670) 仍遍历全部 `synth->polyphony` 个槽位；无符号 voice key 不可能匹配 −1。这是额外的 O(polyphony) 扫描；与实际需要的 Mono/CC68/CC84 声部复用不同，也不把普通无符号 char 目标算作同样受影响。
 - **最小修复方向：** 将这个内部 helper 的返回类型改为 `unsigned char` 或 `int`，避免 255 被截成负值；预计生产改动一行。保留有效键 0–127，以及 helper 的 CC84 消费、portamento 状态更新等副作用，不直接绕过整个 helper，不夹带声部索引重构。
 - **安排与证据边界：** 按用户要求记入待办，作为独立小型性能修复 PR 候选；不依赖 Black MIDI 优化，也不并入已有 IIR 工作。当前记录确认的是根因与多余扫描，单独一行修复的配对性能测量和回归结果仍待完成，暂不填写加速倍数。提交前需覆盖 signed/unsigned-char、无效哨兵与有效键边界、普通 Poly 以及 Mono/legato/CC84 正常行为，并核对 PCM 与届时上游。本次仅更新待办文档，没有发布引擎修复或创建 PR。
+
+### 同项验证进展（2026-10-28，补充上述待验证状态）
+
+- **本地最小候选已实现：** `fluid_synth_get_fromkey_portamento_legato()` 的返回类型由 `char` 改为 `int`；独立于批处理原型的生产 diff 确认仅这一行，无公共 API 或对象布局变化。生产补丁 SHA256：`38a4e17f7f20b6fb7ff8e2f86cc3acdb18cb6b7846e539b25b1a0b6570a048ba`。
+- **实际通过的检查：** 单独一行修复 Release 44/44；120 行批处理原型叠加此修复的 Release 44/44、ASan＋UBSan 44/44（LSan 关闭）。后两项是组合版本验证，不冒称单独修复的 sanitizer 结果，也不代表全平台或 unsigned-char 配置已经覆盖。
+- **定向回归：** 在现有 `test_voice_reuse_gain.c` 增加35行，验证无效起始键255不会访问 voice pool；有效 PTC=60 仍释放相应 voice、设置 `fromkey_portamento=60` 并消费 CC84。负向对照将 voice pool 故意设为 NULL 来检查“不应访问”：旧 char 实现退出 −11（SIGSEGV），int 修复退出0。这个崩溃是测试夹具刻意捕获多余访问，不是普通播放会崩溃的证据。含测试补丁 SHA256：`80d679b7b22e18d2e51e89fe80be8e75794213718e2ff20852b79a2ccd9959e7`。
+- **仍待补足：** 单独修复相对未修改上游的配对性能、PCM 与更全面的模式/键边界验证；不把批处理叠加修复的单次诊断计时写成独立修复或通用性能收益。上述全套测试通过不替代这些专项验证。候选仍仅本地保留，本次只补充 `todo` 文档，未推送引擎代码或创建 PR。
