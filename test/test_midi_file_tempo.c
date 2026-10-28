@@ -13,7 +13,7 @@ static int timing_callback(void *data, fluid_midi_event_t *event)
     struct timing_result *result = data;
     if(fluid_midi_event_get_type(event) == NOTE_ON)
     {
-        TEST_ASSERT(result->count < 2);
+        TEST_ASSERT(result->count < (int)FLUID_N_ELEMENTS(result->notes));
         result->notes[result->count++] = result->now;
     }
     return FLUID_OK;
@@ -26,6 +26,7 @@ static void test_timing(fluid_synth_t *synth, int ppq, int changing,
         'M','T','h','d', 0,0,0,6, 0,0, 0,1, 0,0,
         'M','T','r','k', 0,0,0,0
     };
+    static const unsigned char ending[] = {3, NOTE_ON, 60, 100, 1, 0xFF, MIDI_EOT, 0};
     int size = 22, i, tempo;
     double duration = 0;
     struct timing_result result = {0, {0, 0}, 0};
@@ -38,21 +39,15 @@ static void test_timing(fluid_synth_t *synth, int ppq, int changing,
         tempo = changing && i % 2 ? 1000000 : 500000;
         midi[size++] = i ? 3 : 0;
         midi[size++] = 0xFF;
-        midi[size++] = 0x51;
+        midi[size++] = MIDI_SET_TEMPO;
         midi[size++] = 3;
         midi[size++] = tempo >> 16;
         midi[size++] = (tempo >> 8) & 255;
         midi[size++] = tempo & 255;
         duration += 3.0 * (external ? 750000 : tempo) / ppq / 1000 / multiplier;
     }
-    midi[size++] = 3;
-    midi[size++] = 0x90;
-    midi[size++] = 60;
-    midi[size++] = 100;
-    midi[size++] = 1;
-    midi[size++] = 0xFF;
-    midi[size++] = 0x2F;
-    midi[size++] = 0;
+    FLUID_MEMCPY(midi + size, ending, sizeof(ending));
+    size += sizeof(ending);
     midi[20] = (size - 22) >> 8;
     midi[21] = (size - 22) & 255;
     TEST_SUCCESS(fluid_player_add_mem(player, midi, size));
@@ -78,7 +73,7 @@ static void test_timing(fluid_synth_t *synth, int ppq, int changing,
         {
             TEST_SUCCESS(fluid_player_seek(player, 0));
         }
-        TEST_SUCCESS(fluid_synth_process(synth, 64, 0, NULL, 0, NULL));
+        TEST_SUCCESS(fluid_synth_process(synth, FLUID_BUFSIZE, 0, NULL, 0, NULL));
         if(seek == 3 && (result.now == 96 || result.now == 192))
         {
             double before = player->start_ticks
@@ -138,7 +133,7 @@ int main(void)
         TEST_ASSERT(player != NULL);
         TEST_SUCCESS(fluid_player_add_mem(player, midi, sizeof(midi)));
         TEST_SUCCESS(fluid_player_play(player));
-        TEST_SUCCESS(fluid_synth_process(synth, 64, 0, NULL, 0, NULL));
+        TEST_SUCCESS(fluid_synth_process(synth, FLUID_BUFSIZE, 0, NULL, 0, NULL));
         TEST_ASSERT(player->ntracks == valid);
         delete_fluid_player(player);
 

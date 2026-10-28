@@ -2198,7 +2198,7 @@ fluid_player_callback(void *data, unsigned int msec)
         player->cur_msec = msec;
         deltatime = fluid_atomic_float_get(&player->deltatime);
         player->cur_ticks = (player->start_ticks
-                             + (int)((double)(player->cur_msec - player->start_msec)
+                             + (int)((player->cur_msec - player->start_msec)
                                      / deltatime));
 
         seek_ticks = fluid_atomic_int_get(&player->seek_ticks);
