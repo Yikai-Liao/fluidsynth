@@ -1116,6 +1116,7 @@ new_fluid_synth(fluid_settings_t *settings)
         {
             goto error_recovery;
         }
+        synth->voice[i]->slot_index = i;
     }
 
     /* sets a default basic channel */
@@ -3995,6 +3996,7 @@ fluid_synth_update_polyphony_LOCAL(fluid_synth_t *synth, int new_polyphony)
                 return FLUID_FAILED;
             }
 
+            synth->voice[i]->slot_index = i;
             fluid_voice_set_custom_filter(synth->voice[i], synth->custom_filter_type, synth->custom_filter_flags);
         }
 
@@ -5096,16 +5098,19 @@ fluid_synth_check_finished_voices(fluid_synth_t *synth)
 {
     int j;
     fluid_rvoice_t *fv;
+    fluid_voice_t *voice;
 
     while(NULL != (fv = fluid_rvoice_eventhandler_get_finished_voice(synth->eventhandler)))
     {
-        for(j = 0; j < synth->polyphony; j++)
+        /* Physical owners survive growth/shrink; preserve the logical limit. */
+        voice = fv->finished_cb_voice;
+        if(voice != NULL && (j = voice->slot_index) >= 0 &&
+           j < synth->polyphony && synth->voice[j] == voice)
         {
             if(synth->voice[j]->rvoice == fv)
             {
                 fluid_voice_unlock_rvoice(synth->voice[j]);
                 fluid_voice_stop(synth->voice[j]);
-                break;
             }
             else if(synth->voice[j]->overflow_rvoice == fv)
             {
@@ -5124,7 +5129,6 @@ fluid_synth_check_finished_voices(fluid_synth_t *synth)
                    voice->channel is NULL.
                 */
                 synth->active_voice_count--;
-                break;
             }
         }
     }

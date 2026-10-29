@@ -181,6 +181,7 @@ static void fluid_voice_initialize_rvoice(fluid_voice_t *voice, fluid_real_t out
     fluid_rvoice_param_t param[MAX_EVENT_PARAMS];
 
     FLUID_MEMSET(voice->rvoice, 0, sizeof(fluid_rvoice_t));
+    voice->rvoice->finished_cb_voice = voice; /* Immutable physical owner. */
 
     /* The 'sustain' and 'finished' segments of the volume / modulation
      * envelope are constant. They are never affected by any modulator
@@ -243,6 +244,7 @@ new_fluid_voice(fluid_rvoice_eventhandler_t *handler, fluid_real_t output_rate, 
     voice->vel = 0;
     voice->eventhandler = handler;
     voice->channel = NULL;
+    voice->slot_index = -1; /* Standalone voices do not belong to a synth slot. */
     voice->sample = NULL;
     voice->overflow_sample = NULL;
     voice->output_rate = output_rate;
