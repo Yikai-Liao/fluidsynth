@@ -5106,16 +5106,19 @@ fluid_synth_check_finished_voices(fluid_synth_t *synth)
 {
     int j;
     fluid_rvoice_t *fv;
+    fluid_voice_t *voice;
 
     while(NULL != (fv = fluid_rvoice_eventhandler_get_finished_voice(synth->eventhandler)))
     {
-        for(j = 0; j < synth->polyphony; j++)
+        /* Physical owners survive growth/shrink; preserve the logical limit. */
+        voice = fv->finished_cb_voice;
+        if(voice != NULL && (j = voice->voice_index) >= 0 &&
+           j < synth->polyphony && synth->voice[j] == voice)
         {
             if(synth->voice[j]->rvoice == fv)
             {
                 fluid_voice_unlock_rvoice(synth->voice[j]);
                 fluid_voice_stop(synth->voice[j]);
-                break;
             }
             else if(synth->voice[j]->overflow_rvoice == fv)
             {
@@ -5134,7 +5137,6 @@ fluid_synth_check_finished_voices(fluid_synth_t *synth)
                    voice->channel is NULL.
                 */
                 synth->active_voice_count--;
-                break;
             }
         }
     }

@@ -181,6 +181,7 @@ static void fluid_voice_initialize_rvoice(fluid_voice_t *voice, fluid_real_t out
     fluid_rvoice_param_t param[MAX_EVENT_PARAMS];
 
     FLUID_MEMSET(voice->rvoice, 0, sizeof(fluid_rvoice_t));
+    voice->rvoice->finished_cb_voice = voice; /* Immutable physical owner. */
 
     /* The 'sustain' and 'finished' segments of the volume / modulation
      * envelope are constant. They are never affected by any modulator

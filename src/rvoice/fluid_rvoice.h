@@ -167,7 +167,7 @@ struct _fluid_rvoice_t
     /* Finished callback, invoked from the render thread when the rvoice
      * finishes and is about to be removed from the mixer's active list. */
     fluid_voice_callback_t finished_cb;
-    void *finished_cb_voice; /* fluid_voice_t* passed as first arg */
+    void *finished_cb_voice; /* Immutable fluid_voice_t* owner and callback first arg. */
     void *finished_cb_data;  /* user data passed as second arg */
 };
 

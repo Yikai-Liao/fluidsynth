@@ -579,7 +579,6 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_reset)
 
     /* Clear finished callback */
     voice->finished_cb = NULL;
-    voice->finished_cb_voice = NULL;
     voice->finished_cb_data = NULL;
 
     /* Force setting of the phase at the first DSP loop run
@@ -956,7 +955,6 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_set_finished_callback)
     fluid_rvoice_t *voice = obj;
 
     voice->finished_cb = (fluid_voice_callback_t) param[0].ptr;
-    voice->finished_cb_voice = param[1].ptr;
     voice->finished_cb_data = param[2].ptr;
 }
 
