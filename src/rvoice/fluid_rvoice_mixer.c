@@ -374,17 +374,40 @@ fluid_mixer_buffer_process_finished_voices(fluid_mixer_buffers_t *buffers)
     {
         fluid_rvoice_t *v = buffers->finished_voices[i];
         int av = buffers->mixer->active_voices;
+        int index = v->mixer_index;
 
-        for(j = 0; j < av; j++)
+        if(index >= 0 && index < av && buffers->mixer->rvoices[index] == v)
         {
-            if(v == buffers->mixer->rvoices[j])
-            {
-                av--;
+            v->mixer_index = -1;
+            av--;
 
-                /* Pack the array */
-                if(j < av)
+            /* Keep the original swap-last order, including later callbacks. */
+            if(index < av)
+            {
+                fluid_rvoice_t *moved = buffers->mixer->rvoices[av];
+                buffers->mixer->rvoices[index] = moved;
+                moved->mixer_index = moved->mixer_index == av ? index : -2;
+            }
+        }
+        else if(index != -1)
+        {
+            /* Duplicate additions are supported by the old mixer. Preserve
+             * its exact scan, including skipping a duplicate swapped into j.
+             * Unexpected stale indices also stay on this conservative path. */
+            v->mixer_index = -2;
+            for(j = 0; j < av; j++)
+            {
+                if(v == buffers->mixer->rvoices[j])
                 {
-                    buffers->mixer->rvoices[j] = buffers->mixer->rvoices[av];
+                    av--;
+
+                    /* Pack the array */
+                    if(j < av)
+                    {
+                        fluid_rvoice_t *moved = buffers->mixer->rvoices[av];
+                        buffers->mixer->rvoices[j] = moved;
+                        moved->mixer_index = moved->mixer_index == av ? j : -2;
+                    }
                 }
             }
         }
@@ -581,6 +604,7 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_add_voice)
 
     if(mixer->active_voices < mixer->polyphony)
     {
+        voice->mixer_index = voice->mixer_index == -1 ? mixer->active_voices : -2;
         mixer->rvoices[mixer->active_voices++] = voice;
         return; // success
     }
@@ -598,6 +622,8 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_add_voice)
         if(mixer->rvoices[i]->envlfo.volenv.section == FLUID_VOICE_ENVFINISHED)
         {
             fluid_finish_rvoice(&mixer->buffers, mixer->rvoices[i]);
+            mixer->rvoices[i]->mixer_index = mixer->rvoices[i]->mixer_index == i ? -1 : -2;
+            voice->mixer_index = voice->mixer_index == -1 ? i : -2;
             mixer->rvoices[i] = voice;
             return; // success
         }

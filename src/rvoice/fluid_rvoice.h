@@ -169,6 +169,11 @@ struct _fluid_rvoice_t
     fluid_voice_callback_t finished_cb;
     void *finished_cb_voice; /* fluid_voice_t* passed as first arg */
     void *finished_cb_data;  /* user data passed as second arg */
+
+    /* Renderer-owned membership: -1 known unbound, -2 permanently use the
+     * legacy scan (duplicate membership), otherwise the unique mixer slot.
+     * Initialized only at construction, never by DSP reset or the producer. */
+    int mixer_index;
 };
 
 
