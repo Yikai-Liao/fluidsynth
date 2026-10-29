@@ -1,6 +1,6 @@
 # FluidSynth fork 待办
 
-更新：2026-10-28；上游核对基线 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。此 `todo` 分支是独立根历史，只放任务记录，与 FluidSynth 代码历史没有公共祖先。代码工作在自己的 `origin` fork；`upstream` 远程仅用于获取基线和核对合并状态。
+更新：2026-10-29；独立 Owner 分支基线 `f784f7833acbd07181ea3d3bd6b0d16253b883f4`，先前音频正确性排查仍按 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。此 `todo` 分支是独立根历史，只放任务记录，与 FluidSynth 代码历史没有公共祖先。代码工作在自己的 `origin` fork；`upstream` 远程仅用于获取基线和核对合并状态。
 
 ## 分支约定与当前阶段
 
@@ -24,6 +24,7 @@
 - **Android 等待用户有空 review**。当前瓶颈是用户自己的审核时间，不是要求继续补实现或催促上游；迁移与独立 probe 均先保留。
 - **Windows CI 精简以后再说**，先接受现有运行速度，不为局部 CI 加速增加审核负担。
 - **IIR W4 已单提交暂存，过几天再安排 PR**，减少同时进行的上游审核工作。已完成同一套内核支持 float/double 的精度与代表性 micro 验证，并调查真实 MIDI/SoundFont 渲染中短于 64 样本的调用比例；当前提交与结论见下文。没有把历史端到端数字当作当前实现收益。
+- **独立 Finished Voice Owner（2026-10-29）已发布 dev 快照：** [`perf/dev-finished-voice-owner-standalone`](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-finished-voice-owner-standalone)，仅保留每个 synth voice 的稳定 `slot_index` 与现有 rvoice owner 指针，不包含 Channel Voice Index 位图。尚未提交上游 PR；CI 与单独性能测试状态见文末。
 
 ### IIR W4：已保存的精简分支与后续验证
 
@@ -576,3 +577,13 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 - mixer 的 macOS 完整流程（包括两个 MacPorts universal Intel 测试）成功。
 - owner 仅 [Homebrew macOS 26 Intel job](https://github.com/Yikai-Liao/fluidsynth/actions/runs/40843852377/job/123346464208) 取消。此前 shared/static/readline 构建测试成功，但 framework/Xcode generator 步骤没有完成，**不能算作通过**。所有 MacPorts job 均成功；这不是已确认的 MacPorts 安装失败。完成后的 job 日志下载返回 `404 BlobNotFound`，取消原因尚未建立，不能擅自归因为本补丁或环境。
 - 本轮未发起取消、重跑或工作流修改。两个指定 SHA 的现有运行均已终态，监控结束；仍不声称全绿。后续若要求重跑或修复，应保留这里的原始结果并另记新运行。
+
+## 2026-10-29：Standalone Finished Voice Owner（去除通道位图依赖）
+
+- **新分支：** [`perf/dev-finished-voice-owner-standalone`](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-finished-voice-owner-standalone)，远端提交 [`3c2fe217`](https://github.com/Yikai-Liao/fluidsynth/commit/3c2fe217a70bd46ad0da65962e484d8322861c09)。唯一父提交是当前核对的上游 `f784f7833acbd07181ea3d3bd6b0d16253b883f4`；直接在 pristine 上游基础生成，领先 1 个提交，不含其它性能分支改动，未创建上游 PR。
+- **实际差异：** 5 个生产文件，合计 **+11/−6**（净 +5 行）；复用现有 `test/test_voice_reuse_gain.c` 增加 **185 行测试**。无 Channel Voice Index 位图、`fluid_channel_next_voice`、mixer 索引、空槽游标、同键事件批次或 IIR 代码。
+- **方法：** 在 `fluid_voice_t` 中独立新增稳定 `slot_index`，standalone voice 默认为 `-1`，synth 首次构造及动态扩容时按数组位置赋值；将每个物理 `rvoice` 原有的 `finished_cb_voice` 指针固定为不可变 owner（构造时设置，reset 与 callback setter 不再覆盖）。收到完成通知后，检查 owner 非空、slot 在当前逻辑 polyphony 内、`synth->voice[slot] == owner`，并确认当前 primary 或 overflow rvoice 身份，再执行原有解锁、引用计数和 active voice 更新。所有者查找从 O(P) 线性扫描变为 O(1)，不更改公共 callback 语义；私有 raw-rvoice setter 的冗余参数 1 不再能任意覆盖 owner。
+- **与旧分支的关系：** [`perf/dev-finished-voice-owner`](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-finished-voice-owner) 的同一语义经过提取并更名 `voice_index → slot_index`；原分支仍保留且依赖 [`perf/dev-channel-voice-index`](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-channel-voice-index)。新分支使用独立稳定整数初始化，**不依赖通道索引**；两者属于同一项优化的不同交付方案，不应重复提上游 PR。
+- **测试：** 从旧 owner 分支提取已有的 owner 生命周期、callback 替换/清除、主/overflow 交换、外来/空 owner、逻辑缩容/扩容、sample 引用和并发只读回归；去掉所有 channel bitset 专用测试，并增加 standalone voice 的 `slot_index == -1` 断言。原 owner 分支历史的 Release 与 ASan+UBSan **45/45** 属于旧源码树，**不能冒充本次独立分支的测试通过**。
+- **远端交付检查：** 已回读新分支 ref 与精确 SHA；对比上游显示 1 个新提交、仅上述 6 个文件；当前未获得本独立源码的完整 CI 通过结果。首次检查时 56 项 check-run 仍处于排队或运行中。此环境无法联网克隆构建，后续需要基于精确提交核对 CI（特别留意已有 SF3 x87 mingw32 编译守卫）、必要的本地 ASan/UBSan、实际 owner-only 配对性能与 PCM。此前实验堆叠的 11.29% wall time 差异来自“Owner vs Owner+Mixer Index”，**不是此次 Owner 单独提速**。
+- **队列安排：** 先作为独立 dev 快照等待 review；若通过测试与性能复核，再整理为单独上游 PR 分支。不要因为代码量小就自动投稿，也不要改变既有 PR 的 head 或修复其它模块。
