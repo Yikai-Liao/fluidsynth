@@ -531,3 +531,34 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 - 移植后完整“生产＋测试”补丁 SHA256：通道索引 `9efcf2c55c89af74451212081120d4251ce23dc232dbf1c875d064eb584df160`；exclusive-on-index 相对 pristine 的完整补丁 `24a154bb6ada37e6cbcf5d7c8618227f43187cb8303f5581f75177b22ef91fa0`。实际源码和回归用例以以上固定远端提交为准。
 - **性能边界：** 此次独立移植未重新测量端到端性能，不将实验堆叠版本的加速数字归给这两个独立提交；也不把测试通过当作所有曲目逐bit PCM证明。后续 benchmark 必须明确是否叠加其他优化。
 - 两个新SHA各已触发9项 push workflow，记录时排队/执行中。前三分支已经发现 Windows mingw32 在未改动的 `fluid_sffile.c:2631` 触发既有 `SF3 sample conversion requires float-precision evaluation` 编译guard；各自其他11个Windows构建job成功。最低空槽分支另有 macOS26 MacPorts 依赖安装报 `Port libsndfile not found`，尚未进入项目构建/测试。不能把这些失败统称本轮优化回归或声称CI全绿；未为消除CI红灯混入修复，其他任务仍按实际状态核查。
+
+
+## 2026-10-29：结束声部回收优化分别保存（dev 分支）
+
+本轮按用户要求分别创建独立开发分支，并在既有 `todo` 历史上追加记录；没有强推、没有重写旧分支，也没有创建上游 PR。发布前重新核对上游 `master` 为 [`f784f783`](https://github.com/FluidSynth/fluidsynth/commit/f784f7833acbd07181ea3d3bd6b0d16253b883f4)。以下独立移植与此前用于测量的实验堆叠是不同源码身份。
+
+### 独立源码与依赖
+
+| 分支 | 固定远端提交 / 基线 | 本主题增量与范围 |
+|---|---|---|
+| [perf/dev-finished-voice-owner](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-finished-voice-owner) | [4c1445c9](https://github.com/Yikai-Liao/fluidsynth/commit/4c1445c9c098448d9f76d4b1673524465befa2f7)；唯一父提交为已发布的通道索引 [20bbca67](https://github.com/Yikai-Liao/fluidsynth/commit/20bbca67893c20d5b48e157280f8764fc6d2b3e0) | 4 个生产文件 +7/−6；现有 reuse_gain 测试 +183。依赖 stable `voice_index`，不引入空槽游标、same-key batch、lazy release、SPSC 或 C++ mixer。 |
+| [perf/dev-mixer-finished-index](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-mixer-finished-index) | [b2045d6c](https://github.com/Yikai-Liao/fluidsynth/commit/b2045d6c36c5ee1508cef719c3a396f45a93fd66)；直接基于 pristine [f784f783](https://github.com/FluidSynth/fluidsynth/commit/f784f7833acbd07181ea3d3bd6b0d16253b883f4) | 原 C mixer，3 个生产文件 +39/−7；新 membership 模型测试 326 行及 1 行注册。没有其他性能分支依赖。 |
+
+- owner 分支不是“无依赖单提交”：相对 pristine f784 共 2 个提交，包含已发布的通道索引。累计差异为 7 个生产文件 +113/−9、现有 reuse_gain 测试 +276；[仅 owner 增量](https://github.com/Yikai-Liao/fluidsynth/compare/20bbca67893c20d5b48e157280f8764fc6d2b3e0...4c1445c9c098448d9f76d4b1673524465befa2f7)与[相对 pristine 的累计差异](https://github.com/Yikai-Liao/fluidsynth/compare/f784f7833acbd07181ea3d3bd6b0d16253b883f4...4c1445c9c098448d9f76d4b1673524465befa2f7)分别可查。未为规避依赖而放松逻辑缩容的成员边界。
+- mixer 分支只领先 pristine 一个提交；[完整独立差异](https://github.com/Yikai-Liao/fluidsynth/compare/f784f7833acbd07181ea3d3bd6b0d16253b883f4...b2045d6c36c5ee1508cef719c3a396f45a93fd66)。没有把已经验证的 owner+mixer 实验堆叠冒充最小独立补丁。
+- 发布后回读远端 ref、唯一父提交、tree 和作者。owner 远端 tree `3b6924448a441bf37634cdac67264f2b2f7524a6` 与本地已测 `83b0354b` 完全一致；mixer tree `56e4b551e56acfae8f7d9af20d2f1a758df03b05` 与本地已测 `c51dba6b` 完全一致。GitHub API 生成的提交身份与本地不同，但已验证源码树相同；作者均为 Yikai Liao，提交注明 Codex 辅助。
+- 本次发布后远端快照为 **50 个分支、38 个 dev 分支**；前文旧数量保留为当时记录。本次只新增上述两个分支并追加 todo，未重写既有历史。
+
+### 语义、空间与新移植验证
+
+- **owner：** 复用现有 `finished_cb_voice` 作为物理 rvoice 的不可变 owner，只在构造时写入；reset 和 callback setter 不再改写。每条完成记录先校验稳定索引、当前逻辑 polyphony 与数组身份，再执行原 primary/overflow 的解锁、sample 引用和计数处理，消除逐条全池查找。公共回调语义不变；私有 raw-rvoice callback 事件的冗余 slot 1 不再支持任意改写第一参数，不能当成新的公开兼容承诺。该增量不新增字段或结构体字节。
+- **mixer：** 私有 renderer-owned `mixer_index` 令唯一成员按原 swap-last 顺序 O(1) 移除；`-1` 为已知未绑定，重复/异常成员进入永久 `-2` 保守路径，保留旧扫描的 `j++` 行为、重复完成通知和满容量替换顺序。没有拒绝原本支持的重复 start，没有改变混音、DSP、声部上限或音质。
+- **独立 mixer 不是零空间增量：** 当前 LP64 布局探针中 double rvoice 为 1224→1232 字节，float 为 704→712，原字段偏移不变；每个物理 rvoice 增加 8 字节，一个逻辑 voice 的两份 rvoice 合计增加 16 字节。此前带 lazy-release 头部的实验堆叠可利用填充，这个结论不适用于此次 pristine 移植。
+- **实际发布源码的新验证：owner Release 45/45、ASan+UBSan 45/45；mixer Release 46/46、ASan+UBSan 46/46。** Linux GCC、double、离线固定依赖；SF3 功能未启用。Release 开 OpenMP；sanitizer 关闭 OpenMP 与 leak detection，错误即停止。两者公共头不变；owner 的 409 个动态导出与父逻辑重链接参考一致，mixer 的 409 导出与已接受构建一致。
+- owner 回归覆盖不可变 owner、callback 替换/清除、primary/overflow 换位、sample 引用、外来/空 owner、逻辑缩容/扩容与并行只读探针。mixer 模型覆盖唯一成员和末尾交换、活跃幸存者、重复成员旧扫描顺序、满容量 hole/duplicate 两种次序、pending 记录重加、重复回调、异常索引、resize、DSP reset、公共重复 start 及 256 轮确定性成员序列；删除 moved-index 更新和改变 duplicate `j++` 的两个负对照均被断言捕获。没有 TSAN 或全场景回调重入验证声明。
+
+### 性能证据与 CI 边界
+
+- 此前已验证的**实验堆叠**在固定 50,624-note 派生片段、8 核、polyphony 65,535 的 1.2 秒范围，用 4 对预先声明配对测量比较 owner `a65a729d/f66c` 与 owner+mixer `a758567e/df8c`：wall 中位数 2.98727→2.64992 秒，降低约 **11.29%**，4 对均同向；process CPU 19.43218→19.52933 秒（约 +0.50%，2/2 混合），**没有 CPU 降低结论**。包含 warmup 的 10 次 PCM 均一致；独立诊断 twin 的 .05/1.2 秒四项实际故障计数均为 0。
+- 这只是恢复片段的派生尾音，1.2 秒仍有 5,577 活跃声部，**并非整曲、完全排空或实时达标**。上述数字不自动转移到本次两个独立源码分支；独立移植尚未重新测量端到端性能，也不把本地测试通过等同于所有曲目的逐 bit PCM 证明。
+- 本次两个固定远端 SHA 各触发 9 项 push workflow。记录时 owner 仍排队/执行；mixer 的 Linux、FreeBSD、Alpine、OS/2、Solaris、文档已成功，iOS/macOS 仍执行。mixer Windows 仅 mingw32 cpp11 失败，其余 Windows 构建成功：实际日志在未修改的 `fluid_sffile.c:2631` 命中 pristine f784 已有的 `SF3 sample conversion requires float-precision evaluation` 编译 guard。未为消除红灯夹带其他修复，也没有声称 CI 全绿；继续按这两个精确 SHA 核查。
