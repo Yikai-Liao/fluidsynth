@@ -562,3 +562,17 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 - 此前已验证的**实验堆叠**在固定 50,624-note 派生片段、8 核、polyphony 65,535 的 1.2 秒范围，用 4 对预先声明配对测量比较 owner `a65a729d/f66c` 与 owner+mixer `a758567e/df8c`：wall 中位数 2.98727→2.64992 秒，降低约 **11.29%**，4 对均同向；process CPU 19.43218→19.52933 秒（约 +0.50%，2/2 混合），**没有 CPU 降低结论**。包含 warmup 的 10 次 PCM 均一致；独立诊断 twin 的 .05/1.2 秒四项实际故障计数均为 0。
 - 这只是恢复片段的派生尾音，1.2 秒仍有 5,577 活跃声部，**并非整曲、完全排空或实时达标**。上述数字不自动转移到本次两个独立源码分支；独立移植尚未重新测量端到端性能，也不把本地测试通过等同于所有曲目的逐 bit PCM 证明。
 - 本次两个固定远端 SHA 各触发 9 项 push workflow。记录时 owner 仍排队/执行；mixer 的 Linux、FreeBSD、Alpine、OS/2、Solaris、文档已成功，iOS/macOS 仍执行。mixer Windows 仅 mingw32 cpp11 失败，其余 Windows 构建成功：实际日志在未修改的 `fluid_sffile.c:2631` 命中 pristine f784 已有的 `SF3 sample conversion requires float-precision evaluation` 编译 guard。未为消除红灯夹带其他修复，也没有声称 CI 全绿；继续按这两个精确 SHA 核查。
+
+### 2026-10-29 09:20 UTC：上述两个固定提交的 CI 终态
+
+再次回读分支 ref，owner 仍为 `4c1445c9c098448d9f76d4b1673524465befa2f7`，mixer 仍为 `b2045d6c36c5ee1508cef719c3a396f45a93fd66`；以下只对应这两个 SHA，不是其他分支或本地构建的结果。
+
+| 分支 | 9 项 push workflow | 62 项 check-run |
+|---|---|---|
+| mixer index | **8 成功、1 失败** | 57 成功、4 跳过、1 失败 |
+| finished owner | **7 成功、1 失败、1 取消** | 56 成功、4 跳过、1 失败、1 取消 |
+
+- 两个 Windows 失败均已检查实际日志：mixer 的 [mingw32 cpp11 job](https://github.com/Yikai-Liao/fluidsynth/actions/runs/40842287532/job/123341297190) 和 owner 的 [mingw32 cpp11 job](https://github.com/Yikai-Liao/fluidsynth/actions/runs/40843852176/job/123346463120)，均在未修改的 `fluid_sffile.c:2631` 命中 pristine f784 已有的 SF3 float-precision 编译 guard；其余 Windows 构建通过。没有为此混入其他修复。
+- mixer 的 macOS 完整流程（包括两个 MacPorts universal Intel 测试）成功。
+- owner 仅 [Homebrew macOS 26 Intel job](https://github.com/Yikai-Liao/fluidsynth/actions/runs/40843852377/job/123346464208) 取消。此前 shared/static/readline 构建测试成功，但 framework/Xcode generator 步骤没有完成，**不能算作通过**。所有 MacPorts job 均成功；这不是已确认的 MacPorts 安装失败。完成后的 job 日志下载返回 `404 BlobNotFound`，取消原因尚未建立，不能擅自归因为本补丁或环境。
+- 本轮未发起取消、重跑或工作流修改。两个指定 SHA 的现有运行均已终态，监控结束；仍不声称全绿。后续若要求重跑或修复，应保留这里的原始结果并另记新运行。
