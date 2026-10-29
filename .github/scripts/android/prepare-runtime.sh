@@ -2,7 +2,7 @@
 # Install an SDK system image and extract its Bionic userspace for ARM test jobs.
 set -euo pipefail
 api=${ANDROID_API:?Set ANDROID_API}
-abi=${1:?Usage: android-prepare-runtime.sh <armeabi-v7a|arm64-v8a> <runtime-directory>}
+abi=${1:?Usage: prepare-runtime.sh <armeabi-v7a|arm64-v8a> <runtime-directory>}
 runtime=${2:?Specify a runtime directory}
 sdk=${ANDROID_HOME:?Set ANDROID_HOME to the Android SDK directory}
 case "$abi" in

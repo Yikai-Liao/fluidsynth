@@ -12,14 +12,11 @@ on:
       - '!.circleci/**'
       - '!.github/**'
       - '.github/workflows/android.yml'
-      - '.github/scripts/android-*.sh'
-      - 'test/android-test-launcher.sh'
-      - 'test/run-android-tests.sh'
-      - 'doc/android/vcpkg/**'
+      - '.github/scripts/android/**'
       - '!README.md'
   schedule:
-    # Retain Azure's weekly build without dependency caches.
-    - cron: '0 0 * * 1'
+    # Access default-branch caches within GitHub's default 7-day idle limit.
+    - cron: '17 3 * * 1,4'
 
 permissions:
   contents: read
@@ -33,22 +30,27 @@ defaults:
     shell: bash
 
 env:
-  VCPKG_VERSION: '2026.10.16'
   NDK_VERSION: '27.3.13750724'
   # Run compatibility tests at the minimum supported API level.
   ANDROID_API: '24'
 
 jobs:
-  build-test:
+  build:
     env:
       ABI: ${{ matrix.abi }}
-      ANDROID_BUILD_DIR: ${{ github.workspace }}/build/android
-    name: Build and test ${{ matrix.abi }}
+    name: Build ${{ matrix.abi }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     strategy:
-      matrix:
-        abi: [armeabi-v7a, arm64-v8a, x86, x86_64]
+      fail-fast: false
+      # Keep target and test-environment choices in one table for both jobs.
+      matrix: &android_targets
+        include:
+          - {abi: x86, test_runner: ubuntu-24.04, test_backend: emulator}
+          - {abi: x86_64, test_runner: ubuntu-24.04, test_backend: emulator}
+          # Hosted ARM runners use the host kernel with Android's Bionic userspace.
+          - {abi: armeabi-v7a, test_runner: ubuntu-24.04-arm, test_backend: chroot}
+          - {abi: arm64-v8a, test_runner: ubuntu-24.04-arm, test_backend: chroot}
     steps:
       - uses: actions/checkout@v7
       - name: Checkout build dependencies
@@ -60,41 +62,67 @@ jobs:
             "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
           fi
           echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           cmake --version
           cat "$ndk/source.properties"
-      - uses: actions/cache/restore@v5
-        id: dependencies
-        if: ${{ github.event_name != 'schedule' }}
+      - name: Build dependencies, FluidSynth, tests and SDK artifact
+        run: bash .github/scripts/android/build.sh "$ABI" build/android
+      - name: Cache the ARM Android userspace
+        if: matrix.test_backend == 'chroot'
+        id: runtime
+        uses: actions/cache@v5
         with:
-          path: build/android/dependencies
-          # Bump v3 when changing dependency features, triplets or installation policy.
-          key: android-deps-v3-${{ runner.os }}-${{ runner.arch }}-${{ matrix.abi }}-api${{ env.ANDROID_API }}-ndk${{ env.NDK_VERSION }}-vcpkg${{ env.VCPKG_VERSION }}
-      - name: Checkout vcpkg release
-        if: steps.dependencies.outputs.cache-hit != 'true'
-        uses: actions/checkout@v7
+          path: build/android/runtime
+          # Bump v3 when updating SDK system image revisions or extracted contents.
+          key: android-native-runtime-v3-api${{ env.ANDROID_API }}-${{ matrix.abi }}
+      - name: Install and extract the ARM Android userspace
+        if: matrix.test_backend == 'chroot' && steps.runtime.outputs.cache-hit != 'true'
+        run: bash .github/scripts/android/prepare-runtime.sh "$ABI" build/android/runtime
+      - name: Bundle tests and runtime
+        run: |
+          paths=(tests)
+          if [[ -d build/android/runtime ]]; then paths+=(runtime); fi
+          tar -C build/android -czf "$RUNNER_TEMP/android-tests.tar.gz" "${paths[@]}"
+      - uses: actions/upload-artifact@v7
         with:
-          repository: microsoft/vcpkg
-          ref: ${{ env.VCPKG_VERSION }}
-          path: build/android/vcpkg
-      - name: Build dependencies
-        env:
-          VCPKG_ROOT: ${{ github.workspace }}/build/android/vcpkg
-        if: steps.dependencies.outputs.cache-hit != 'true'
-        run: bash doc/android/build.sh build-dependencies
-      # Save before FluidSynth installs into the same prefix.
-      - uses: actions/cache/save@v5
-        if: ${{ github.event_name != 'schedule' && steps.dependencies.outputs.cache-hit != 'true' }}
+          name: android-tests-${{ matrix.abi }}
+          path: ${{ runner.temp }}/android-tests.tar.gz
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@v7
         with:
-          path: build/android/dependencies
-          key: ${{ steps.dependencies.outputs.cache-primary-key }}
-      - name: Build and install FluidSynth, test executables and asset loader
-        run: bash doc/android/build.sh build-and-install
-      - name: Verify and package shared libraries and headers
-        run: bash doc/android/build.sh package
+          name: fluidsynth-android${{ env.ANDROID_API }}-${{ matrix.abi }}
+          path: build/android/package
+          if-no-files-found: error
+          retention-days: 14
+
+  test:
+    # Consume each available bundle even if another ABI fails to build.
+    if: ${{ !cancelled() }}
+    needs: build
+    name: Test ${{ matrix.abi }} (${{ matrix.test_backend }})
+    runs-on: ${{ matrix.test_runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: *android_targets
+    env:
+      ABI: ${{ matrix.abi }}
+      TEST_BACKEND: ${{ matrix.test_backend }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-tests-${{ matrix.abi }}
+          path: ${{ runner.temp }}/android-tests
+      - name: Extract test bundle
+        run: tar -xzf "$RUNNER_TEMP/android-tests/android-tests.tar.gz" -C "$RUNNER_TEMP/android-tests"
+      - name: Locate the Android SDK for caching
+        if: matrix.test_backend == 'emulator'
+        run: echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
       - name: Cache the emulator and API 24 system image
         uses: actions/cache@v5
-        if: ${{ (matrix.abi == 'x86' || matrix.abi == 'x86_64') && github.event_name != 'schedule' }}
+        if: matrix.test_backend == 'emulator'
         with:
           path: |
             ${{ env.ANDROID_HOME }}/system-images/android-${{ env.ANDROID_API }}/default/${{ matrix.abi }}
@@ -102,7 +130,7 @@ jobs:
           # Bump v1 when updating the emulator or SDK system image revision.
           key: android-emulator-v1-${{ runner.os }}-${{ runner.arch }}-api${{ env.ANDROID_API }}-default-${{ matrix.abi }}
       - name: Install the emulator image and grant KVM access
-        if: matrix.abi == 'x86' || matrix.abi == 'x86_64'
+        if: matrix.test_backend == 'emulator'
         run: |
           test -e /dev/kvm
           sudo chmod a+rw /dev/kvm
@@ -117,79 +145,5 @@ jobs:
           fi
           cat "$ANDROID_HOME/emulator/source.properties"
           cat "$ANDROID_HOME/system-images/android-$ANDROID_API/default/$ABI/source.properties"
-      - name: Run native tests in the emulator
-        if: matrix.abi == 'x86' || matrix.abi == 'x86_64'
-        run: bash .github/scripts/android-run-emulator.sh build/android "$ABI"
-      - name: Cache the ARM Android userspace
-        if: ${{ (matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a') && github.event_name != 'schedule' }}
-        id: runtime
-        uses: actions/cache@v5
-        with:
-          path: build/android/runtime
-          # Bump v3 when updating SDK system image revisions or extracted contents.
-          key: android-native-runtime-v3-api${{ env.ANDROID_API }}-${{ matrix.abi }}
-      - name: Install and extract the ARM Android userspace
-        if: ${{ (matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a') && steps.runtime.outputs.cache-hit != 'true' }}
-        run: bash .github/scripts/android-prepare-runtime.sh "$ABI" build/android/runtime
-      - name: Bundle ARM tests and Android userspace
-        if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
-        run: tar -C build/android -czf "$RUNNER_TEMP/android-tests.tar.gz" tests runtime
-      - uses: actions/upload-artifact@v7
-        if: matrix.abi == 'armeabi-v7a' || matrix.abi == 'arm64-v8a'
-        with:
-          name: android-tests-${{ matrix.abi }}
-          path: ${{ runner.temp }}/android-tests.tar.gz
-          compression-level: 0
-          if-no-files-found: error
-          retention-days: 1
-      - uses: actions/upload-artifact@v7
-        with:
-          name: fluidsynth-android${{ env.ANDROID_API }}-${{ matrix.abi }}
-          path: build/android/package
-          if-no-files-found: error
-          retention-days: 14
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: android-logs-${{ matrix.abi }}
-          path: |
-            build/android/logs
-            build/android/tests/Testing
-            build/android/tests/android-tests.xml
-            build/android/build/**/CMakeFiles/CMakeConfigureLog.yaml
-            build/android/vcpkg/buildtrees/**/*.log
-          retention-days: 14
-
-  # Hosted ARM runners do not expose nested KVM. Execute Android/Bionic tests
-  # on their Linux kernel; Android framework services and device drivers remain
-  # outside this path's coverage. Keep x86 Android emulator tests above.
-  arm-tests:
-    env:
-      ABI: ${{ matrix.abi }}
-    name: Native Android/Bionic ${{ matrix.abi }}
-    needs: build-test
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 15
-    strategy:
-      matrix:
-        abi: [armeabi-v7a, arm64-v8a]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
-        with:
-          name: android-tests-${{ matrix.abi }}
-          path: ${{ runner.temp }}/android-tests
-      - name: Run native ARM Android binaries
-        run: |
-          bash .github/scripts/android-run-native-tests.sh "$ABI" \
-            "$RUNNER_TEMP/android-tests/android-tests.tar.gz" "$RUNNER_TEMP/native-tests"
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: android-native-logs-${{ matrix.abi }}
-          path: |
-            ${{ runner.temp }}/native-tests/logs
-            ${{ runner.temp }}/native-tests/tests/Testing
-            ${{ runner.temp }}/native-tests/tests/android-tests.xml
-            ${{ runner.temp }}/native-tests/runtime/provenance.txt
-          retention-days: 14
+      - name: Run Android tests
+        run: timeout 900 bash .github/scripts/android/test.sh "$TEST_BACKEND" "$ABI" "$RUNNER_TEMP/android-tests"
