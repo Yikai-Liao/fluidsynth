@@ -791,7 +791,7 @@ fluid_midi_router_handle_midi_event(void *data, fluid_midi_event_t *event)
          * (noteoff or pedal up).
          */
         if(event->type == NOTE_ON || (event->type == CONTROL_CHANGE
-                                      && par1 == SUSTAIN_SWITCH && par2 >= 64))
+                                      && (par1 == SUSTAIN_SWITCH || par1 == SOSTENUTO_SWITCH) && par2 >= 64))
         {
             /* Noteon or sustain pedal down event generated */
             if(rule->keys_cc[par1] == 0)
@@ -801,7 +801,7 @@ fluid_midi_router_handle_midi_event(void *data, fluid_midi_event_t *event)
             }
         }
         else if(event->type == NOTE_OFF || (event->type == CONTROL_CHANGE
-                                            && par1 == SUSTAIN_SWITCH && par2 < 64))
+                                            && (par1 == SUSTAIN_SWITCH || par1 == SOSTENUTO_SWITCH) && par2 < 64))
         {
             /* Noteoff or sustain pedal up event generated */
             if(rule->keys_cc[par1] > 0)
