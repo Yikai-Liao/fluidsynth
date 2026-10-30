@@ -647,6 +647,23 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 
 
 
+### 2026-10-30 14:21 UTC：六项初始修复提交的 CI 终态
+
+以下只对应上表六个精确提交，均已终态，计数单位是 workflow（不是 check-run）：
+
+| 固定提交 | workflow 结果 |
+|---|---|
+| 跨周期 `034bb381` | 8 成功、1 失败 |
+| router `e1554705` | 8 成功、1 失败 |
+| 缩容 `e18868ca` | 9/9 成功 |
+| Freeverb/FDN `e33ce9f6` | 9/9 成功 |
+| Lexverb `f61728df` | 9/9 成功 |
+| Mono CC123 `d0b0510e` | 9/9 成功 |
+
+跨周期与 router 各自唯一失败均在 MacPorts 安装依赖阶段报 `Port libsndfile not found`，早于项目编译；各自四个 Homebrew job 均成功。实际失败日志：[跨周期 MacPorts](https://github.com/Yikai-Liao/fluidsynth/actions/runs/41058222120/job/124071035734)、[router MacPorts](https://github.com/Yikai-Liao/fluidsynth/actions/runs/41058227010/job/124071051409)。这两项不是全 CI 通过，也没有据此确认生产代码回归。
+
+后面的 CC66 review 收尾已将跨周期与 router 分支推进到 `a492c976`、`575c0376`；上述 CI **不覆盖这两个新提交**。本次只记录已完成运行，没有重跑或修改工作流。
+
 ## 2026-10-30：CC66 专题 review 收尾
 
 用户接受按独立缺陷拆成多个 PR；本轮只调整并保存三个 dev 分支，没有创建上游 PR。各分支保留原开发历史，未 rebase 或 squash；以下是分别追加的收尾提交。
