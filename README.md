@@ -1,22 +1,23 @@
 # FluidSynth fork 待办
 
-更新：2026-10-29；独立 Owner 分支基线 `f784f7833acbd07181ea3d3bd6b0d16253b883f4`，先前音频正确性排查仍按 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。此 `todo` 分支是独立根历史，只放任务记录，与 FluidSynth 代码历史没有公共祖先。代码工作在自己的 `origin` fork；`upstream` 远程仅用于获取基线和核对合并状态。
+更新：2026-10-30；本次核对上游 `master` 为 `fc1c55f4627f0050c820d72784c5463e12620140`。独立 Owner 分支原基线仍为 `f784f7833acbd07181ea3d3bd6b0d16253b883f4`，先前音频正确性排查仍按 `18bcb76f48bd24a383bff19240dc39dd3a9d4651`。此 `todo` 分支是独立根历史，只放任务记录，与 FluidSynth 代码历史没有公共祖先。代码工作在自己的 `origin` fork；`upstream` 远程仅用于获取基线和核对合并状态。
 
 ## 分支约定与当前阶段
 
 - `fix/dev-xxx`、`perf/dev-xxx`、`ci/dev-xxx`、`refactor/dev-xxx`：未完成工作，完整保留 Git 提交历史，允许继续迭代。
 - 去掉 `dev-` 的对应分支：review 完成后基于当时的上游，整理为一个完整提交。可以先存入待办，等用户安排后再提 PR；开发分支不提前 squash。
-- 已有开放 PR 的 head 分支保留，避免影响 PR；目前共 2 个（#1879、#1884），见“已提上游的工作”。已合并 PR 的现存分支仅保留历史，不再计入待 review 工作。
+- 已有 PR 的 head 分支保留历史；当前用户在 FluidSynth 上游的 17 个 PR 均已关闭，其中 16 个已合并，#1878 关闭未合并；开放数为 0，见“已提上游的工作”。已合并 PR 的现存分支仅保留历史，不再计入待 review 工作。
 - `archive/previous-work`：集中保留旧分支的完整提交历史及原名称映射。原来的日期分支、重复版本和已停止实验分支从分支列表清理；所有原始提交仍可追溯。
-- 分支结构已整理完成。All Notes Off 已提 #1879，仍开放；踏板转交 #1880 和零 tempo #1881 已合并。其余 dev 分支的完成程度分别记录，不能因本次状态更新而视为已完成测试精简或 rebase。审计包按主题拆分；DLS 按整体重构系列 review。
+- 分支结构已整理完成。All Notes Off #1879、踏板转交 #1880、零 tempo #1881、SF3 x87 #1884 和哨兵 #1886 均已合并。其余 dev 分支的完成程度分别记录，不能因本次状态更新而视为已完成测试精简或 rebase。审计包按主题拆分；DLS 按整体重构系列 review。
 
-远端现有 **39 个分支：29 个 dev 分支、1 个暂存的非 dev 性能分支、2 个开放 PR 分支、4 个已合并 PR 的保留分支，以及 master / todo / archive/previous-work**。dev 分支中也保留了已合并主题的旧历史，因此分支数量不等于待修问题或待提 PR 数量。本次新增 `perf/iir-stable-block` 并更新 `todo`，其余代码/PR 分支保留。
+截至 2026-10-30 10:51 UTC，远端现有 **52 个分支：40 个 dev 分支、1 个暂存的非 dev 性能分支、7 个已合并 PR 的保留分支、1 个 evidence 分支，以及 master / todo / archive/previous-work**。dev 分支中也保留了已合并主题的旧历史，因此分支数量不等于待修问题或待提 PR 数量。本次新增独立 exclusive 候选分支，其余代码分支与原始历史保留。
 
 ## 当前取舍：减少上游审核压力
 
 2026-10-27 用户决定：边际问题先保留，今后再处理；不为凑三个问题或增加 PR 数量而提交。判断是否值得推进时，同时考虑普通使用下的发生条件、实际后果、收益证据与维护者审核成本。合法输入能触发、生产只改一行，都不足以单独构成优先提交的理由。
 
-- 先跟进现有开放 PR：#1879 Mono 清键、#1884 SF3 x87 构建兼容。当前没有安排新增边际修复 PR。
+- #1879 Mono 清键、#1884 SF3 x87 构建兼容及 #1886 哨兵已合并，移出待跟进队列。当前没有安排新增边际修复 PR。
+- **性能优化按普通 MIDI 端到端收益决定是否值得上游化（2026-10-30 用户决定）。** 位图、缓存等新增数据结构需要显著、可重复的普通曲目完整渲染收益，不能只用密集 MIDI 或局部扫描提速支撑。小改动仍单独评价；#1886 已合并，但其默认 polyphony 整体渲染尚无明确收益。当前扩展消融只在 fork 实验，未安排新增上游 PR。
 - 现有证据不足以列出三个“普通 MIDI、常用音色、默认播放下常见且严重”的剩余渲染缺陷。#1879 需 Mono 与清键事件；IIR 启动问题需 JACK 协商前后采样率不同，不能写成普通离线渲染普遍受影响。
 - **重复 CC66（F46）提高优先级（2026-10-28 用户决定）**：已有真实 MIDI＋MuseScore MS Basic 音源的原生播放证据，列入下一批优先考虑提交的修复 PR。修复保留在 `fix/dev-sostenuto-repeat`（`54817529`），尚未提上游 PR；此调整不代表授权立即提交。SF2 固定力度 0、Breath Sync 仍为低优先级候选；Breath Sync 需显式启用。单个真实样本不等于高发生率。
 - 播放器控制、跨轨排序/seek、heap merge、F35 继续搁置，沿用 2026-10-26 的决定；本次未恢复这些任务。
@@ -71,7 +72,7 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 
 | 工作分支 | 内容 | review 规模 | 生产/CI 差异 |
 |---|---|---|---|
-| [fix/dev-all-notes-off-mono-keys](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-all-notes-off-mono-keys) | All Notes Off 清除 mono held keys；#1879 open（另含 CC120） | M | +7 / −0 |
+| [fix/dev-all-notes-off-mono-keys](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-all-notes-off-mono-keys) | All Notes Off 清除 mono held keys；#1879 merged（另含 CC120）；dev 仅保留历史 | M | +7 / −0 |
 | [fix/dev-basic-channel-count-bounds](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-basic-channel-count-bounds) | basic channel 数量校验与加法溢出 | M | +2 / −8 |
 | [fix/dev-breath-sync-reset](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-breath-sync-reset) | F31：CC121 复位 Breath Sync 的上一气息值；已 review，暂缓提交 | S | +1 / −1 |
 | [fix/dev-dattorro-sample-rate](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-dattorro-sample-rate) | Dattorro 采样率变化时重建状态 | M | +25 / −2 |
@@ -93,8 +94,9 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 | [fix/dev-sostenuto-sustain-handoff](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-sustain-handoff) | CC66 抬起时转交仍按下的 sustain；#1880 merged，dev 仅保留历史 | M | +7 / −2 |
 | [fix/dev-sostenuto-repeat](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-repeat) | F46：重复 CC66 不重新捕获后来音符；已 review，用户提高至下一批优先考虑，尚未提 PR | S | +9 / −7 |
 | [fix/dev-audit-fixes](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-audit-fixes) | 审计混合包：51 项成立问题，待按主题拆分 | L | 混合/重构包，见下文 |
-| [perf/iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/iir-stable-block) | 精简 double W4，单提交暂存；float 统一实现继续验证，PR 延后 | S | +43 / −5 |
+| [perf/iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/iir-stable-block) | 统一 float/double 精简 W4，单提交暂存；最终完整渲染复核与 PR 延后 | S | +39 / −5 |
 | [perf/dev-iir-stable-block](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-iir-stable-block) | 旧 double W4 与历史证据保留；由精简分支承接，不重复排 PR | L | +129 / −0 |
+| [perf/dev-exclusive-candidates-standalone](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-exclusive-candidates-standalone) | 独立 exclusive 候选位图；直接基于 `fc1c55f4`；fork 实验，普通 MIDI 端到端收益待测 | S | +40 / −2 |
 | [perf/dev-midi-track-merge](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-midi-track-merge) | MIDI 跨轨事件 heap merge 备选实现；随 player 搁置 | L | +84 / −58 |
 | [ci/dev-windows-build](https://github.com/Yikai-Liao/fluidsynth/tree/ci/dev-windows-build) | Windows CI 子模块与 MSYS2 依赖精简；以后再说 | L | +27 / −12 |
 | [ci/dev-android-migration](https://github.com/Yikai-Liao/fluidsynth/tree/ci/dev-android-migration) | Android CI 迁移与构建/测试工具整合；等用户有空 review | L | +647 / −751 |
@@ -104,11 +106,11 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 
 ## 需要保留的区别与依赖
 
-- `perf/iir-stable-block` 是基于 `18bcb76f` 的精简 W4 单提交快照；当前仅优化 double，float 统一实现正在验证。`perf/dev-iir-stable-block` 的 +129 行生产代码、+318 行旧测试和历史端到端证据继续保留。两者是同一项待办，与已合并的系数复用 #1867 不同；最终提 PR 前仍需整合最小测试并重查 PCM、完整渲染及届时上游。
+- `perf/iir-stable-block` 是基于 `18bcb76f` 的精简 W4 单提交快照；当前 `707b52d6` 为统一 float/double 实现，生产 +39/−5。`perf/dev-iir-stable-block` 的 +129 行生产代码、+318 行旧测试和历史端到端证据继续保留。两者是同一项待办，与已合并的系数复用 #1867 不同；最终提 PR 前仍需整合最小测试并重查 PCM、完整渲染及届时上游。
 - `ci/dev-windows-build` 是尚未提 PR 的 Windows CI 整理，单个 workflow +27/−12。既有多个开发提交在 dev 分支完整保留。
 - Android 迁移整合稿在 `ci/dev-android-migration`；独立 API 35 developer probe 在 `ci/dev-android-developer-probe`。旧的 cicd-work、maintainability、superbuild 版本在归档保留，先比较差异再决定是否还要移植；不将同一迁移重复算多项 PR。
 - `fix/dev-player-track-order` 与 `perf/dev-midi-track-merge` 是正确性方案与 heap 备选实现；需要比较后决定最终实现，不能重复宣传同一修复。
-- 旧 `fix/midi-track-duration-20261021` 通过拒绝超 INT_MAX 曲目解决计数问题；审计 F35 改为内部 64 位继续播放。旧方案已归档，优先 review F35，再决定旧用例如何移植。
+- 旧 `fix/midi-track-duration-20261021` 通过拒绝超 INT_MAX 曲目解决计数问题；审计 F35 改为内部 64 位继续播放。旧方案已归档，F35 随播放器工作继续搁置；恢复后再决定旧用例如何移植。
 - 两版 sostenuto/sustain 修复保留较早但独立的工作分支 `fix/dev-sostenuto-sustain-handoff`；另一版含不同旧基线和部分测试差异，完整原历史仍在归档。
 - DLS 的四个重构提交保留在 `refactor/dev-dls-boundaries`，继承的审计包也保留。先核对依赖再整理到干净上游基线；不把 13 个 DLS 审计条目自动拆成 13 个 PR。
 - `fix/dev-audit-fixes` 保留原审计与两次复审的历史，并加入 F18 测试夹具精简提交。F18 独立测试暂由 211 行减到 74 行；此前 double/float Debug ASan/UBSan/float-cast-overflow 均通过，撤销修复或将 fallback 错设为 61 均失败。下一步检查合入现有 sample/pitch 测试的合适位置。
@@ -125,8 +127,9 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 
 | 工作 | 状态与分支处理 |
 |---|---|
-| [#1879 Mono All Notes Off / All Sounds Off](https://github.com/FluidSynth/fluidsynth/pull/1879) | open；`fix/all-notes-off-mono-keys`；保留 PR head；不在本次状态更新中修改 |
-| [#1884 SF3 x87 fallback](https://github.com/FluidSynth/fluidsynth/pull/1884) | open；`fix/sf3-x87-fallback`；保留 PR head；不在本次状态更新中修改 |
+| [#1879 Mono All Notes Off / All Sounds Off](https://github.com/FluidSynth/fluidsynth/pull/1879) | merged（2026-10-27）；merge `f784f783`；`fix/all-notes-off-mono-keys` 与 dev 仅保留历史 |
+| [#1884 SF3 x87 fallback](https://github.com/FluidSynth/fluidsynth/pull/1884) | merged（2026-10-29）；先合入 `fix-x87`（`c90a865b`），再经 [#1885](https://github.com/FluidSynth/fluidsynth/pull/1885) 合入 master（`fc1c55f4`）；分支仅保留历史 |
+| [#1886 invalid-note 哨兵](https://github.com/FluidSynth/fluidsynth/pull/1886) | merged（2026-10-29）；merge `14669717`；`perf/legato-invalid-note-sentinel` 与 dev 仅保留历史；不再列为待提交候选 |
 | [#1880 sostenuto → sustain](https://github.com/FluidSynth/fluidsynth/pull/1880) | merged（2026-10-26）；`fix/sostenuto-sustain-handoff`；已移出待 review 队列；分支与 dev 历史保留 |
 | [#1881 MIDI zero tempo](https://github.com/FluidSynth/fluidsynth/pull/1881) | merged（2026-10-26）；`fix/midi-zero-tempo`；已移出待 review 队列；分支与 dev 历史保留 |
 | [#1877 SF3 gain](https://github.com/FluidSynth/fluidsynth/pull/1877) | merged（2026-10-26）；`fix/sf3-sample-gain-20261021`；已移出待 review 队列；分支与 dev 历史保留 |
@@ -135,7 +138,7 @@ F18 unpitched SF2 + 自定义调音、F49 调音跨音区 + Mono 连奏、Dattor
 | [#1863 voice reuse](https://github.com/FluidSynth/fluidsynth/pull/1863)、[#1864 Dattorro tap](https://github.com/FluidSynth/fluidsynth/pull/1864)、[#1867 IIR](https://github.com/FluidSynth/fluidsynth/pull/1867)、[#1868 realtime MIDI](https://github.com/FluidSynth/fluidsynth/pull/1868) | merged；历史与证据保留 |
 | [#1870 Linux CI](https://github.com/FluidSynth/fluidsynth/pull/1870)、[#1872 predelay](https://github.com/FluidSynth/fluidsynth/pull/1872)、[#1873 runner](https://github.com/FluidSynth/fluidsynth/pull/1873)、[#1874 Ubuntu/Arm](https://github.com/FluidSynth/fluidsynth/pull/1874)、[#1875 Alpine](https://github.com/FluidSynth/fluidsynth/pull/1875) | merged；历史与证据保留 |
 
-状态于 2026-10-27 通过 GitHub PR 元数据与上游提交核对。开放 PR 只表示尚未合并，不等于所有远端 CI 已通过；历史性能、sanitizer 与全量测试结论仅适用于其原始版本。
+状态于 2026-10-30 通过 GitHub PR 元数据核对；上述 17 个用户 PR 中 16 个 `merged=true`，仅 #1878 `merged=false`。#1879、#1884、#1886 的最终 head 分别为 `2fac96b3`、`9981ef6e`、`2442aeed`，均有 derselbst 对该 head 的 APPROVED review。合并状态与 CI 分开记录：这三个 head 的 check-run 分别仍含 2、1、2 项失败；#1885 head `c90a865b` 的 135 项 check-run 为 129 成功、6 跳过。commit status API 均未返回独立 status context（total_count=0），不把其 `pending` 当作仍在运行的 CI。历史性能、sanitizer 与全量测试结论仅适用于其原始版本。
 
 ## 归档与恢复
 
@@ -588,3 +591,23 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 - **远端交付检查：** 已回读新分支 ref 与精确 SHA；对比上游显示 1 个新提交、仅上述 6 个文件；当前未获得本独立源码的完整 CI 通过结果。首次检查时 56 项 check-run 仍处于排队或运行中。此环境无法联网克隆构建，后续需要基于精确提交核对 CI（特别留意已有 SF3 x87 mingw32 编译守卫）、必要的本地 ASan/UBSan、实际 owner-only 配对性能与 PCM。此前实验堆叠的 11.29% wall time 差异来自“Owner vs Owner+Mixer Index”，**不是此次 Owner 单独提速**。
 - **CI 追加快照（2026-10-29 13:25 UTC，固定 SHA `3c2fe217`）：** 56 项 check-run 中 41 成功、1 失败、12 运行中、2 排队；Linux、FreeBSD、Alpine、OS/2 和文档工作流已完成且成功。唯一当时失败的是 [mingw32 cpp11](https://github.com/Yikai-Liao/fluidsynth/actions/runs/40881288358/job/123473171067)，实际日志指向未修改的 `src/sfloader/fluid_sffile.c:2631` 中既有的 `SF3 sample conversion requires float-precision evaluation` 编译守卫。此项不能归因为本分支新增 Owner 代码，但也**不代表全 CI 通过**；其余检查当时尚未终态。
 - **队列安排：** 先作为独立 dev 快照等待 review；若通过测试与性能复核，再整理为单独上游 PR 分支。不要因为代码量小就自动投稿，也不要改变既有 PR 的 head 或修复其它模块。
+
+
+## 2026-10-30：上游状态与普通 MIDI 消融安排
+
+- **上游基线：** 本次实时核对 `master` 为 [`fc1c55f4`](https://github.com/FluidSynth/fluidsynth/commit/fc1c55f4627f0050c820d72784c5463e12620140)，已包含 #1879、#1886 及经 #1885 带入的 #1884。fork 的 `master` 仍停在 `c7ba7b49`；此次未移动它，也未把旧 dev 分支当作已经 rebase。
+- **哨兵完成：** 上文 2026-10-28 的“待测／待提交”是历史快照，现由 #1886 合并状态取代。PR 报告在普通真实 MIDI、默认 polyphony 256 下 Note On 处理耗时降低约 9.7%，95% CI 5.7–13.7%；这是事件处理局部计时。默认容量完整渲染未见明确端到端改善，不据此填写普通 MIDI 总体加速。
+- **旧独立 Owner CI 已终态：** 固定 `3c2fe217` 当前 62 个 check-run：57 成功、4 跳过、1 个 mingw32 失败；失败仍是上文链接的同一 job。旧依赖通道索引的 Owner `4c1445c9` 为 56 成功、4 跳过、1 取消、1 失败；Mixer `b2045d6c` 为 57 成功、4 跳过、1 失败，均共 62 项。上游 x87 修复已落地，但这些旧 SHA 没有因此改变或自动变绿；今后若继续，先移植到当前基线再验证。
+- **消融范围：** 计划以 8 首不同类型完整普通 MIDI 为语料，独立变体与组合变体分开；主线采用 portable Release、默认 DOUBLE、1/4 线程，FLOAT 独立报告，native 组合的逐项撤除另列。比较完整初始化／加载／渲染端到端 wall time，并同时保留 render-only、CPU、PCM 一致性及配对置信区间。尚无本轮普通曲目结果，不能提前认定某项有收益。
+- **证据分层：** Black MIDI 压力结果、micro、Note On 处理与普通完整曲目分别记录；原 original-v2 是已有优化的实验基线，不称 pristine upstream。位图等增加维护成本的方案先留 fork，普通曲目收益足以支撑时再讨论上游；不恢复搁置的播放器、DLS、Android/Windows 工作。
+- **相关历史链接复核：** #673、#1081 为已合并功能 PR；#1288 仍为关闭且标记 bug/wontfix，不等于漂移已修复；#1361 多端口请求仍开放，#1352 已关闭。原审计的基线、复现范围与 deferred/cancelled 安排保持不变。
+
+### 独立 exclusive 候选位图：已保存 fork 实验
+
+- **远端身份：** [`perf/dev-exclusive-candidates-standalone`](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-exclusive-candidates-standalone)，提交 [`ebe48363`](https://github.com/Yikai-Liao/fluidsynth/commit/ebe48363d986bf0b2eb5eac1fde83f73f02d92a8)，唯一父提交为上游 `fc1c55f4627f0050c820d72784c5463e12620140`。远端 tree `ea12a97028d4f5502cefd7e5d0e3616e17da2762` 与实际测试的本地 `97a741a583bf39d8c19a0d3cfcb9964455c067d0` 完全相同；发布时作者／时间元数据变化导致 commit SHA 不同。
+- **规模与开销：** 4 个生产文件 +40/−2；新增回归测试 97 行、CMake 1 行。每个 synth 固定增加 8 KiB 位图；本次 native FLOAT 构建中 stable slot 使用既有 padding，`sizeof(fluid_voice_t)` 保持 4712 字节。这个布局观察只适用于已测构建。
+- **依赖区分：** 此分支直接在 pristine `fc1c55f4` 上保存，不依赖 Channel Voice Index。旧 [`perf/dev-exclusive-channel-scan`](https://github.com/Yikai-Liao/fluidsynth/tree/perf/dev-exclusive-channel-scan) 的 `24530a25` 仍依赖通道索引 `20bbca67`，完整历史保留；两者是不同方案，不将旧组合差异或收益计入新独立分支。
+- **验证与收益：** 对应源码基线 45/45、候选 46/46 全套测试通过，独立源码 review 通过。普通 MIDI 完整渲染收益仍待 8 首完整曲目的新消融；未把旧 stacked bitmap 的扫描计数、Black MIDI 加速或组合基线收益转写为此独立实现收益。N14 跨 preset exclusiveClass 语义问题仍是独立未修复条目。
+- **独立短片段探测：** native FLOAT、4 线程、polyphony 4096、TimGM6mb、Mahler 前 10 秒；固定两组 BAAB/ABBA，每臂 4 次。候选／基线几何耗时比为 1.217，CPU 比为 1.032，未显示收益。此计时包含旧 harness 的 PCM 文件写入；完整普通曲目另按新协议测量。密集 0.05 秒压力输入的 pristine 基线触及 120 秒 wall guard，未产生完整结果，因此本独立分支尚无该压力场景的性能结论。
+- **CI 快照（2026-10-30 10:51 UTC）：** 固定远端 SHA 的 9 个 workflow 中，Alpine 已成功，7 个运行中、macOS 排队；尚非全 CI 通过。以该 SHA 的后续终态为准。
+- **安排：** 仅保存 fork 实验，没有创建上游 PR。先完成普通 MIDI 端到端消融，再按收益与新增位图的维护成本决定是否值得继续；当前不安排投稿。
