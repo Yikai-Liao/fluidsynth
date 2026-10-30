@@ -1116,6 +1116,7 @@ new_fluid_synth(fluid_settings_t *settings)
         {
             goto error_recovery;
         }
+        synth->voice[i]->slot = i;
     }
 
     /* sets a default basic channel */
@@ -3995,6 +3996,7 @@ fluid_synth_update_polyphony_LOCAL(fluid_synth_t *synth, int new_polyphony)
                 return FLUID_FAILED;
             }
 
+            synth->voice[i]->slot = i;
             fluid_voice_set_custom_filter(synth->voice[i], synth->custom_filter_type, synth->custom_filter_flags);
         }
 
@@ -5487,10 +5489,22 @@ fluid_synth_kill_by_exclusive_class_LOCAL(fluid_synth_t *synth,
         return;
     }
 
-    /* Kill all notes on the same channel with the same exclusive class */
+    /* Kill all notes on the same channel with the same exclusive class. */
     for(i = 0; i < synth->polyphony; i++)
     {
-        fluid_voice_t *existing_voice = synth->voice[i];
+        fluid_voice_t *existing_voice;
+        uint32_t candidates = synth->exclusive_candidates[i / 32];
+
+        if(candidates == 0)
+        {
+            i |= 31; /* Skip the rest of this empty word. */
+            continue;
+        }
+        if(!(candidates & ((uint32_t)1 << (i % 32))))
+        {
+            continue;
+        }
+        existing_voice = synth->voice[i];
 
         /* If voice is playing, on the same channel, has same exclusive
          * class and is not part of the same noteon event (voice group), then kill it */

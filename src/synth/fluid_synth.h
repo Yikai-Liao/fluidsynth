@@ -154,6 +154,7 @@ struct _fluid_synth_t
     fluid_channel_t **channel;         /**< the channels */
     int nvoice;                        /**< the length of the synthesis process array (max polyphony allowed) */
     fluid_voice_t **voice;             /**< the synthesis voices */
+    uint32_t exclusive_candidates[2048]; /* Public polyphony is at most 65535. */
     int active_voice_count;            /**< count of active voices */
     unsigned int noteid;               /**< the id is incremented for every new note. it's used for noteoff's  */
     unsigned int storeid;

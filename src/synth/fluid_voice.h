@@ -110,6 +110,7 @@ struct _fluid_voice_t
     fluid_sample_t *overflow_sample; /* Pointer to sample (dupe in overflow_rvoice) */
 
     int mod_count;
+    unsigned int slot; /* Stable index in the synth voice pool. */
     fluid_mod_t mod[FLUID_NUM_MOD];
     fluid_gen_t gen[GEN_LAST];
 

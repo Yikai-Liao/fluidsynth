@@ -273,6 +273,17 @@ delete_fluid_voice(fluid_voice_t *voice)
     FLUID_FREE(voice);
 }
 
+/* Class membership is conservative for one voice lifetime: a possible
+ * contribution stays indexed until generator initialization on reuse. */
+static void fluid_voice_mark_exclusive(fluid_voice_t *voice, int gen)
+{
+    if(gen == GEN_EXCLUSIVECLASS && voice->channel != NULL)
+    {
+        voice->channel->synth->exclusive_candidates[voice->slot / 32] |=
+            (uint32_t)1 << (voice->slot % 32);
+    }
+}
+
 /* fluid_voice_init
  *
  * Initialize the synthesis process
@@ -345,6 +356,12 @@ fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
      * into voice parameters in
      * fluid_voice_calculate_runtime_synthesis_parameters.  */
     fluid_gen_init(&voice->gen[0], channel);
+    channel->synth->exclusive_candidates[voice->slot / 32] &=
+        ~((uint32_t)1 << (voice->slot % 32));
+    if(voice->gen[GEN_EXCLUSIVECLASS].nrpn != 0)
+    {
+        fluid_voice_mark_exclusive(voice, GEN_EXCLUSIVECLASS);
+    }
     UPDATE_RVOICE_I1(fluid_rvoice_set_samplemode, _SAMPLEMODE(voice));
 
     voice->synth_gain = gain;
@@ -400,6 +417,7 @@ fluid_voice_set_output_rate(fluid_voice_t *voice, fluid_real_t value)
 void
 fluid_voice_gen_set(fluid_voice_t *voice, int i, float val)
 {
+    fluid_voice_mark_exclusive(voice, i);
     voice->gen[i].val = val;
     voice->gen[i].flags = GEN_SET;
 
@@ -419,6 +437,7 @@ fluid_voice_gen_set(fluid_voice_t *voice, int i, float val)
 void
 fluid_voice_gen_incr(fluid_voice_t *voice, int i, float val)
 {
+    fluid_voice_mark_exclusive(voice, i);
     voice->gen[i].val += val;
     voice->gen[i].flags = GEN_SET;
 }
@@ -1506,6 +1525,8 @@ fluid_voice_add_mod_local(fluid_voice_t *voice, fluid_mod_t *mod, int mode, int 
 {
     int i;
 
+    fluid_voice_mark_exclusive(voice, mod->dest);
+
     /* check_limit_count cannot be above voice->mod_count */
     if(check_limit_count > voice->mod_count)
     {
@@ -1870,6 +1891,7 @@ fluid_voice_get_lower_boundary_for_attenuation(fluid_voice_t *voice)
 
 int fluid_voice_set_param(fluid_voice_t *voice, int gen, fluid_real_t nrpn_value)
 {
+    fluid_voice_mark_exclusive(voice, gen);
     voice->gen[gen].nrpn = nrpn_value;
     voice->gen[gen].flags = GEN_SET;
     fluid_voice_update_param(voice, gen);
