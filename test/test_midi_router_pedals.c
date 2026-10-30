@@ -13,26 +13,29 @@ static int count_event(void *data, fluid_midi_event_t *event)
 
 int main(void)
 {
+    static const int pedals[] = {SUSTAIN_SWITCH, SOSTENUTO_SWITCH};
     fluid_settings_t *settings = new_fluid_settings();
     fluid_midi_event_t *event = new_fluid_midi_event();
-    int pedal, count = 0;
+    unsigned int i;
+    int count = 0;
     fluid_midi_router_t *router = new_fluid_midi_router(settings, count_event, &count);
     TEST_ASSERT(settings != NULL && event != NULL && router != NULL);
     TEST_SUCCESS(fluid_midi_event_set_type(event, CONTROL_CHANGE));
     TEST_SUCCESS(fluid_midi_event_set_channel(event, 0));
 
-    for(pedal = SUSTAIN_SWITCH; pedal <= SOSTENUTO_SWITCH; pedal += 2)
+    for(i = 0; i < FLUID_N_ELEMENTS(pedals); i++)
     {
         count = 0;
         TEST_SUCCESS(fluid_midi_router_set_default_rules(router));
-        TEST_SUCCESS(fluid_midi_event_set_control(event, pedal));
-        TEST_SUCCESS(fluid_midi_event_set_value(event, 127));
+        TEST_SUCCESS(fluid_midi_event_set_control(event, pedals[i]));
+        TEST_SUCCESS(fluid_midi_event_set_value(event, 64));
         TEST_SUCCESS(fluid_midi_router_handle_midi_event(router, event));
         TEST_ASSERT(count == 1);
+        /* Cleared rules drop new pedal-downs but must pass the pending release. */
         TEST_SUCCESS(fluid_midi_router_clear_rules(router));
         TEST_SUCCESS(fluid_midi_router_handle_midi_event(router, event));
         TEST_ASSERT(count == 1);
-        TEST_SUCCESS(fluid_midi_event_set_value(event, 0));
+        TEST_SUCCESS(fluid_midi_event_set_value(event, 63));
         TEST_SUCCESS(fluid_midi_router_handle_midi_event(router, event));
         TEST_ASSERT(count == 2);
         TEST_SUCCESS(fluid_midi_router_handle_midi_event(router, event));
