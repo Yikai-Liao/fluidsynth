@@ -194,7 +194,7 @@ void fluid_revmodel_lexverb::reset()
         if(this->dl[i].has_buffer())
         {
             this->dl[i].fill_buffer(0.0f);
-            this->dl[i].set_positions(1, 1);
+            this->dl[i].set_positions(0, 0);
         }
         this->dl[i].set_last_output(0.0f);
         this->dl[i].damping.buffer = 0.0f;
