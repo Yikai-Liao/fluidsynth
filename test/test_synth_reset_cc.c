@@ -116,6 +116,26 @@ static void test_portamento_fromkey(fluid_synth_t* synth, int chan)
     TEST_ASSERT(!fluid_channel_is_valid_note(ptc));
 }
 
+static void test_sostenuto_global(fluid_synth_t *synth)
+{
+    unsigned int orderid;
+
+    TEST_SUCCESS(fluid_synth_system_reset(synth));
+    TEST_SUCCESS(fluid_synth_reset_basic_channel(synth, -1));
+    TEST_SUCCESS(fluid_synth_set_basic_channel(synth, 1, FLUID_CHANNEL_MODE_OMNIOFF_MONO, 2));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 1, 60, 127));
+    TEST_SUCCESS(fluid_synth_cc(synth, 1, SOSTENUTO_SWITCH, 127));
+    orderid = synth->channel[1]->sostenuto_orderid;
+    TEST_SUCCESS(fluid_synth_noteon(synth, 2, 60, 127));
+    TEST_SUCCESS(fluid_synth_cc(synth, 2, SOSTENUTO_SWITCH, 63));
+
+    /* Global CC66 must detect the pedal edge separately on each channel. */
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, SOSTENUTO_SWITCH, 64));
+    TEST_ASSERT(synth->channel[1]->sostenuto_orderid == orderid);
+    TEST_ASSERT(synth->channel[2]->sostenuto_orderid == synth->noteid);
+    TEST_SUCCESS(fluid_synth_system_reset(synth));
+}
+
 // this test should make sure that sample rate changed are handled correctly
 int main(void)
 {
@@ -147,6 +167,7 @@ int main(void)
         fluid_synth_system_reset(synth);
     }
     
+    test_sostenuto_global(synth);
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
 
