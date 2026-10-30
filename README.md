@@ -645,3 +645,20 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 
 真实MIDI证据见[专项记录](evidence/real-midi-20261030/README.md)。公开保留94-byte两同音夹具、来源事件清单、比较结果及hash；完整原始MIDI、PCM、原始日志与压缩归档不在此次发布集合中。默认普通播放确认第1项，宿主动作/设置下确认第2/3/8项，第4/5项是真实可达的小幅残留；第6/7/9项没有新增自然触发确认。
 
+
+
+## 2026-10-30：CC66 专题 review 收尾
+
+用户接受按独立缺陷拆成多个 PR；本轮只调整并保存三个 dev 分支，没有创建上游 PR。各分支保留原开发历史，未 rebase 或 squash；以下是分别追加的收尾提交。
+
+| 主题 | 分支与本轮提交 | 调整 |
+|---|---|---|
+| F46 重复 CC66 | [`fix/dev-sostenuto-repeat`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-repeat)，[`58a97453`](https://github.com/Yikai-Liao/fluidsynth/commit/58a974533b67dd67f06cd4f7f5ec3b69ca705c04) | 在现有 `test_synth_reset_cc.c` 增加 21 行，覆盖 Global Controller 转发中各目标声道旧值不同，以及 63→64 边沿；生产实现保留 |
+| 跨周期旧 voice ID | [`fix/dev-sostenuto-cycle`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-cycle)，[`a492c976`](https://github.com/Yikai-Liao/fluidsynth/commit/a492c976b2d6f9a1472472e9f579ef3093e31463) | 补充生产注释，解释保留同周期重弹而排除已释放尾音的原因；24 行回归继续复用 `test_voice_callback.c` |
+| router 漏松踏板 | [`fix/dev-router-sostenuto-release`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-router-sostenuto-release)，[`575c0376`](https://github.com/Yikai-Liao/fluidsynth/commit/575c0376c7b4c19370e2686ccf02d2693b48856d) | 同步 sustain/sostenuto 注释；测试显式列出两种踏板并使用 `FLUID_N_ELEMENTS`，以 64/63 验证阈值；保留独立 router 测试文件 |
+
+验证范围：三项最终改动分别独立移植到本轮核对的上游 `86f3ed46857b23efe61cfa1dd4ce3e53b1fb7cbe`。Linux GCC 16.2.1、RelWithDebInfo、double、OpenMP/signalsmith 关闭，SF3 开启；全套测试分别为重复 CC66 **49/49**、跨周期 **49/49**、router **50/50**。这些是当前上游上的独立移植结果，不冒充旧基线 dev 提交的全 CI。重复 CC66 原 dev 源码另在既有 Debug UBSan/float-cast-overflow 配置中通过 **46/46**。
+
+定向负对照：新增逐声道测试能捕获把转发旧值错误取自固定基本声道的变体；router 的 64/63 用例能捕获把按下阈值错写为 `>64` 的变体。两者均在预期断言处失败，恢复实际实现后通过。审查阶段三个缺陷也已分别完成修复前失败／修复后通过；跨周期同周期控制能捕获错误使用 `fluid_voice_is_on()` 的变体。实验脚本、日志和错误变体只保留在本地构建证据目录，没有加入生产分支。
+
+后续如安排投稿，分别基于届时上游整理三个独立 PR；不因同属 CC66 自动合并，也不发布互相堆叠的分支。
