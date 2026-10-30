@@ -679,3 +679,19 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 定向负对照：新增逐声道测试能捕获把转发旧值错误取自固定基本声道的变体；router 的 64/63 用例能捕获把按下阈值错写为 `>64` 的变体。两者均在预期断言处失败，恢复实际实现后通过。审查阶段三个缺陷也已分别完成修复前失败／修复后通过；跨周期同周期控制能捕获错误使用 `fluid_voice_is_on()` 的变体。实验脚本、日志和错误变体只保留在本地构建证据目录，没有加入生产分支。
 
 后续如安排投稿，分别基于届时上游整理三个独立 PR；不因同属 CC66 自动合并，也不发布互相堆叠的分支。
+
+
+### 2026-10-30 14:44 UTC：六项修复最新提交 CI 全部成功
+
+本次核对的六个分支提交均已完成 **9/9 workflow 成功**，合计 **54/54**：
+
+| 分支 | 本次提交 | workflow |
+|---|---|---|
+| `fix/dev-sostenuto-cycle` | `a492c976b2d6f9a1472472e9f579ef3093e31463` | 9/9 成功 |
+| `fix/dev-router-sostenuto-release` | `575c0376c7b4c19370e2686ccf02d2693b48856d` | 9/9 成功 |
+| `fix/dev-shrink-finished-voices` | `e18868ca43652b2157c9c23156fc960c5f4fe5f3` | 9/9 成功 |
+| `fix/dev-reverb-reset-history` | `e33ce9f6d8b801528e535b798bc5a63a8f178274` | 9/9 成功 |
+| `fix/dev-lexverb-zero-room-reset` | `f61728df0935bad915b9ebec6069ba52bef499ae` | 9/9 成功 |
+| `fix/dev-mono-cc123-sustain` | `d0b0510e6fd4e4919c75c5c6c753dff1ebb77153` | 9/9 成功 |
+
+更新后的[跨周期 macOS workflow](https://github.com/Yikai-Liao/fluidsynth/actions/runs/41068445888)及[router macOS workflow](https://github.com/Yikai-Liao/fluidsynth/actions/runs/41068446611)也已成功。上文 `034bb381`、`e1554705` 的 MacPorts 依赖失败保留为旧提交历史，不代表本表最新提交仍有失败。本轮六项 CI 跟进已结束；这项记录不包含另一个 F46 重复 CC66 分支，也不表示已提交或合并上游 PR。
