@@ -1,0 +1,59 @@
+{
+  "baseline_commit": "fc1c55f4627f0050c820d72784c5463e12620140",
+  "original_midi": [
+    {
+      "id": "two-of-us-1",
+      "filename": "Two of Us.1.mid",
+      "bytes": 45980,
+      "sha256": "a43e851d3dfb3ab36af4bc7969ffbe5a21288d78925845f840365856803c7186",
+      "source_url": "http://hog.ee.columbia.edu/craffel/lmd/clean_midi.tar.gz",
+      "source_archive_member": "clean_midi/The Beatles/Two of Us.1.mid",
+      "public_file_included": false
+    },
+    {
+      "id": "two-of-us",
+      "filename": "Two of Us.mid",
+      "bytes": 45561,
+      "sha256": "28031a7e442d95a67de3a550d051072e5b2d12f02a09bcc4f9bd70934ed1ef80",
+      "source_url": "http://hog.ee.columbia.edu/craffel/lmd/clean_midi.tar.gz",
+      "source_archive_member": "clean_midi/The Beatles/Two of Us.mid",
+      "public_file_included": false
+    },
+    {
+      "id": "you-go-to-my-head",
+      "filename": "You Go to My Head.mid",
+      "bytes": 14973,
+      "sha256": "8626fd117a4054e15db7f8306f45142df878c1c6fb3618b50dac8795dcb974d9",
+      "source_url": "http://hog.ee.columbia.edu/craffel/lmd/clean_midi.tar.gz",
+      "source_archive_member": "clean_midi/Evans Bill/You Go to My Head.mid",
+      "public_file_included": false
+    },
+    {
+      "id": "etude",
+      "filename": "6338816_Etude No. 4.mid",
+      "bytes": 3998,
+      "sha256": "433e35f1282987e212b9c8c352fa158a5558e47ce787bcf829dd5e6463819c41",
+      "source_url": "https://github.com/Yikai-Liao/symusic/blob/3cdd0ee22d990d577db8efc9c7b4f369d34f0c31/tests/testcases/One_track_MIDIs/6338816_Etude%20No.%204.mid",
+      "source_archive_member": null,
+      "public_file_included": false
+    }
+  ],
+  "lakh_archive": {
+    "bytes": 234283029,
+    "sha256": "de1bb64cbc0cf35545a05b5c3e786aa6890cfa144edffc4b827ff41bf8c33dc5",
+    "homepage": "https://colinraffel.com/projects/lmd/"
+  },
+  "soundfonts": {
+    "GeneralUser GS": "e5d3617c427e94fe388980d83bc955359047a53842b60ffe5558df8bc19c0300",
+    "TimGM6mb": "c5378b62028c920cb11e4803327983fee2f2cdff5dc89c708e39da417e51c854"
+  },
+  "dsos": {
+    "baseline": "1ef5896e8af86e08ab8d7f3d3b9b6d5650d81471d153c3ab072733c9e3e0e42d",
+    "item1": "220e1ae5ca5f3ed3b724c6132fd629df0ed23b2dbfd26bf1f31887c9db103cc1",
+    "item4": "e35cd941c92c07b2418995756fc42c4948b516d91fa5aa03a4e3f1679a81c544",
+    "item2": "94347d62362631198d77b68ab4368998dd3f97705980f23dc7facb9bb1285f92",
+    "item3": "17e9e55ee079a2033460f05998374a975a2b406a79ce963643b89863f0f60076",
+    "item8": "3d22e6408ea25bfba9ea1a3f171098db38f6735369e8a34a0bfd4497f08828fe",
+    "item5": "19f786686723da006ec74e1d8c0fb4a3a9b67db648a91500b6ce9180700a9722"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "GeneralUserGS": {
+    "rendered_frames": 1102528,
+    "samples": 2205056,
+    "different_samples": 1987582,
+    "max_abs": 0.01658383192261681,
+    "first_interleaved_sample": 217474,
+    "first_seconds": 2.4656916099773243,
+    "relative_rms_to_fixed": 0.49025282648512114,
+    "finite": true
+  },
+  "TimGM6mb": {
+    "rendered_frames": 1102528,
+    "samples": 2205056,
+    "different_samples": 1987582,
+    "max_abs": 0.020981379493605345,
+    "first_interleaved_sample": 217474,
+    "first_seconds": 2.4656916099773243,
+    "relative_rms_to_fixed": 0.5644226830847948,
+    "finite": true
+  }
+}

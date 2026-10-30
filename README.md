@@ -611,3 +611,37 @@ exclusive 分支相对 pristine 总计生产 +113/−4、测试 +137；不能把
 - **独立短片段探测：** native FLOAT、4 线程、polyphony 4096、TimGM6mb、Mahler 前 10 秒；固定两组 BAAB/ABBA，每臂 4 次。候选／基线几何耗时比为 1.217，CPU 比为 1.032，未显示收益。此计时包含旧 harness 的 PCM 文件写入；完整普通曲目另按新协议测量。密集 0.05 秒压力输入的 pristine 基线触及 120 秒 wall guard，未产生完整结果，因此本独立分支尚无该压力场景的性能结论。
 - **CI 快照（2026-10-30 10:51 UTC）：** 固定远端 SHA 的 9 个 workflow 中，Alpine 已成功，7 个运行中、macOS 排队；尚非全 CI 通过。以该 SHA 的后续终态为准。
 - **安排：** 仅保存 fork 实验，没有创建上游 PR。先完成普通 MIDI 端到端消融，再按收益与新增位图的维护成本决定是否值得继续；当前不安排投稿。
+
+
+
+## 2026-10-30：9 项新问题的真实 MIDI 验证
+
+证据索引：[原曲来源、SHA256、事件链、原生状态和诊断对照](evidence/real-midi-20261030/README.md)。完整原始文件验证与派生最小夹具分开记录；94-byte 两同音 CC66 夹具仅作辅助回归，不能替代原曲证据。
+
+- **第 1 项确认默认普通播放可触发：** 原始 `Two of Us.1.mid`，GeneralUser GS与TimGM均以默认 Poly / note-cut=0 / polyphony256直接复现跨 CC66 周期继承已 release voice ID，两臂输出各自与早先P512逐位相同；两音色库的派生小夹具也均以P256确认。原文件无连续重复 CC66 高值，与 F46 不同。独立一条件补丁使新音正常释放；原曲前25秒输出确有差异，Etude无CC66负控逐位相同。
+- **第 2、3、8 项确认，但分别需要宿主动作/设置：** 原曲播放中清路由会丢原始 CC66up；Etude播放中256→64缩容留下22个管理计数并阻塞DONE；Bill Evans原曲在宿主 Mono＋note-cut2 下，CC123漏记被踏板保持的键，下一音不能切掉旧音。三项均有独立源码诊断对照；第8项默认Poly负控不变，7行补丁尚需多layer/模式切换review。第2项原生EOF最终会重置踏板，不称永久挂音；第3项共同PCM逐位相同，不称可听挂音。
+- **第 4、5 项有真实路径，但数值影响小：** 原曲GS reset和Etude＋System Reset下，Freeverb/FDN历史相关差异可测；默认Dattorro整曲对照逐位相同。Etude＋Lexverb room .5→0＋System Reset也经独立单表达式诊断补丁确认，含首块历史相关峰值−87.56 dBFS。没有听感测试，不把组件人工输入的大残音当普通曲目收益。
+- **其余层级：** 第6/7项尚无实际调用场景确认；第9项本轮仅完成源码所有权/宿主扩容路径审计；用户此前提供的构造失败注入结果未在本轮重测，不计入自然MIDI触发。未声称9项全部默认播放可复现。
+- **语料范围：** 新扫描访问17,256个Lakh原文件并核对hash；16,982个文件两解析器note counts一致。第8项24文件/857个粗候选不是24首独立作品或857个已确认缺陷。结论以真实文件原生重放为准。
+- **普通MIDI性能消融暂缓：** 已完成8首完整曲目、共约23.465分钟、32组baseline资格检查；没有候选性能结果，先处理此次真实触发验证。
+
+### 独立 exclusive 候选分支 CI 终态（固定 `ebe48363`）
+
+上文10:51 UTC是历史中间快照。本次固定 `ebe48363d986bf0b2eb5eac1fde83f73f02d92a8`：9个workflow **8成功、1失败**；62个check-run **56成功、4跳过、1失败、1取消**。失败为macOS26 MacPorts安装依赖时 `Port libsndfile not found`，发生在项目编译前；macOS15 job取消。没有将依赖安装失败称作生产代码回归，也不记为CI全绿。仍仅保存fork实验，普通MIDI端到端收益未确立，不安排上游投稿。
+
+
+### 2026-10-30：六项独立修复已保存 fork
+
+以下六个 dev 分支已分别保存并回读远端提交；相互独立，不把诊断补丁或旧分支的测试记录混算成新提交结果。尚未创建上游 PR。
+
+| 项目 | 分支 | 本次核实的远端提交 |
+|---|---|---|
+| 跨CC66周期旧voice ID | [`fix/dev-sostenuto-cycle`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-sostenuto-cycle) | [`034bb381`](https://github.com/Yikai-Liao/fluidsynth/commit/034bb381389872db4afd1a243fe2108c623c76b6) |
+| router清规则后的CC66松踏板 | [`fix/dev-router-sostenuto-release`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-router-sostenuto-release) | [`e1554705`](https://github.com/Yikai-Liao/fluidsynth/commit/e1554705b0187e4ae897810da0ec8282bd674a5c) |
+| polyphony缩容完成通知 | [`fix/dev-shrink-finished-voices`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-shrink-finished-voices) | [`e18868ca`](https://github.com/Yikai-Liao/fluidsynth/commit/e18868ca43652b2157c9c23156fc960c5f4fe5f3) |
+| Freeverb/FDN reset历史 | [`fix/dev-reverb-reset-history`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-reverb-reset-history) | [`e33ce9f6`](https://github.com/Yikai-Liao/fluidsynth/commit/e33ce9f6d8b801528e535b798bc5a63a8f178274) |
+| Lexverb零roomsize reset | [`fix/dev-lexverb-zero-room-reset`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-lexverb-zero-room-reset) | [`f61728df`](https://github.com/Yikai-Liao/fluidsynth/commit/f61728df0935bad915b9ebec6069ba52bef499ae) |
+| Mono CC123踏板保持键 | [`fix/dev-mono-cc123-sustain`](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-mono-cc123-sustain) | [`d0b0510e`](https://github.com/Yikai-Liao/fluidsynth/commit/d0b0510e6fd4e4919c75c5c6c753dff1ebb77153) |
+
+真实MIDI证据见[专项记录](evidence/real-midi-20261030/README.md)。公开保留94-byte两同音夹具、来源事件清单、比较结果及hash；完整原始MIDI、PCM、原始日志与压缩归档不在此次发布集合中。默认普通播放确认第1项，宿主动作/设置下确认第2/3/8项，第4/5项是真实可达的小幅残留；第6/7/9项没有新增自然触发确认。
+
