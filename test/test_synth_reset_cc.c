@@ -203,6 +203,40 @@ static void test_all_off_monolist(fluid_synth_t *synth, int all_sounds)
     }
 }
 
+/* Bulk noteoff must retain the last mono key held by either pedal. */
+static void test_all_notes_off_mono_pedal(fluid_synth_t *synth, int pedal)
+{
+    TEST_SUCCESS(fluid_synth_system_reset(synth));
+    TEST_SUCCESS(fluid_synth_reset_basic_channel(synth, -1));
+    TEST_SUCCESS(fluid_synth_set_basic_channel(synth, 0, FLUID_CHANNEL_MODE_OMNION_MONO, 1));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 64, 100));
+    if(pedal)
+    {
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, pedal, 127));
+    }
+    else
+    {
+        /* A held note that is not sustained replaces any stale memo. */
+        synth->channel[0]->key_mono_sustained = 60;
+    }
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, ALL_NOTES_OFF, 0));
+    TEST_ASSERT(synth->channel[0]->n_notes == 0);
+    TEST_ASSERT(synth->channel[0]->key_mono_sustained == (pedal ? 64 : INVALID_NOTE));
+    /* Repeating CC123 with no held keys must preserve the remembered key. */
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, ALL_NOTES_OFF, 0));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 67, 100));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 2);
+    if(pedal)
+    {
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, pedal, 0));
+    }
+    TEST_SUCCESS(fluid_synth_noteoff(synth, 0, 67));
+    TEST_SUCCESS(fluid_synth_process(synth, SAMPLES, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
 /* Test controller resets and overlapping hold pedals. */
 int main(void)
 {
@@ -241,6 +275,9 @@ int main(void)
         test_pedal_overlap(synth, mono, SUSTAIN_SWITCH);
         test_pedal_overlap(synth, mono, SOSTENUTO_SWITCH);
     }
+    test_all_notes_off_mono_pedal(synth, SUSTAIN_SWITCH);
+    test_all_notes_off_mono_pedal(synth, SOSTENUTO_SWITCH);
+    test_all_notes_off_mono_pedal(synth, 0);
     test_all_off_monolist(synth, 0);
     test_all_off_monolist(synth, 1);
     delete_fluid_synth(synth);

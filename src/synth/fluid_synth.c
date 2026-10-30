@@ -2869,13 +2869,30 @@ fluid_synth_all_notes_off_LOCAL(fluid_synth_t *synth, int chan)
     fluid_voice_t *voice;
     int i;
 
+    /* Match mono noteoff: replace the remembered key only for a held note. */
+    for(i = (chan < 0 ? 0 : chan); i < (chan < 0 ? synth->midi_channels : chan + 1); i++)
+    {
+        fluid_channel_t *channel = synth->channel[i];
+        if(fluid_channel_is_playing_mono(channel) && channel->n_notes > 0)
+        {
+            channel->key_mono_sustained = INVALID_NOTE;
+        }
+    }
+
     for(i = 0; i < synth->polyphony; i++)
     {
         voice = synth->voice[i];
 
         if(fluid_voice_is_playing(voice) && ((-1 == chan) || (chan == fluid_voice_get_channel(voice))))
         {
+            fluid_channel_t *channel = voice->channel;
             fluid_voice_noteoff(voice);
+            if(fluid_channel_is_playing_mono(channel) && channel->n_notes > 0
+                    && voice->key == fluid_channel_last_note(channel)
+                    && (fluid_voice_is_sustained(voice) || fluid_voice_is_sostenuto(voice)))
+            {
+                channel->key_mono_sustained = voice->key;
+            }
         }
     }
 
