@@ -7094,7 +7094,7 @@ fluid_synth_release_voice_on_same_note_LOCAL(fluid_synth_t *synth, int chan,
             enum fluid_midi_channel_type type = synth->channel[chan]->channel_type;
             enum fluid_msgs_note_cut note_cut_mode = synth->msgs_note_cut_mode;
 
-            /* Id of voices that was sustained by sostenuto */
+            /* Preserve sostenuto holding on retriggers, but not from released tails. */
             if(fluid_voice_is_sostenuto(voice) && !voice->has_noteoff)
             {
                 synth->storeid = fluid_voice_get_id(voice);
