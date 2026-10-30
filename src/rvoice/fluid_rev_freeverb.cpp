@@ -152,6 +152,8 @@ fluid_freeverb_revmodel_init(fluid_revmodel_freeverb_t *rev)
     {
         rev->combL[i].fill_buffer(DC_OFFSET);
         rev->combR[i].fill_buffer(DC_OFFSET);
+        rev->combL[i].filterstore = 0;
+        rev->combR[i].filterstore = 0;
     }
 
     for(i = 0; i < numallpasses; i++)

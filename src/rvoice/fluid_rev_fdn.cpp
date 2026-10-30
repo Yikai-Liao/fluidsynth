@@ -841,10 +841,13 @@ fluid_fdn_revmodel_init(fluid_revmodel_fdn_t *rev)
 {
     int i;
 
+    rev->late.tone_buffer = 0;
     /* clears all the delay lines */
     for(i = 0; i < NBR_DELAYS; i ++)
     {
         clear_delay_line(&rev->late.mod_delay_lines[i].dl);
+        rev->late.mod_delay_lines[i].dl.damping.buffer = 0;
+        rev->late.mod_delay_lines[i].buffer = 0;
     }
 }
 

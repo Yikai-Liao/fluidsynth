@@ -4,6 +4,48 @@
 #include "fluid_rev.h"
 #include "fluid_synth.h"
 
+/* Reset must discard signal history, independently of the DC offset transient. */
+static void test_reverb_reset(int type)
+{
+    fluid_revmodel_t *rev[2];
+    fluid_real_t input[FLUID_BUFSIZE], zero[FLUID_BUFSIZE] = {0};
+    fluid_real_t left[2][FLUID_BUFSIZE], right[2][FLUID_BUFSIZE];
+    int i, block, model;
+
+    for(model = 0; model < 2; model++)
+    {
+        rev[model] = new_fluid_revmodel(44100, 44100, type);
+        TEST_ASSERT(rev[model] != NULL);
+        fluid_revmodel_set(rev[model], FLUID_REVMODEL_SET_ALL, 0.5, 0.4, 1, 0.8);
+    }
+    for(i = 0; i < FLUID_BUFSIZE; i++)
+    {
+        input[i] = (fluid_real_t)0.1;
+    }
+    /* Advance both models equally so delay positions and modulation match. */
+    for(block = 0; block < 256; block++)
+    {
+        fluid_revmodel_processreplace(rev[0], input, left[0], right[0]);
+        fluid_revmodel_processreplace(rev[1], zero, left[1], right[1]);
+    }
+    for(model = 0; model < 2; model++)
+    {
+        fluid_revmodel_reset(rev[model]);
+    }
+    for(block = 0; block < 256; block++)
+    {
+        fluid_revmodel_processreplace(rev[0], zero, left[0], right[0]);
+        fluid_revmodel_processreplace(rev[1], zero, left[1], right[1]);
+        for(i = 0; i < FLUID_BUFSIZE; i++)
+        {
+            TEST_ASSERT(left[0][i] == left[1][i]);
+            TEST_ASSERT(right[0][i] == right[1][i]);
+        }
+    }
+    delete_fluid_revmodel(rev[0]);
+    delete_fluid_revmodel(rev[1]);
+}
+
 // this test should make sure that effects change (reverb, chorus) are handled correctly
 int main(void)
 {
@@ -11,6 +53,9 @@ int main(void)
     fluid_settings_t *settings = new_fluid_settings();
     double value;
     int int_value;
+
+    test_reverb_reset(FLUID_REVERB_TYPE_FREEVERB);
+    test_reverb_reset(FLUID_REVERB_TYPE_FDN);
 
     TEST_ASSERT(settings != NULL);
     /* set 2 group of effects */
