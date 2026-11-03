@@ -157,28 +157,29 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 ### New branch: `perf/reverb-idle-skip` (`0de60265`, +36/-0)
 
-`fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb send), the Dattorro loop processed an all-zero input and added zeros. `fluid_mixer_fx_t` now records whether the reverb has received a nonzero input since its last reset; while that flag says idle, the mixer scans the input block and skips the call if it is all zeros. Skipping is exact because a reset reverb with zero input produces zero.
+`fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-- Instrumented destination counts for the nine sampled files: three (all MAESTRO piano files, plus POP909 909.mid separately) never mix into the reverb send, six do.
-- MAESTRO 2014 MIDI-UNPROCESSED_16-18, 5 pairs: 18.466 s / 20.256 s, geomean ratio 0.909 (95% CI 0.898-0.921).
-- PCM byte-identical for 909.mid, the MAESTRO file (no reverb send) and ugly.mid (uses reverb).
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/dd/dd88b142b74dd450fe44664ac0f556770fa645509e4546357262bccb4227c966.txt; sha256=dd88b142b74dd450fe44664ac0f556770fa645509e4546357262bccb4227c966; bytes=18362]
+### Instruction counts, base vs all five changes (retired instructions, taskset -c 2)
 
-### Tools run on the changed files
+| File (MIDI Collection / MAESTRO) | base | combined | ratio |
+|---|---:|---:|---:|
+| lionking neverending | 68.47B | 66.54B | 0.972 |
+| ugly.mid | 48.16B | 46.47B | 0.965 |
+| class14.mid | 63.10B | 61.39B | 0.973 |
+| ekn call-al | 30.75B | 29.92B | 0.973 |
+| dreamadream.mid | 74.52B | 71.27B | 0.956 |
+| 8076fe75.mid | 13.60B | 13.33B | 0.980 |
+| MAESTRO 2014 16-18 | 114.17B | 98.34B | 0.861 |
+| MAESTRO 2013 ORIG 03 | 64.02B | 54.63B | 0.853 |
+| MAESTRO 2015 R1 D1-1-8 | 59.34B | 52.88B | 0.891 |
 
-| Tool | Result |
-|---|---|
-| ASan+UBSan test run (`test_rvoice_dsp_interpolate`, `test_iir_coefficient_reuse`) | pass; the unguarded tap-window version is caught by ASan |
-| ASan+UBSan `fluidsynth` render of 909.mid, MAESTRO, ugly.mid, class14.mid | no reports |
-| GCC 14 `-fanalyzer` on the five modified translation units | no diagnostics apart from the `-Wreorder` above |
-| Clang 19 static analyzer (`--analyze`) on the same files | no diagnostics |
-| Clang 19 `-Wlifetime-safety-permissive` on `fluid_rvoice_mixer.c` and `fluid_rvoice_dsp.cpp` | no diagnostics (C support in clang 19 is experimental) |
+Geomean 0.935 (-6.5%). The three MAESTRO files gain more because no voice sends to the reverb there, so `perf/reverb-idle-skip` removes the whole reverb block; the six MIDI Collection files use the reverb and save the interpolation, IIR and delay-line-length work only. Counts are deterministic (single run per build) unlike the wall-clock pairs.
 
-The SF2-backed tests (`test_synth_render_s16`, `test_fast_render`, `test_rvoice_mixer_worker_startup`) cannot run in these worktrees because `test/sf2/` assets are not part of the repository; they were replaced by ASan renders of real files.
+### Per-branch PCM check (44.1 kHz, MuseScore General, 909.mid / ugly.mid / MAESTRO 2013 ORIG)
 
-### Combined (five branches, all cherry-picked cleanly)
+Every branch alone and the combination render WAVs byte-identical to upstream on all three files.
 
-POP909 909.mid, 6 pairs: 5.545 s / 6.704 s, geomean ratio 0.837 (95% CI 0.804-0.872). Rendered WAVs are byte-identical to upstream for 909.mid, ugly.mid and the MAESTRO file.
+### CI decision
 
-### CI
-
-Branch pushes do not trigger workflows; the repository only runs CI for pull requests, so these five branches have no CI runs yet.
+Branch pushes do not trigger workflows and the operator asked not to open pull requests, so the five branches stay without CI runs. Local evidence: ASan/UBSan tests and renders, GCC/Clang analyzers, byte-identical PCM, deterministic instruction counts and paired wall-clock runs.
