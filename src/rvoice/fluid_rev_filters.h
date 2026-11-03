@@ -78,6 +78,7 @@ public:
         : line(),
           line_in(0),
           line_out(0),
+          length(0),
           damping(),
           coefficient(0),
           last_output(0)
@@ -94,6 +95,7 @@ public:
         line_in = 0;
         line_out = 0;
         last_output = 0;
+        this->length = length;
         line.resize(static_cast<size_t>(length), sample_t());
         // do not call shrink_to_fit() here since the buffer is inited by its biggest size and may be decrease again later in realtime, while avoiding unnecessary reallocations
     }
@@ -184,7 +186,9 @@ public:
 
     int size() const
     {
-        return static_cast<int>(this->line.size());
+        /* Cached in set_buffer(); the sample loop reads it for every delay and
+         * tap access, where reloading the vector bounds is visible. */
+        return length;
     }
 
     /**
@@ -213,6 +217,8 @@ public:
      * write at this index, while multi-tap delays may keep line_in separate.
      */
     int line_out;
+    /** Cached delay buffer length, set by set_buffer(). */
+    int length;
     /** Optional damping low-pass filter state. */
     damping_t damping;
     /** Optional coefficient for lexverb cross-feed. */
