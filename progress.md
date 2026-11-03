@@ -97,3 +97,25 @@ This section records experiments run on the Xeon Gold 6140 box (6 cores, 2.3 GHz
 - IIR stable-coefficient four-sample block: already recorded as rejected above; not revived.
 - Interpolation sum reassociation: already recorded as rejected above; not revived.
 - 16-bit tap shift removal by pre-scaling the cubic coefficient table: considered and dropped. It would need a second coefficient table for the 24-bit path and touches the table generator; the expected saving is four integer shifts per sample.
+
+## 2026-11-04 second update (Xeon session): filter coefficients and interpolation tap window
+
+All branches below are one commit on top of the fetched `upstream/master=2e838ae6`; none of them exists on `todo` or in the prior branch list.
+
+### Accepted: `perf/iir-coeff-double` (pushed, `eed962d8`, +12/-2)
+
+- The biquad coefficients are stored as float (`IIR_COEFF_T`) while the history is `fluid_real_t` (double in the default build). The generated code widened both coefficients with `cvtss2sd` on every sample. Converting the four coefficients once into loop-local `fluid_real_t` copies and refreshing them after each recalculated row removes those conversions.
+- Safety: the float-to-double conversion is exact, the stored and recalculated values remain float, and every arithmetic operand is the same value as before, so the result is bit-identical. Rendered WAV is byte-identical.
+- Paired runs, POP909 909.mid, 10 pairs: 6.654 s -> 6.404 s, geomean ratio 0.959 (95% CI 0.942-0.975). Profile share of `fluid_iir_filter_apply` fell from 31.1% to 29.0% on the nine-file set.
+
+### Accepted: `perf/interp-tap-window` (pushed, `e74f2b08`, +32/-10)
+
+- The fourth-order interpolator loaded and converted four taps on every output sample. When the phase index advances by exactly one sample, the next window is the previous one shifted by one, so only the newest tap needs loading. The tap values, coefficient row and multiply-add order are unchanged, so the output is bit-identical (verified by byte-identical WAVs).
+- Instrumented phase increments: 30-59% of voice samples run at 0.99-1.01 samples per output sample, 33-59% at 1.01-1.25, the rest below 0.99; no larger increments appeared.
+- Paired runs: 909.mid, 8 pairs, 6.505 s -> 6.371 s (0.964, CI 0.942-0.990); re-measured after reverting a rejected variant, 6 pairs, 6.665 s -> 6.405 s (0.963, CI 0.944-0.992). dreamadream.mid, 5 pairs, 12.844 s -> 12.262 s (0.978, CI 0.952-1.007).
+
+### Rejected in this session
+
+- Window shift for a two-sample phase advance (`adv == 2`): 909.mid, 8 pairs, ratio 0.992 (CI 0.970-1.016), i.e. the extra branch costs more than the two taps it saves. Reverted; the pushed branch only specialises `adv == 1`.
+- Removing the IIR amplitude-ramp add chain entirely (forced `dsp_amp_incr = 0`, an upper bound that changes audio): 909.mid, 5 pairs, ratio about 0.99. The ramp chain is not the IIR bottleneck, so no steady-amplitude IIR specialisation was written.
+- Reconsidered and dropped without benchmarking: 16-bit tap shift removal by pre-scaling the cubic coefficient table (needs a second table for the 24-bit path); sliding-window fast path for unity playback (does not exist in the measured corpus).
