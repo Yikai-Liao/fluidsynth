@@ -63,3 +63,10 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 - 128-voice sustain render: L1D load misses median 268.74M -> 254.31M (-5.4%), but cycles 14.629B -> 14.644B (+0.1%, regression/noise); PCM identical.
 - Real Bach MIDI: L1D misses 150.44M -> 149.97M (-0.3%), cycles 5.532B -> 5.548B (+0.3%, regression/noise); PCM identical.
 - Reject: the cache counter change does not improve end-to-end MIDI rendering. `fluid_rvoice_write` remains a secondary ~5.3% hotspot; IIR/interpolation/mixing dominate.
+
+## 2026-11-04 multithread cache-to-cache investigation
+
+- `perf c2c record` works with AMD IBS on this machine when rendering with `synth.cpu-cores=4` and affinity to CPUs 4-7. One 128-voice run captured 26,057 records, 127 local HITM loads. The largest shared line was in pthread mutex lock/unlock code (40 local HITMs); another mixer worker/atomic line had 6. The recording is short and samples were sparse, so treat counts as directional.
+- Tried local voice index batches of 4 on `perf/mixer-voice-batches`. A seven-run preliminary `perf stat` showed 2.9% lower aggregate cycles and 0.7% fewer instructions, but repeated renders had varying output lengths and very large PCM differences (thousands of 16-bit units). This is not acceptable.
+- Setting batch size to 1 restored the exact baseline PCM hash across three runs, confirming the problem is tied to batched assignment/order. Discard the branch change; do not push it.
+- `perf c2c` is the better tool for cross-core cache-line sharing; it identified mutex/scheduler lines. `perf mem` is unusable with this perf build (`event '(null)' not supported`), and raw IBS records did not resolve load addresses/latencies in `perf report`.
