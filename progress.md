@@ -56,3 +56,10 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 - Nine paired real-Bach runs: median cycles 5.551B -> 5.549B (~0.03%).
 - Three paired conventional multi-track runs: median cycles 80.522B -> 80.465B (~0.07%).
 - Reject: the normal MIDI results do not clear noise. Next investigate internal ADSR field layout for L1 locality; no accepted code change yet.
+
+## 2026-11-04 ADSR layout experiment
+
+- Reordered `fluid_adsr_env_t` so `section/count/val` precede the envelope stage array (`perf/adsr-hot-layout`, uncommitted experiment).
+- 128-voice sustain render: L1D load misses median 268.74M -> 254.31M (-5.4%), but cycles 14.629B -> 14.644B (+0.1%, regression/noise); PCM identical.
+- Real Bach MIDI: L1D misses 150.44M -> 149.97M (-0.3%), cycles 5.532B -> 5.548B (+0.3%, regression/noise); PCM identical.
+- Reject: the cache counter change does not improve end-to-end MIDI rendering. `fluid_rvoice_write` remains a secondary ~5.3% hotspot; IIR/interpolation/mixing dominate.
