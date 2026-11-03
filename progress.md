@@ -119,3 +119,23 @@ All branches below are one commit on top of the fetched `upstream/master=2e838ae
 - Window shift for a two-sample phase advance (`adv == 2`): 909.mid, 8 pairs, ratio 0.992 (CI 0.970-1.016), i.e. the extra branch costs more than the two taps it saves. Reverted; the pushed branch only specialises `adv == 1`.
 - Removing the IIR amplitude-ramp add chain entirely (forced `dsp_amp_incr = 0`, an upper bound that changes audio): 909.mid, 5 pairs, ratio about 0.99. The ramp chain is not the IIR bottleneck, so no steady-amplitude IIR specialisation was written.
 - Reconsidered and dropped without benchmarking: 16-bit tap shift removal by pre-scaling the cubic coefficient table (needs a second table for the 24-bit path); sliding-window fast path for unity playback (does not exist in the measured corpus).
+
+### Accepted: `perf/reverb-delay-size` (pushed, `d91699c9`, +7/-1)
+
+- `fluid_reverb_delay_line::size()` recomputed the vector bounds on every delay and tap access; the Dattorro loop performs dozens per sample. The length is now stored in `set_buffer()` and returned by `size()`. The buffer is only resized there, so the value is identical and the output is byte-identical.
+- Reverb-only workload (5-minute silent MIDI, 12 pairs of `perf stat` cycles, taskset -c 2): 5.966B -> 5.842B, geomean ratio 0.984 (95% CI 0.972-0.994). Full 909.mid render, 6 pairs: 0.980 (CI 0.953-1.002), median 6.623 s -> 6.598 s; the box was shared during these runs, so the full-render number is weaker.
+
+### Combined effect of the four branches (scratch worktree, not pushed)
+
+Cherry-picked `bd6c7ec2`, `eed962d8`, `e74f2b08`, `d91699c9` onto `upstream/master` (no conflicts) and compared against plain upstream on 909.mid:
+
+| Build | Retired instructions | Wall-clock median (6 pairs) |
+|---|---:|---:|
+| upstream | 40.028B | 6.772 s |
+| +`interp-buffer-steps` | 39.997B | - |
+| +`iir-coeff-double` | 38.120B | - |
+| +`interp-tap-window` | 39.444B | - |
+| +`reverb-delay-size` | 40.020B | - |
+| all four | 37.514B (-6.3%) | 6.387 s (ratio 0.944, CI 0.919-0.968) |
+
+Instruction counts are deterministic and were taken once per build; wall-clock and cycle counters on this shared machine fluctuate by 2-3% between runs, so the combined wall-clock result (5.6%) is the weakest of these numbers. WAV output of the combined build is byte-identical to upstream for 909.mid.
