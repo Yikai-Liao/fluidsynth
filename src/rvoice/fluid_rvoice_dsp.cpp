@@ -82,8 +82,22 @@ compute_interpolation_steps(fluid_phase_t dsp_phase, fluid_phase_t dsp_phase_inc
     fluid_phase_set_int(boundary, dsp_end_index + 1);
     // Phase can be slightly negative after a loop wrap and a previously rounded dsp_phase, so compare signed.
     int64_t remaining = static_cast<int64_t>(boundary - dsp_phase);
+    const unsigned short buffer_remaining = FLUID_BUFSIZE - dsp_i;
+
+    // If the phase does not reach the boundary within this buffer, the step count
+    // is limited by the buffer and the division below can be skipped. The bound on
+    // the increment keeps the comparison product from wrapping for out-of-range
+    // pitch values; those fall back to the division below.
+    const fluid_phase_t max_safe_incr = static_cast<fluid_phase_t>(-1) / FLUID_BUFSIZE;
+
+    if(remaining > 0 && dsp_phase_incr <= max_safe_incr
+            && static_cast<fluid_phase_t>(remaining) >= buffer_remaining * dsp_phase_incr)
+    {
+        return buffer_remaining;
+    }
+
     fluid_phase_t steps = remaining <= 0 ? 0 : ((static_cast<fluid_phase_t>(remaining) + dsp_phase_incr - 1) / dsp_phase_incr);
-    unsigned short iters = static_cast<unsigned short>(std::min<fluid_phase_t>(steps, (FLUID_BUFSIZE - dsp_i)));
+    unsigned short iters = static_cast<unsigned short>(std::min<fluid_phase_t>(steps, buffer_remaining));
     return iters;
 }
 
