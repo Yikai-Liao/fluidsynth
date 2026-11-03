@@ -139,3 +139,46 @@ Cherry-picked `bd6c7ec2`, `eed962d8`, `e74f2b08`, `d91699c9` onto `upstream/mast
 | all four | 37.514B (-6.3%) | 6.387 s (ratio 0.944, CI 0.919-0.968) |
 
 Instruction counts are deterministic and were taken once per build; wall-clock and cycle counters on this shared machine fluctuate by 2-3% between runs, so the combined wall-clock result (5.6%) is the weakest of these numbers. WAV output of the combined build is byte-identical to upstream for 909.mid.
+
+### Boundary fix in `perf/interp-tap-window` (amended to `486e327a`)
+
+The first version refreshed the tap window after every iteration, including the last one of a segment. That last refresh reads `dsp_phase_index + 2`, which can already lie past the loop or sample end when the phase advanced beyond the segment end.
+
+Evidence, Debug build with `-fsanitize=address,undefined`:
+
+- Without the `if(safe_count)` guard, `test/test_rvoice_dsp_interpolate` aborts with `AddressSanitizer: stack-buffer-overflow ... in fluid_rvoice_get_sample16` (64-sample fixture, offset 272 over the `data` array) in the integer-phase test.
+- With the guard, the whole test passes, including the short-loop, end-of-sample, high-playback-rate and phase-ramp cases.
+
+Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean ratio 0.954 (95% CI 0.943-0.965); PCM still byte-identical.
+
+### Amendment in `perf/reverb-delay-size` (amended to `e89c8734`)
+
+`gcc -fanalyzer` on the modified files reported `-Wreorder` for `fluid_reverb_delay_line` because the new `length` member was declared between `line_in` and `line_out` while the constructor initializes it after `line_out`. The member was moved after `line_out`; no warning, PCM unchanged.
+
+### New branch: `perf/reverb-idle-skip` (`0de60265`, +36/-0)
+
+`fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb send), the Dattorro loop processed an all-zero input and added zeros. `fluid_mixer_fx_t` now records whether the reverb has received a nonzero input since its last reset; while that flag says idle, the mixer scans the input block and skips the call if it is all zeros. Skipping is exact because a reset reverb with zero input produces zero.
+
+- Instrumented destination counts for the nine sampled files: three (all MAESTRO piano files, plus POP909 909.mid separately) never mix into the reverb send, six do.
+- MAESTRO 2014 MIDI-UNPROCESSED_16-18, 5 pairs: 18.466 s / 20.256 s, geomean ratio 0.909 (95% CI 0.898-0.921).
+- PCM byte-identical for 909.mid, the MAESTRO file (no reverb send) and ugly.mid (uses reverb).
+
+### Tools run on the changed files
+
+| Tool | Result |
+|---|---|
+| ASan+UBSan test run (`test_rvoice_dsp_interpolate`, `test_iir_coefficient_reuse`) | pass; the unguarded tap-window version is caught by ASan |
+| ASan+UBSan `fluidsynth` render of 909.mid, MAESTRO, ugly.mid, class14.mid | no reports |
+| GCC 14 `-fanalyzer` on the five modified translation units | no diagnostics apart from the `-Wreorder` above |
+| Clang 19 static analyzer (`--analyze`) on the same files | no diagnostics |
+| Clang 19 `-Wlifetime-safety-permissive` on `fluid_rvoice_mixer.c` and `fluid_rvoice_dsp.cpp` | no diagnostics (C support in clang 19 is experimental) |
+
+The SF2-backed tests (`test_synth_render_s16`, `test_fast_render`, `test_rvoice_mixer_worker_startup`) cannot run in these worktrees because `test/sf2/` assets are not part of the repository; they were replaced by ASan renders of real files.
+
+### Combined (five branches, all cherry-picked cleanly)
+
+POP909 909.mid, 6 pairs: 5.545 s / 6.704 s, geomean ratio 0.837 (95% CI 0.804-0.872). Rendered WAVs are byte-identical to upstream for 909.mid, ugly.mid and the MAESTRO file.
+
+### CI
+
+Branch pushes do not trigger workflows; the repository only runs CI for pull requests, so these five branches have no CI runs yet.
