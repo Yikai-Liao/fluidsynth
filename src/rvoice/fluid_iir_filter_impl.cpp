@@ -185,6 +185,12 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
         IIR_COEFF_T dsp_b02 = iir_filter->b02;
         IIR_COEFF_T dsp_b1 = iir_filter->b1;
 
+        /* The coefficients are stored in IIR_COEFF_T but the sample history uses
+         * fluid_real_t. Keep a converted copy for the loop so the per-sample
+         * arithmetic does not widen them again, and refresh it after each
+         * recalculation below. */
+        fluid_real_t a1d = dsp_a1, a2d = dsp_a2, b02d = dsp_b02, b1d = dsp_b1;
+
         int fres_incr_count = iir_filter->fres_incr_count;
         int q_incr_count = iir_filter->q_incr_count;
         
@@ -204,8 +210,8 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
         for (dsp_i = 0; dsp_i < count; dsp_i++)
         {
             /* The filter is implemented in Direct-II form. */
-            fluid_real_t dsp_centernode = dsp_buf[dsp_i] - dsp_a1 * dsp_hist1 - dsp_a2 * dsp_hist2;
-            fluid_real_t sample = dsp_b02 * (dsp_centernode + dsp_hist2) + dsp_b1 * dsp_hist1;
+            fluid_real_t dsp_centernode = dsp_buf[dsp_i] - a1d * dsp_hist1 - a2d * dsp_hist2;
+            fluid_real_t sample = b02d * (dsp_centernode + dsp_hist2) + b1d * dsp_hist1;
             dsp_hist2 = dsp_hist1;
             dsp_hist1 = dsp_centernode;
 
@@ -261,6 +267,10 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
                 if(!REUSE_COEFFICIENTS || table_index != previous_table_index)
                 {
                     fluid_iir_filter_calculate_coefficients<IIR_COEFF_T, GAIN_NORM, TYPE>(fres, q, iir_filter->sincos_table, &dsp_a1, &dsp_a2, &dsp_b02, &dsp_b1);
+                    a1d = dsp_a1;
+                    a2d = dsp_a2;
+                    b02d = dsp_b02;
+                    b1d = dsp_b1;
                     previous_table_index = table_index;
                 }
             }
