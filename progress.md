@@ -1,0 +1,38 @@
+# FluidSynth MIDI performance work
+
+Updated: 2026-11-04 00:38 Asia/Singapore (UTC+08:00)
+
+## Goal
+
+Continue measured performance optimization for regular MIDI rendering until 2026-11-04 10:00 Beijing time. Each accepted optimization must live on its own branch and be pushed to `origin`. Production changes must add fewer than 50 lines. Keep the original `/home/lyk/code/fluidsynth` worktree untouched because its `TODO` has unrelated uncommitted edits.
+
+## Baseline and prior work
+
+- Upstream baseline: `upstream/master` at `2e838ae6` when the prior optimization was prepared.
+- Existing optimization: `perf/mixer-stable-amp`, commit `d4afd04a` (`perf: skip stable voice gain ramp arithmetic`), based on that upstream baseline. It adds 10 production lines and removes 1.
+- Reported measurements from the prior run: ordinary generated 8-track MIDI cycles median 5.337B -> 5.128B (~4.1%); 128-voice sustain wall time 3.133 s -> 3.021 s. PCM hashes matched. Real 12-second MIDI measurements showed ~1.5% and ~4.2% lower cycles, with identical PCM hashes.
+- Rejected experiments: IIR stable-block branch (no cycles gain) and interpolation sum reordering (gain within noise). Do not revive without new evidence.
+- Exclude work already on `todo`, including voice index/owner, mixer index, exclusive bitmap/candidate scans, MIDI heap/track merge, and IIR W4 work.
+
+## Current machine and profiling
+
+- Ryzen 7 8845H, x86_64; 16 logical CPUs.
+- `perf_event_paranoid` currently reads `0`; `perf` and `llvm-mca` are available.
+- Existing saved profiles in `/tmp/fs-*.data` contain no lost samples. Ordinary MIDI profile: IIR 30.19%, 4th-order interpolation 28.4%. High-voice sustain profiles show IIR around 33-36% and interpolation about 34.7% in one reverb configuration. Profile samples are short and should be refreshed for candidates.
+- Self-contained SoundFont: `sf2/VintageDreamsWaves-v2.sf2`.
+- Available real MIDI examples include `/home/lyk/Music/asap-dataset-master/Bach/Fugue/bwv_846/Shi05M.mid` and `/home/lyk/Downloads/test.mid`. Prior real-MIDI runs used an additional 12-second normal and Mahler excerpt; locate their exact paths before reuse.
+
+## Worktree state
+
+- Main repo `/home/lyk/code/fluidsynth`: branch `ci/dev-android-migration`, unrelated modified `TODO`; do not edit or reset it.
+- Perf worktree `/home/lyk/code/fluidsynth-perf-mixer`: clean branch `perf/mixer-stable-amp` at `d4afd04a`; currently ahead of `upstream/master` by one commit.
+- Todo worktree `/home/lyk/code/fluidsynth-worktrees/todo`: branch `todo`, initially clean at `34f8594d`; this file is being added here.
+- Existing builds are under `/home/lyk/code/fluidsynth-builds`; create a fresh optimized build for each compared source revision or ensure CMake points at the correct source tree.
+
+## Next actions
+
+1. Push `perf/mixer-stable-amp` to `origin` and commit/push this progress file on `todo`.
+2. Refresh `upstream/master`; do not incorporate unrelated upstream changes without checking them.
+3. Build a current baseline and refresh function-level `perf record` on representative regular MIDI, then pick candidates outside completed `todo` work.
+4. For each candidate, benchmark alternating baseline/candidate runs on a pinned core, check PCM equality (or quantify float differences), reject noisy or regressive results, keep production additions below 50 lines, then commit and push that candidate branch.
+5. Update this file after every experiment, accepted optimization, push, and any blocker.
