@@ -404,19 +404,46 @@ fluid_rvoice_dsp_interpolate_4th_order_local(fluid_rvoice_t *rvoice, fluid_real_
         /* interpolate the sequence of sample points */
         safe_count = compute_interpolation_steps(dsp_phase, dsp_phase_incr, end_index, dsp_i);
 
-        for(; safe_count--; dsp_i++)
+        if(safe_count > 0)
         {
-            fluid_real_t sample = interp_cubic(
-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index - 1),
-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index),
-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 1),
-                                      fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 2));
+            /* Keep the four converted taps across iterations. A phase increment
+             * between one and two samples moves the window by one position, so
+             * only the newest tap has to be loaded and converted again. */
+            fluid_real_t tap0 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index - 1);
+            fluid_real_t tap1 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index);
+            fluid_real_t tap2 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 1);
+            fluid_real_t tap3 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 2);
+            unsigned int previous_index = dsp_phase_index;
 
-            dsp_buf[dsp_i] = sample;
+            for(; safe_count--; dsp_i++)
+            {
+                dsp_buf[dsp_i] = interp_cubic(tap0, tap1, tap2, tap3);
 
-            /* increment phase and amplitude */
-            fluid_phase_incr(dsp_phase, dsp_phase_incr);
-            dsp_phase_index = fluid_phase_index(dsp_phase);
+                /* increment phase and amplitude */
+                fluid_phase_incr(dsp_phase, dsp_phase_incr);
+                dsp_phase_index = fluid_phase_index(dsp_phase);
+
+                /* Only refresh the window if another sample follows. The last
+                 * iteration may already point past the loop or sample end. */
+                if(safe_count)
+                {
+                    if(dsp_phase_index - previous_index == 1)
+                    {
+                        tap0 = tap1;
+                        tap1 = tap2;
+                        tap2 = tap3;
+                        tap3 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 2);
+                    }
+                    else
+                    {
+                        tap0 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index - 1);
+                        tap1 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index);
+                        tap2 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 1);
+                        tap3 = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + 2);
+                    }
+                    previous_index = dsp_phase_index;
+                }
+            }
         }
 
         /* break out if buffer filled */
