@@ -85,6 +85,11 @@ struct _fluid_mixer_fx_t
     /* chorus shadow parameters here will be returned if queried */
     double chorus_param[FLUID_CHORUS_PARAM_LAST];
     int chorus_on; /* chorus on/off */
+
+    /** Set while the reverb has not received a nonzero input since it was last
+     * reset. Its delay lines then still hold zeros, so feeding zeros produces
+     * zeros and the unit can be skipped. */
+    int reverb_idle;
 };
 
 struct _fluid_rvoice_mixer_t
@@ -130,6 +135,23 @@ struct _fluid_rvoice_mixer_t
 static void delete_rvoice_mixer_threads(fluid_rvoice_mixer_t *mixer);
 static int fluid_rvoice_mixer_set_threads(fluid_rvoice_mixer_t *mixer, int thread_count, int prio_level);
 #endif
+
+/* True if every sample in buf is zero. */
+static FLUID_INLINE int
+fluid_mixer_buf_is_silent(const fluid_real_t *buf, int count)
+{
+    int i;
+
+    for(i = 0; i < count; i++)
+    {
+        if(buf[i] != 0.0f)
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
 
 static FLUID_INLINE void
 fluid_rvoice_mixer_process_fx(fluid_rvoice_mixer_t *mixer, int current_blockcount)
@@ -220,6 +242,21 @@ fluid_rvoice_mixer_process_fx(fluid_rvoice_mixer_t *mixer, int current_blockcoun
 
                     for(i = 0; i < sample_count; i += FLUID_BUFSIZE, samp_idx += FLUID_BUFSIZE)
                     {
+                        /* Only engines whose reset state survives zero input
+                         * may be skipped: the FDN and Signalsmith engines advance
+                         * modulation phases while processing, and the Freeverb
+                         * engine adds a DC offset to its input. */
+                        if(mixer->fx[f].reverb_idle &&
+                                fluid_revmodel_can_skip_silence(mixer->fx[f].reverb))
+                        {
+                            if(fluid_mixer_buf_is_silent(&in_rev[samp_idx], FLUID_BUFSIZE))
+                            {
+                                continue; /* zero input into an all-zero reverb stays zero */
+                            }
+
+                            mixer->fx[f].reverb_idle = 0;
+                        }
+
                         reverb_process_func(mixer->fx[f].reverb,
                                             &in_rev[samp_idx],
                                             mix_fx_to_out ? &out_rev_l[dry_idx + i] : &out_rev_l[samp_idx],
@@ -791,14 +828,18 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_set_samplerate)
 
         if(mixer->fx[i].reverb)
         {
-            fluid_revmodel_samplerate_change(mixer->fx[i].reverb, samplerate);
-
             /*
               fluid_revmodel_samplerate_change() shouldn't fail if the reverb was created
               with sample_rate_max set to the maximum sample rate indicated in the settings.
               If this condition isn't respected, the reverb will continue to work but with
               lost of quality.
+              A failed change keeps the previous state, so only a successful one may be
+              treated as a reset whose silence can be skipped.
             */
+            if(fluid_revmodel_samplerate_change(mixer->fx[i].reverb, samplerate) == FLUID_OK)
+            {
+                mixer->fx[i].reverb_idle = 1;
+            }
         }
     }
 
@@ -876,6 +917,8 @@ new_fluid_rvoice_mixer(int buf_count, int fx_buf_count, int fx_units,
             FLUID_LOG(FLUID_ERR, "Out of memory");
             goto error_recovery;
         }
+
+        mixer->fx[i].reverb_idle = 1;
     }
 
     if(!fluid_mixer_buffers_init(&mixer->buffers, mixer))
@@ -1313,6 +1356,7 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_reset_reverb)
     for(i = 0; i < mixer->fx_units; i++)
     {
         fluid_revmodel_reset(mixer->fx[i].reverb);
+        mixer->fx[i].reverb_idle = 1;
     }
 }
 

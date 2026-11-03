@@ -34,6 +34,19 @@ struct _fluid_revmodel_t
     virtual void reset() = 0;
     virtual void set(int set, fluid_real_t roomsize, fluid_real_t damping, fluid_real_t width, fluid_real_t level) = 0;
     virtual int samplerate_change(fluid_real_t sample_rate) = 0;
+
+    /**
+     * Report whether processing only zero input after reset() leaves the
+     * engine in that reset state and produces zero output.
+     *
+     * fluid_rvoice_mixer skips processmix() on silent blocks for engines that
+     * answer true. Engines that advance an oscillator or inject a constant
+     * offset while processing must keep running and answer false.
+     */
+    virtual bool can_skip_silence() const
+    {
+        return false;
+    }
 };
 
 extern "C" {
@@ -113,6 +126,8 @@ void fluid_revmodel_set(fluid_revmodel_t *rev, int set, fluid_real_t roomsize,
                         fluid_real_t damping, fluid_real_t width, fluid_real_t level);
 
 int fluid_revmodel_samplerate_change(fluid_revmodel_t *rev, fluid_real_t sample_rate);
+
+int fluid_revmodel_can_skip_silence(fluid_revmodel_t *rev);
 
 #ifdef __cplusplus
 }

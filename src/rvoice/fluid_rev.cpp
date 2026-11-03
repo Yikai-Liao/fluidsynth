@@ -181,6 +181,16 @@ void fluid_revmodel_set(fluid_revmodel_t *rev, int set, fluid_real_t roomsize,
     }
 }
 
+/**
+ * Check whether a reverb that was reset and has only been fed silence can be
+ * left unprocessed, see _fluid_revmodel_t::can_skip_silence().
+ */
+int fluid_revmodel_can_skip_silence(fluid_revmodel_t *rev)
+{
+    fluid_return_val_if_fail(rev != NULL, 0);
+    return rev->can_skip_silence() ? 1 : 0;
+}
+
 int fluid_revmodel_samplerate_change(fluid_revmodel_t *rev, fluid_real_t sample_rate)
 {
     fluid_return_val_if_fail(rev != NULL, FLUID_FAILED);

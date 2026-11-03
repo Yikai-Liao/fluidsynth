@@ -94,6 +94,13 @@ struct fluid_revmodel_dattorro : public _fluid_revmodel_t
              fluid_real_t width, fluid_real_t level) override;
     int samplerate_change(fluid_real_t sample_rate) override;
 
+    /* Fixed delay lengths, no oscillator and no DC offset: zero input keeps
+     * every line and filter state at zero, only the ring positions advance. */
+    bool can_skip_silence() const override
+    {
+        return true;
+    }
+
 private:
     void setup();
     void update();
