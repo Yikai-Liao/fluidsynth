@@ -70,3 +70,30 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 - Tried local voice index batches of 4 on `perf/mixer-voice-batches`. A seven-run preliminary `perf stat` showed 2.9% lower aggregate cycles and 0.7% fewer instructions, but repeated renders had varying output lengths and very large PCM differences (thousands of 16-bit units). This is not acceptable.
 - Setting batch size to 1 restored the exact baseline PCM hash across three runs, confirming the problem is tied to batched assignment/order. Discard the branch change; do not push it.
 - `perf c2c` is the better tool for cross-core cache-line sharing; it identified mutex/scheduler lines. `perf mem` is unusable with this perf build (`event '(null)' not supported`), and raw IBS records did not resolve load addresses/latencies in `perf report`.
+
+## 2026-11-04 10:00-deadline session on Xeon 6140 (second machine)
+
+This section records experiments run on the Xeon Gold 6140 box (6 cores, 2.3 GHz, GCC 13, /root/code paths). It supplements, and does not replace, the Ryzen results above. Every comparison below used `/root/code/fluidsynth-delivery-20261018/archive/research/20261015/assets/MuseScore_General.sf2`, 44.1 kHz, gain 0.5, `synth.cpu-cores=1`, 64-frame interleaved `fluid_synth_write_float` writes, rendering to a memory buffer only, `taskset -c 2`, alternating base/candidate process pairs.
+
+### Profiling refresh (9 ordinary MIDI files, pop + game + piano)
+
+- perf, no children: `fluid_iir_filter_apply` 31.1%, `fluid_rvoice_dsp_interpolate` 27.0%, `fluid_rvoice_buffers_mix` 9.5%, Dattorro reverb 6.6%, `fluid_rvoice_write` 4.1%, chorus 1.9%, `fluid_iir_filter_calc` 1.6%.
+- Line-level annotation of the interpolator on POP909 909.mid: int16-to-double conversion 17.4% of the function, the four tap loads 23%, table row 8%, store 6%. A 64-bit division in `compute_interpolation_steps` runs two to four times per 64-sample block.
+- Instrumented build counters for 909.mid: 6.05M interpolate calls, 387.4M voice samples (about 70 active voices per block), 70.8M per sample segment. IIR received 387.4M samples; 118.6M of them (30.6%) had an active cutoff/Q ramp; 10.5M coefficient table-row changes.
+- Instrumented increment check: no voice sample in 909.mid had an integer phase increment, and only 5.4% of samples in one MIDI Collection file played at exactly 1.0. A sliding-window fast path for unity playback was therefore not pursued.
+
+### Accepted: `perf/interp-buffer-steps` (pushed, `9ed43975`)
+
+- Change: in `compute_interpolation_steps()`, compare the remaining phase distance with the remaining output buffer before dividing. When the buffer ends first, return the buffer remainder and skip the 64-bit division. +10/-1 production lines, no compiler-specific code.
+- Paired fast-render runs, 10 pairs each, median render-loop time:
+  - POP909 909.mid: 6.695 s -> 6.566 s, paired geomean ratio 0.986 (95% CI 0.975-0.996).
+  - MIDI Collection dreamadream.mid: 12.276 s -> 12.127 s, ratio 0.978 (95% CI 0.964-0.993).
+- Rendered WAVs byte-identical for both files. Standalone micro benchmark of the function (half the calls taking the new early exit): 10.0 ns -> 4.8 ns per call, stable across five repetitions.
+- Not yet covered: other generators/corpora, float/double builds, 32/48/96 kHz, Clang/MSVC. These remain open before an upstream PR.
+
+### Rejected or not pursued in this session
+
+- Mixer steady-amplitude fast path: already implemented and pushed as `perf/mixer-stable-amp` (`d4afd04a`); not duplicated.
+- IIR stable-coefficient four-sample block: already recorded as rejected above; not revived.
+- Interpolation sum reassociation: already recorded as rejected above; not revived.
+- 16-bit tap shift removal by pre-scaling the cubic coefficient table: considered and dropped. It would need a second coefficient table for the 24-bit path and touches the table generator; the expected saving is four integer shifts per sample.
