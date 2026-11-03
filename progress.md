@@ -47,3 +47,12 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 - Cache-line prefetch experiment on a separate worktree/branch `perf/rvoice-prefetch` (not accepted): prefetched the next active rvoice's `envlfo` cacheline. Five alternating baseline/candidate runs gave cycles medians 14.616B vs 14.574B (~0.3%), identical PCM SHA-256, L1D load misses ~262.1M vs ~262.0M. No convincing cache benefit; discard this uncommitted branch change.
 - `perf mem record` fails on this installation with `event '(null)' not supported`. Raw `perf record -e ibs_op// -d` samples successfully, but current `perf` did not resolve useful data addresses or load latency for this run. `perf c2c` targets cross-core cache-line sharing; this render path is single-threaded.
 - Current focus: inspect `fluid_adsr_env_calc`/sustain state in `fluid_rvoice_write` for safe repeated work that can be removed under 50 added lines.
+
+## 2026-11-04 ADSR experiment
+
+- Tested a guarded sustain-section fast path in `fluid_adsr_env_calc` on `perf/adsr-sustain-fastpath` (uncommitted experiment, do not keep).
+- Output was byte-identical for the 128-voice sustain render, a real Bach MIDI, and the generated conventional multi-track MIDI.
+- Five paired high-voice runs: median cycles 14.618B -> 14.554B (~0.44%); instructions 59.161B -> 58.946B (~0.36%).
+- Nine paired real-Bach runs: median cycles 5.551B -> 5.549B (~0.03%).
+- Three paired conventional multi-track runs: median cycles 80.522B -> 80.465B (~0.07%).
+- Reject: the normal MIDI results do not clear noise. Next investigate internal ADSR field layout for L1 locality; no accepted code change yet.
