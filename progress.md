@@ -36,3 +36,14 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 3. Build a current baseline and refresh function-level `perf record` on representative regular MIDI, then pick candidates outside completed `todo` work.
 4. For each candidate, benchmark alternating baseline/candidate runs on a pinned core, check PCM equality (or quantify float differences), reject noisy or regressive results, keep production additions below 50 lines, then commit and push that candidate branch.
 5. Update this file after every experiment, accepted optimization, push, and any blocker.
+
+## 2026-11-04 cache-line and rvoice investigation
+
+- Pushed the prior accepted branch: `origin/perf/mixer-stable-amp` now points to `d4afd04a`.
+- Added and pushed this progress file as `todo` commit `004a9e43`.
+- Fresh `RelWithDebInfo` build of `d4afd04a` used GCC 16.2.1, double sample type, O2, same CLI/SoundFont settings for comparisons.
+- On `/tmp/fluidsynth-conventional.mid`, `perf record -e cycles:u -F 999 -g` with zero lost samples attributed ~34.6% to IIR, ~31.0% to interpolation, ~23.0% to mixing, and ~5.3% to `fluid_rvoice_write`.
+- Process-level 128-voice sustain counters: ~13.57B L1D loads / ~262M L1D load misses per render; cache-misses event varied from 4.5M to 10.3M across runs, so treat that event as noisy here.
+- Cache-line prefetch experiment on a separate worktree/branch `perf/rvoice-prefetch` (not accepted): prefetched the next active rvoice's `envlfo` cacheline. Five alternating baseline/candidate runs gave cycles medians 14.616B vs 14.574B (~0.3%), identical PCM SHA-256, L1D load misses ~262.1M vs ~262.0M. No convincing cache benefit; discard this uncommitted branch change.
+- `perf mem record` fails on this installation with `event '(null)' not supported`. Raw `perf record -e ibs_op// -d` samples successfully, but current `perf` did not resolve useful data addresses or load latency for this run. `perf c2c` targets cross-core cache-line sharing; this render path is single-threaded.
+- Current focus: inspect `fluid_adsr_env_calc`/sustain state in `fluid_rvoice_write` for safe repeated work that can be removed under 50 added lines.
