@@ -61,6 +61,7 @@ ADD_FLUID_TEST(test_voice_reuse_gain)
 ADD_FLUID_TEST(test_basic_channel)
 ADD_FLUID_TEST(test_rvoice_dsp_interpolate)
 ADD_FLUID_TEST(test_iir_coefficient_reuse)
+ADD_FLUID_TEST(test_chorus_silence_skip)
 
 if ( NOT OSAL STREQUAL "embedded" )
     ADD_FLUID_TEST(test_threading)

@@ -85,6 +85,7 @@ struct _fluid_mixer_fx_t
     /* chorus shadow parameters here will be returned if queried */
     double chorus_param[FLUID_CHORUS_PARAM_LAST];
     int chorus_on; /* chorus on/off */
+    int chorus_idle; /* chorus has not been fed a non-zero sample since reset */
 };
 
 struct _fluid_rvoice_mixer_t
@@ -127,6 +128,24 @@ struct _fluid_rvoice_mixer_t
 };
 
 #if ENABLE_MIXER_THREADS
+/* A buffer of exactly zero samples stays zero when a linear effect only sees
+ * zeros, so a freshly reset effect does not have to be run on it. */
+static FLUID_INLINE int
+fluid_mixer_buf_is_silent(const fluid_real_t *buf, int count)
+{
+    int i;
+
+    for(i = 0; i < count; i++)
+    {
+        if(buf[i] != 0.0f)
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 static void delete_rvoice_mixer_threads(fluid_rvoice_mixer_t *mixer);
 static int fluid_rvoice_mixer_set_threads(fluid_rvoice_mixer_t *mixer, int thread_count, int prio_level);
 #endif
@@ -256,6 +275,20 @@ fluid_rvoice_mixer_process_fx(fluid_rvoice_mixer_t *mixer, int current_blockcoun
 
                     for(i = 0; i < sample_count; i += FLUID_BUFSIZE, samp_idx += FLUID_BUFSIZE)
                     {
+                        /* A chorus that was reset and has only been fed silence
+                         * reads zeros and writes zeros; only its modulator
+                         * positions move on, which processsilence() does. */
+                        if(mixer->fx[f].chorus_idle)
+                        {
+                            if(fluid_mixer_buf_is_silent(&in_ch[samp_idx], FLUID_BUFSIZE))
+                            {
+                                fluid_chorus_processsilence(mixer->fx[f].chorus);
+                                continue;
+                            }
+
+                            mixer->fx[f].chorus_idle = 0;
+                        }
+
                         chorus_process_func(mixer->fx[f].chorus,
                                             &in_ch [samp_idx],
                                             mix_fx_to_out ? &out_ch_l[dry_idx + i] : &out_ch_l[samp_idx],
@@ -870,6 +903,7 @@ new_fluid_rvoice_mixer(int buf_count, int fx_buf_count, int fx_units,
         mixer->fx[i].reverb = new_fluid_revmodel(sample_rate_max, sample_rate,
                                                  reverb_type);
         mixer->fx[i].chorus = new_fluid_chorus(sample_rate);
+        mixer->fx[i].chorus_idle = 1;
 
         if(mixer->fx[i].reverb == NULL || mixer->fx[i].chorus == NULL)
         {
@@ -1324,6 +1358,7 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_reset_chorus)
     for(i = 0; i < mixer->fx_units; i++)
     {
         fluid_chorus_reset(mixer->fx[i].chorus);
+        mixer->fx[i].chorus_idle = 1;
     }
 }
 

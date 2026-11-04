@@ -372,12 +372,13 @@ static FLUID_INLINE fluid_real_t get_mod_triang(triang_modulator *mod)
  @param mod pointer on modulator structure.
  @return current value.
 -----------------------------------------------------------------------------*/
-static FLUID_INLINE fluid_real_t get_mod_delay(fluid_chorus_t *chorus,
+/* Compute the delay line position of one chorus block for the current sample.
+   Called by get_mod_delay() and by fluid_chorus_processsilence(). */
+static FLUID_INLINE void update_mod_delay_line(fluid_chorus_t *chorus,
                                                modulator *mod)
 {
     fluid_real_t out_index;  /* new modulated index position */
     int int_out_index; /* integer part of out_index */
-    fluid_real_t out; /* value to return */
 
     /* Checks if the modulator must be updated (every mod_rate samples). */
     /* Important: center_pos_mod must be used immediately for the
@@ -423,18 +424,33 @@ static FLUID_INLINE fluid_real_t get_mod_delay(fluid_chorus_t *chorus,
           Memorizing is necessary for modulation rate above 1 */
         mod->frac_pos_mod = out_index - int_out_index;
     }
+}
 
-    /*  First order all-pass interpolation ----------------------------------*/
-    /* https://ccrma.stanford.edu/~jos/pasp/First_Order_Allpass_Interpolation.html */
-    /*  begins interpolation: read current sample */
-    out = chorus->line[mod->line_out];
-
+/* Move the read position of one chorus block to the next sample. */
+static FLUID_INLINE void advance_mod_delay_line(fluid_chorus_t *chorus,
+                                                modulator *mod)
+{
     /* updates line_out to the next sample.
        Boundary check and circular motion as needed */
     if(++mod->line_out >= chorus->size)
     {
         mod->line_out -= chorus->size;
     }
+}
+
+static FLUID_INLINE fluid_real_t get_mod_delay(fluid_chorus_t *chorus,
+                                               modulator *mod)
+{
+    fluid_real_t out; /* value to return */
+
+    update_mod_delay_line(chorus, mod);
+
+    /*  First order all-pass interpolation ----------------------------------*/
+    /* https://ccrma.stanford.edu/~jos/pasp/First_Order_Allpass_Interpolation.html */
+    /*  begins interpolation: read current sample */
+    out = chorus->line[mod->line_out];
+
+    advance_mod_delay_line(chorus, mod);
 
     /* Fractional interpolation between next sample (at next position) and
        previous output added to current sample.
@@ -996,6 +1012,55 @@ void fluid_chorus_processmix(fluid_chorus_t *chorus, const fluid_real_t *in,
         /* Add the chorus stereo unit d_out to left and right output */
         left_out[sample_index]  += d_out[0] * chorus->wet1  + d_out[1] * chorus->wet2;
         right_out[sample_index] += d_out[1] * chorus->wet1  + d_out[0] * chorus->wet2;
+    }
+}
+
+/**
+ * Process one block of silence in a chorus that has not been fed any signal
+ * since it was created or reset.
+ *
+ * The delay line is still all zeros, so reading it would return zero and
+ * writing the silent input would not change it. Only the modulator positions,
+ * the oscillator phases and the buffer indices move forward, exactly as in
+ * fluid_chorus_processmix(), so a later non-silent block is processed as if no
+ * block had been skipped.
+ *
+ * @param chorus pointer on chorus unit.
+ */
+void fluid_chorus_processsilence(fluid_chorus_t *chorus)
+{
+    int sample_index;
+    int i;
+
+    for(sample_index = 0; sample_index < FLUID_BUFSIZE; sample_index++)
+    {
+        ++chorus->index_rate; /* modulator rate */
+
+        for(i = 0; i < chorus->number_blocks; i++)
+        {
+            update_mod_delay_line(chorus, &chorus->mod[i]);
+            advance_mod_delay_line(chorus, &chorus->mod[i]);
+        }
+
+        /* update modulator index rate and output center position */
+        if(chorus->index_rate >= chorus->mod_rate)
+        {
+            chorus->index_rate = 0; /* clear modulator index rate */
+
+            /* updates center position (center_pos_mod) to the next position
+               specified by modulation rate */
+            if((chorus->center_pos_mod += chorus->mod_rate) >= chorus->size)
+            {
+                chorus->center_pos_mod -= chorus->size;
+            }
+        }
+
+        /* Writing the silent input sample is skipped, only the write index
+           moves on, which keeps the distance between read and write position. */
+        if(++chorus->line_in >= chorus->size)
+        {
+            chorus->line_in -= chorus->size;
+        }
     }
 }
 
