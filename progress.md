@@ -159,18 +159,17 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/8b/8bb92a6d865fc4c0679ff9ab298d1f868fc190675e34018fc702b7717cdd166b.txt; sha256=8bb92a6d865fc4c0679ff9ab298d1f868fc190675e34018fc702b7717cdd166b; bytes=17609]
-### Remaining multithreaded overhead: per-worker buffer zeroing
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/d8/d8b49bfb5a4447f9e2b5a758dd6c6898f594bef1ea1c07626d5bfae4974a757a.txt; sha256=d8b49bfb5a4447f9e2b5a758dd6c6898f594bef1ea1c07626d5bfae4974a757a; bytes=18022]
+### Other configurations
 
-With `perf/builtin-atomics` the workers run in parallel, but the parallel path is still inefficient: at `synth.cpu-cores=4` a render of ugly.mid costs 11.9 s user + 3.7 s sys against 7.5 s + 0.5 s single-threaded, for a wall-clock gain of only 7.9 s -> 6.9 s.
+Identity and speed at other sample rates, 909.mid (interp 4, MuseScore General, upstream vs stack):
 
-Measured on a scratch build with the worker-side `fluid_mixer_buffers_zero()` call compiled out (output invalid, timing only), ugly.mid, 3 pairs:
+| sample rate | differing samples | max abs | 
+|---|---:|---:|
+| 44.1 kHz | 3 / 10,960,768 | 4.7e-10 |
+| 48 kHz | 1 / 11,929,856 | 1.7e-18 |
+| 96 kHz | 8 / 23,859,200 | 2.3e-10 |
 
-| worker zeroing | render time |
-|---|---:|
-| on | 8.12 / 7.67 / 7.50 s |
-| off | 6.36 / 6.35 / 6.01 s |
+FDN reverb (`synth.reverb.engine=fdn`) on 909.mid: 7.30 s -> 5.97 s (-18.2 %), and the output differs in 99.99 % of the samples by at most 4.0e-8, because a one-ULP difference in the feedback network recurses. The difference does not grow over the file: quarters of the render differ by at most 4.0e-8 / 1.5e-8 / 1.5e-8 / 1.5e-8.
 
-So roughly 20 % of the four-core render time goes to zeroing per-worker destination buffers. Each worker zeroes `buf_count + fx_buf_count` stereo buffers (6 KB for a 64-sample block at the default voice routing) every block, and with three extra workers that is four times the single-threaded zeroing volume. The sys time comes from the same place indirectly: workers sleep and wake every block, because the file renderer calls the synth with one 64-sample block per `fluid_file_renderer_process_block()`.
-
-Neither is fixed here: `fluid_mixer_buffers_zero()` already carries an upstream TODO about zeroing only the buffers that are used, and changing the wakeup granularity or the per-worker buffer layout is a mixer-thread redesign that touches the same code as the `perf/dev-mixer-*` branches.
+With TimGM6mb.sf2 on 909.mid: byte-identical output, 1.85 s -> 1.69 s (-8.7 %).
