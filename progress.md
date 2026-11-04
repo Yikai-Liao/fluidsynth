@@ -159,33 +159,32 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/c1/c12bda6f1bedfa781826d0bb8bd093201a5017bc5a3b332f52e6f8f593be5a9c.txt; sha256=c12bda6f1bedfa781826d0bb8bd093201a5017bc5a3b332f52e6f8f593be5a9c; bytes=18517]
-### Float-level verification of every branch (correction)
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/ad/ade11c8693b7b12b9060bfef48ab75812c0af67ec13a9cbcbd80796bc7b429a4.txt; sha256=ade11c8693b7b12b9060bfef48ab75812c0af67ec13a9cbcbd80796bc7b429a4; bytes=18734]
+### Chorus idle skip (new branch)
 
-Earlier checks compared 16-bit WAVs, which quantize away last-bit differences. Re-running every branch with `fluid_synth_write_float` (raw float32 output, 909.mid, fourth-order interpolation, 10,960,768 samples) separates them:
+`perf/chorus-idle-skip` (+182/-7 incl. test): the chorus unit runs every block even when its send is zero. The mixer now tracks per fx unit whether the chorus was reset after its last non-zero input; while that holds it calls `fluid_chorus_processsilence()`, which advances only the modulator positions, oscillator phases and buffer indices, so a later non-zero block sees exactly the state the skipped blocks would have produced. The modulator update of `get_mod_delay()` was split into `update_mod_delay_line()`/`advance_mod_delay_line()` so both paths drive the same code.
 
-| Branch | Raw-float difference vs upstream |
-|---|---|
-| `perf/interp-buffer-steps` | none |
-| `perf/interp-tap-window` | none |
-| `perf/reverb-delay-size` | none |
-| `perf/reverb-idle-skip` | none |
-| `perf/iir-coeff-double` | 3 samples, max relative 1.1e-7 (1 float ULP) |
-| `perf/iir-steady-loop` | 3 samples, same positions and magnitude |
+- `test_chorus_silence_skip` compares `processsilence()` against `processmix()` on silent blocks and requires bit-identical output for the following signal.
+- Raw float output identical to baseline for 909.mid, ugly.mid and the 2013 MAESTRO file.
+- Paired fast-render runs (6 pairs, interleaved): MAESTRO 2013 median 11.48 s -> 11.29 s, geomean ratio 0.958 (noisy machine, worst pair 1.017); POP909 909.mid median 7.05 s -> 6.96 s, ratio 0.980.
+- Profile share of `fluid_chorus_processmix` on 909.mid drops from 2.75 % to 1.60 % (`processsilence`).
 
-Both IIR branches move work out of the per-sample loop, and `fluid_iir_filter_impl.cpp` is compiled with `-ffast-math`, so GCC reassociates the biquad expression differently once the loop shape changes. The result is mathematically equivalent but no longer bit-identical at the double level; the 16-bit WAVs remain byte-identical. The two branch descriptions now state this instead of claiming byte-identical output.
+### Full stack (eleven commits)
 
-With all six changes plus `perf/mixer-stable-amp`, `perf/sinc-phase-table-rebased` and `perf/sinc-kernel-fused-taps` stacked, the raw-float differences against upstream are: 909.mid 3/10.96M (max rel 1.1e-7), ugly.mid 17/17.37M (max rel 1.8e-7), MAESTRO 2013 2/27.72M (max rel 1.2e-7). Sinc output is byte-identical to the phase-table branch for all three orders.
+`perf/interp-buffer-steps`, `perf/iir-coeff-double`, `perf/interp-tap-window`, `perf/reverb-delay-size`, `perf/reverb-idle-skip`, `perf/iir-steady-loop`, `perf/chorus-idle-skip`, `perf/mixer-stable-amp`, `perf/sinc-phase-table-rebased`, `perf/sinc-kernel-fused-taps`, `perf/sinc-paired-samples`. All branch from 2e838ae6 and cherry-pick without conflicts; `make check` passes (51 tests).
 
-### Stacked build (nine changes)
+Retired instructions, upstream -> stack (`perf stat`, CLI fast render, 44.1 kHz, taskset -c 2):
 
-`perf/interp-buffer-steps`, `perf/iir-coeff-double`, `perf/interp-tap-window`, `perf/reverb-delay-size`, `perf/reverb-idle-skip`, `perf/iir-steady-loop`, `perf/mixer-stable-amp`, `perf/sinc-phase-table-rebased`, `perf/sinc-kernel-fused-taps`. All cherry-pick onto current master without conflicts.
-
-909.mid, MuseScore General, 44.1 kHz, taskset -c 2, single runs:
-
-| Interpolation | upstream | stacked | speed-up |
+| file | upstream | stack | ratio |
 |---|---:|---:|---:|
-| 4th order (default) | 6.99 s | 6.02 s | 1.16x |
-| sinc MID (11 taps) | 215.15 s | 14.37 s | 15.0x |
-| sinc HIGH (17 taps) | 335.20 s | 21.05 s | 15.9x |
-| sinc HIGHEST (25 taps) | - | 27.14 s | - |
+| neverending | 68.41B | 61.90B | 0.905 |
+| ugly | 48.10B | 43.53B | 0.905 |
+| class14 | 63.05B | 57.61B | 0.914 |
+| paul-simon call | 30.71B | 28.04B | 0.913 |
+| dreamadream | 74.47B | 66.28B | 0.890 |
+| 8076fe75 | 13.56B | 12.49B | 0.921 |
+| MAESTRO 2014 | 114.13B | 92.61B | 0.811 |
+| MAESTRO 2013 | 63.98B | 51.75B | 0.809 |
+| MAESTRO 2015 | 59.30B | 50.26B | 0.848 |
+
+Geometric mean 0.879 (-12.1 %). Paired wall-clock runs (5 pairs, base and stack alternating): 909.mid 7.16 s -> 5.98 s (geomean ratio 0.835, 1.20x), MAESTRO 2013 11.69 s -> 9.55 s (0.817, 1.22x). The wall-clock gain is smaller than the instruction gain because the biquad recurrence and the sine-table sinc kernel are latency- rather than throughput-bound.
