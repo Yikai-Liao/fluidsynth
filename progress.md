@@ -159,17 +159,18 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/d8/d8b49bfb5a4447f9e2b5a758dd6c6898f594bef1ea1c07626d5bfae4974a757a.txt; sha256=d8b49bfb5a4447f9e2b5a758dd6c6898f594bef1ea1c07626d5bfae4974a757a; bytes=18022]
-### Other configurations
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/d4/d421f1a7682570f3829a1c300c60d23c2f1cece66403f77b3e65a1330e272759.txt; sha256=d421f1a7682570f3829a1c300c60d23c2f1cece66403f77b3e65a1330e272759; bytes=17365]
+### ASan
 
-Identity and speed at other sample rates, 909.mid (interp 4, MuseScore General, upstream vs stack):
+The full stack was rebuilt with AddressSanitizer and run on 909.mid at `synth.cpu-cores=1` and `=4`: no sanitizer reports with `alloc_dealloc_mismatch` suppressed.
 
-| sample rate | differing samples | max abs | 
-|---|---:|---:|
-| 44.1 kHz | 3 / 10,960,768 | 4.7e-10 |
-| 48 kHz | 1 / 11,929,856 | 1.7e-18 |
-| 96 kHz | 8 / 23,859,200 | 2.3e-10 |
+That suppression is needed because upstream aborts before any rendering with:
 
-FDN reverb (`synth.reverb.engine=fdn`) on 909.mid: 7.30 s -> 5.97 s (-18.2 %), and the output differs in 99.99 % of the samples by at most 4.0e-8, because a one-ULP difference in the feedback network recurses. The difference does not grow over the file: quarters of the render differ by at most 4.0e-8 / 1.5e-8 / 1.5e-8 / 1.5e-8.
+```
+ERROR: AddressSanitizer: alloc-dealloc-mismatch (operator new vs free)
+    #1 fluid_free            src/utils/fluid_sys.c:329
+    #2 fluid_thread_high_prio src/utils/fluid_sys.c:987
+    #3 thread_wrapper        src/utils/fluid_sys_cpp11.cpp:50
+```
 
-With TimGM6mb.sf2 on 909.mid: byte-identical output, 1.85 s -> 1.69 s (-8.7 %).
+`new_fluid_thread()` allocates `fluid_thread_info_t` with `new` (fluid_sys_cpp11.cpp) and `fluid_thread_high_prio()` releases it with `FLUID_FREE` (fluid_sys.c). This is unchanged upstream code (verified against 2e838ae6) and only shows up when a high-priority thread is created, i.e. with `synth.cpu-cores > 1`. Not touched here.
