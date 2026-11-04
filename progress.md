@@ -1,5 +1,5 @@
 # FluidSynth MIDI performance work
-Updated: 2026-11-04 13:24 Asia/Singapore (UTC+08:00)
+Updated: 2026-11-04 13:28 Asia/Singapore (UTC+08:00)
 
 ## Goal
 
@@ -32,7 +32,7 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 
 1. `perf/mixer-stable-amp` is pushed. The phase-increment cache branch was measured then withdrawn after profiling showed no skipped conversion calls; keep this progress file current on `todo`.
 2. Refresh `upstream/master` before starting a new candidate; inspect existing delivered and rejected work in `perf-inventory.md` first.
-3. Use the fresh line-level profile to assess the stable-amplitude mixing loop; first quantify how often exact unity gain occurs, then benchmark a no-multiply path if it is common. Keep other uncovered modules as later candidates.
+3. Build the delivered stack in a fresh local worktree and refresh the line-level profile before choosing another hotspot. The current static `-pg` result is directional and predates most delivered branches; hardware sampling remains blocked by the current perf policy.
 4. For each candidate, compare clean baseline/candidate builds with interleaved runs, inspect PCM equality or quantified float differences, require a repeatable end-to-end gain, keep production additions below 50 lines, then commit and push that candidate branch.
 5. Update this file after every experiment, accepted optimization, push, and any blocker.
 
@@ -416,3 +416,11 @@ Rebasing that branch onto `2e838ae6` (two commits, no conflicts) and re-running 
 - The static `-pg` Gprof call counts on `Shi05M.mid` show `fluid_rvoice_write()` called 2,523,832 times and `fluid_ct2hz_real()` 2,526,848 times. The conversion still runs for every voice block, so the cache adds compare/state traffic without avoiding the targeted conversion on this representative MIDI. The sub-0.5% cycle changes are therefore treated as noise/compiler-layout variation and the candidate is rejected.
 - Profile of that one MIDI (float samples, GCC 16.2.1, `-O2`, static `-pg`; approximate self-time shares): interpolation 31.3%, IIR apply 30.4%, voice-buffer mixing 19.1%, Dattorro reverb 7.0%, `fluid_rvoice_write` 4.4%, chorus 1.7%. Gprof line attribution puts the stable-amplitude mix multiply-add at `fluid_rvoice_mixer.c:490` at about 17.4% of total sampled time. This is a call-graph timer profile, not hardware-counter sampling.
 - Current environment has `/proc/sys/kernel/perf_event_paranoid=2`; `perf record` cannot open `cycles:u`. Callgrind aborts in the dynamic loader on an AVX-512 instruction unsupported by installed Valgrind 3.25. Static Gprof works, but Signalsmith/limiter support was unavailable in that configure. Revisit hardware profiling if permissions/runtime change; retain these module-level shares as directional evidence only.
+
+
+## 2026-11-04 stable unity-amplitude mixer experiment — rejected
+
+- On local branch `perf/mixer-unity-amp`, added a direct-add SIMD loop for stable gain `1.0`, stacked on `perf/mixer-stable-amp`. Production diff was +9/-1 lines; it was built but never committed or pushed.
+- Nine alternating float-build runs on real Bach `Shi05M.mid` with CPU 2 affinity: cycles median 5.608B -> 5.618B (+0.18%); instructions median 22.670B -> 22.814B (+0.63%). Four pairs improved and five regressed. PCM hashes matched in all pairs (`8452a775...83133`).
+- Reject: the extra branch costs more than the saved multiply on this MIDI. The trial branch was deleted, leaving the worktree detached at `d4afd04a`.
+- Earlier static Gprof line attribution identified `fluid_rvoice_mixer.c:490` as about 17.4% of the sampled profile, but that evidence predates most of the delivered optimization stack. Refresh the profile on the stack before pursuing another mixer path.

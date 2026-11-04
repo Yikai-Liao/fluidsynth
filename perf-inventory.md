@@ -71,6 +71,7 @@
 - `perf/builtin-atomics`：编译器特定 `__atomic` 语法，已本地与远端删除。
 - `perf/phase-incr-cache` / `perf/rvoice-cache-phase-incr`、`perf/iir-short-recurrence`：相位缓存未在代表性 MIDI 跳过任何 `fluid_ct2hz_real()` 调用，已撤回；详见 `progress.md`.
 - `perf/iir-param-reorder`：每次调用前缓存系数方向，实测中性，删除。
+- 稳定增益为 1 的 mixer 直加分支：9 组真实 MIDI 配对回退，见 `progress.md`。
 - 结构体内存布局重排（ADSR / rvoice）、mixer 缓存行填充、`fluid_iir_filter_calc` 调用点内联：见 `progress.md`，均无收益。
 
 ## 9. 尚未覆盖的模块（动手前先看这里）
