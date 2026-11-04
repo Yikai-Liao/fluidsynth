@@ -159,32 +159,18 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/ad/ade11c8693b7b12b9060bfef48ab75812c0af67ec13a9cbcbd80796bc7b429a4.txt; sha256=ade11c8693b7b12b9060bfef48ab75812c0af67ec13a9cbcbd80796bc7b429a4; bytes=18734]
-### Chorus idle skip (new branch)
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/ed/ed0f2d92c46487dc8c8b6bfac34619b41cf2ef38a9f9786f550e05079c5a08b5.txt; sha256=ed0f2d92c46487dc8c8b6bfac34619b41cf2ef38a9f9786f550e05079c5a08b5; bytes=19115]
+### Compiler atomics instead of one global mutex (new branch)
 
-`perf/chorus-idle-skip` (+182/-7 incl. test): the chorus unit runs every block even when its send is zero. The mixer now tracks per fx unit whether the chorus was reset after its last non-zero input; while that holds it calls `fluid_chorus_processsilence()`, which advances only the modulator positions, oscillator phases and buffer indices, so a later non-zero block sees exactly the state the skipped blocks would have produced. The modulator update of `get_mod_delay()` was split into `update_mod_delay_line()`/`advance_mod_delay_line()` so both paths drive the same code.
+`perf/builtin-atomics` (+80/-0): `fluid_locked_atomics.h` wraps every atomic operation in `_atomic_lock`, a single global mutex. The mixer worker threads hand their buffers over through those atomics, so `synth.cpu-cores > 1` serialized on that mutex. `fluid_builtin_atomics.h` implements the same API with GCC/Clang `__atomic` builtins (usable from C and C++ sources), seq-cst like the mutex version, and `fluid_sys_cpp11.h` picks it when either compiler is in use; other compilers keep the locked fallback.
 
-- `test_chorus_silence_skip` compares `processsilence()` against `processmix()` on silent blocks and requires bit-identical output for the following signal.
-- Raw float output identical to baseline for 909.mid, ugly.mid and the 2013 MAESTRO file.
-- Paired fast-render runs (6 pairs, interleaved): MAESTRO 2013 median 11.48 s -> 11.29 s, geomean ratio 0.958 (noisy machine, worst pair 1.017); POP909 909.mid median 7.05 s -> 6.96 s, ratio 0.980.
-- Profile share of `fluid_chorus_processmix` on 909.mid drops from 2.75 % to 1.60 % (`processsilence`).
+ugly.mid, CLI fast render:
 
-### Full stack (eleven commits)
+| synth.cpu-cores | before | after |
+|---:|---:|---:|
+| 1 | 8.86 s | 8.92 s |
+| 2 | 9.19 s | 8.02 s |
+| 4 | 10.37 s | 7.16 s |
+| 6 | 12.09 s | 8.10 s |
 
-`perf/interp-buffer-steps`, `perf/iir-coeff-double`, `perf/interp-tap-window`, `perf/reverb-delay-size`, `perf/reverb-idle-skip`, `perf/iir-steady-loop`, `perf/chorus-idle-skip`, `perf/mixer-stable-amp`, `perf/sinc-phase-table-rebased`, `perf/sinc-kernel-fused-taps`, `perf/sinc-paired-samples`. All branch from 2e838ae6 and cherry-pick without conflicts; `make check` passes (51 tests).
-
-Retired instructions, upstream -> stack (`perf stat`, CLI fast render, 44.1 kHz, taskset -c 2):
-
-| file | upstream | stack | ratio |
-|---|---:|---:|---:|
-| neverending | 68.41B | 61.90B | 0.905 |
-| ugly | 48.10B | 43.53B | 0.905 |
-| class14 | 63.05B | 57.61B | 0.914 |
-| paul-simon call | 30.71B | 28.04B | 0.913 |
-| dreamadream | 74.47B | 66.28B | 0.890 |
-| 8076fe75 | 13.56B | 12.49B | 0.921 |
-| MAESTRO 2014 | 114.13B | 92.61B | 0.811 |
-| MAESTRO 2013 | 63.98B | 51.75B | 0.809 |
-| MAESTRO 2015 | 59.30B | 50.26B | 0.848 |
-
-Geometric mean 0.879 (-12.1 %). Paired wall-clock runs (5 pairs, base and stack alternating): 909.mid 7.16 s -> 5.98 s (geomean ratio 0.835, 1.20x), MAESTRO 2013 11.69 s -> 9.55 s (0.817, 1.22x). The wall-clock gain is smaller than the instruction gain because the biquad recurrence and the sine-table sinc kernel are latency- rather than throughput-bound.
+Single-threaded renders gain 1.3-1.9 % (paired geomean 0.987 on 909.mid, 0.981 on MAESTRO 2013); the mutex was 1.2 % of a single-threaded profile. With the whole stack applied, ugly.mid goes 8.88 / 8.91 / 10.01 s (base, cores 1/2/4) to 8.17 / 7.15 / 6.64 s. Output is byte-identical at cpu-cores 1 and 4, and `make check` passes.
