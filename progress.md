@@ -159,40 +159,7 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/27/2771deff5848587e0907d1c07d679df33f0af7a059794dbd7ff443ca0e8bd428.txt; sha256=2771deff5848587e0907d1c07d679df33f0af7a059794dbd7ff443ca0e8bd428; bytes=18684]
-## Final state
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/85/854f06ff8b421701d4e37dc9f2a2e66260b814014b454cfe509005aaa1119e28.txt; sha256=854f06ff8b421701d4e37dc9f2a2e66260b814014b454cfe509005aaa1119e28; bytes=19820]
+### Tighter head-line number (10 pairs)
 
-### Six branches (all pushed, each under 50 added lines)
-
-| Branch | Commit | Diff | Isolated measurement | PCM |
-|---|---|---|---|---|
-| `perf/interp-buffer-steps` | `bd6c7ec2` | +15/-1 | 909.mid 10 pairs 0.986 (0.975-0.996), 6 pairs 0.980 (0.969-0.991); dreamadream 10 pairs 0.978 (0.964-0.993); function micro benchmark 10.0 ns -> 4.8 ns per call | identical |
-| `perf/iir-coeff-double` | `eed962d8` | +12/-2 | 909.mid 10 pairs 0.959 (0.942-0.975) | identical |
-| `perf/interp-tap-window` | `486e327a` | +37/-10 | 909.mid 6 pairs 0.954 (0.943-0.965) | identical, ASan-clean |
-| `perf/reverb-delay-size` | `e89c8734` | +7/-1 | reverb-only workload 12 pairs 0.984 (0.972-0.994) | identical |
-| `perf/reverb-idle-skip` | `0de60265` | +36/-0 | MAESTRO 2013 5 pairs 0.909 (0.898-0.921) | identical |
-| `perf/iir-steady-loop` | `a3f23ec0` | +29/-0 | 909.mid 6 pairs 0.972 (0.946-0.993); MAESTRO 2013 4 pairs 0.973 (0.960-0.973); instructions 40.03B -> 37.34B | identical |
-
-### All six applied together
-
-- Retired instructions, nine ordinary files: geomean 0.909 (-9.1%); per file 0.834-0.953, the three MAESTRO files lowest because they never send to the reverb.
-- Wall clock, paired, taskset -c 2: 909.mid 6 pairs 0.832 (0.822-0.846), MAESTRO 2013 4 pairs 0.973 (0.960-0.973), dreamadream 4 pairs 0.965, class14 4 pairs 0.983.
-- WAV output byte-identical to upstream on 909.mid, ugly.mid and MAESTRO 2013.
-- ASan+UBSan: `test_rvoice_dsp_interpolate` and `test_iir_coefficient_reuse` pass; four real files render without reports.
-- GCC 14 `-fanalyzer` and Clang 19 `--analyze` on the modified files: no diagnostics (the analyzer found the `-Wreorder` in `perf/reverb-delay-size`, fixed).
-
-### Rejected experiments (measured, not kept)
-
-- `perf/phase-incr-cache` (local only): memoize `fluid_ct2hz_real(pitch)/root_pitch_hz` per voice while the pitch sum and root pitch are unchanged. 909.mid instructions 40.006B -> 39.869B (-0.34%), MAESTRO 64.034B -> 63.915B (-0.19%); 15 added lines for under 0.4% is below the threshold used here.
-- Custom-filter call guard: skipping `fluid_iir_filter_calc()` when `resonant_custom_filter.type == FLUID_IIR_DISABLED` (true for 100% of 6.05M calls on 909.mid and 8.72M on MAESTRO) added only 0.07 points on top of the above. Not kept.
-
-### Remaining hotspots and why they stop here (909.mid, all six applied)
-
-| Function | Share | Limit |
-|---|---:|---|
-| `fluid_iir_filter_apply` | 36.5% | biquad feedback chain `a1*hist1 -> sub -> sub` is 12 cycles/sample; reordering (including transposed direct form II) changes the floating-point result |
-| `fluid_rvoice_dsp_interpolate` | 29.9% | ~6 cycles/sample, 4 mul + 3 add + coefficient/tap loads, no recurrence left to exploit |
-| `fluid_rvoice_write` | 5.7% | per-buffer setup; memoizing its expensive parts measured below 0.4% |
-| `fluid_rvoice_buffers_mix` | 5.3% | the stable-gain SIMD loop exists on `perf/mixer-stable-amp` (other session) |
-| `fluid_iir_filter_calc` | 1.9% | per-buffer comparisons; skipping the disabled custom filter measured 0.07% |
-| chorus | 1.7% | skipping it would freeze the LFO/delay indices, so the output would diverge once a send appears |
+POP909 909.mid, all six branches, taskset -c 2, 10 pairs: 5.581 s / 6.477 s, paired geomean ratio 0.850 (95% CI 0.836-0.865). Retired instructions on the same file: 34.16B vs 40.03B (-14.7%).
