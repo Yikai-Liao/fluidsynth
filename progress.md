@@ -159,27 +159,32 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/dd/dd88b142b74dd450fe44664ac0f556770fa645509e4546357262bccb4227c966.txt; sha256=dd88b142b74dd450fe44664ac0f556770fa645509e4546357262bccb4227c966; bytes=18362]
-### Instruction counts, base vs all five changes (retired instructions, taskset -c 2)
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/8d/8dd5cb055387972742efa80bb2653a1f76eaacb6a4cc1c8b514a64ab8719e9a6.txt; sha256=8dd5cb055387972742efa80bb2653a1f76eaacb6a4cc1c8b514a64ab8719e9a6; bytes=18076]
+### New branch: `perf/iir-steady-loop` (`a3f23ec0`, +29/-0)
 
-| File (MIDI Collection / MAESTRO) | base | combined | ratio |
+`fluid_iir_filter_apply_samples()` tested `fres_incr_count > 0 || q_incr_count > 0` on every sample. Both counters only decrease inside the call, so when they are already zero on entry no sample can recalculate the biquad coefficients. The function now runs the same Direct-II filter in a check-free loop for that case and keeps the ramping loop for the other.
+
+- Arithmetic order, coefficients and history handling are unchanged; PCM byte-identical to upstream on 909.mid, ugly.mid and MAESTRO 2013 ORIG.
+- 909.mid: retired instructions 40.03B -> 37.34B (-6.7%); 6 pairs 6.548 s / 6.642 s, geomean ratio 0.972 (95% CI 0.946-0.993).
+- MAESTRO 2013 ORIG, 4 pairs: 10.719 s / 11.007 s, ratio 0.973 (95% CI 0.960-0.973).
+- The wall-clock gain is smaller than the instruction gain because the biquad recurrence is latency-bound; the removed branches were not on the critical path.
+
+### Updated instruction counts with all six changes
+
+| File | base | combined | ratio |
 |---|---:|---:|---:|
-| lionking neverending | 68.47B | 66.54B | 0.972 |
-| ugly.mid | 48.16B | 46.47B | 0.965 |
-| class14.mid | 63.10B | 61.39B | 0.973 |
-| ekn call-al | 30.75B | 29.92B | 0.973 |
-| dreamadream.mid | 74.52B | 71.27B | 0.956 |
-| 8076fe75.mid | 13.60B | 13.33B | 0.980 |
-| MAESTRO 2014 16-18 | 114.17B | 98.34B | 0.861 |
-| MAESTRO 2013 ORIG 03 | 64.02B | 54.63B | 0.853 |
-| MAESTRO 2015 R1 D1-1-8 | 59.34B | 52.88B | 0.891 |
+| lionking neverending | 68.46B | 64.24B | 0.938 |
+| ugly.mid | 48.16B | 45.22B | 0.939 |
+| class14.mid | 63.09B | 60.12B | 0.953 |
+| ekn call-al | 30.75B | 29.10B | 0.946 |
+| dreamadream.mid | 74.51B | 69.04B | 0.927 |
+| 8076fe75.mid | 13.60B | 12.90B | 0.949 |
+| MAESTRO 2014 16-18 | 114.17B | 95.42B | 0.836 |
+| MAESTRO 2013 ORIG 03 | 64.02B | 53.41B | 0.834 |
+| MAESTRO 2015 R1 D1-1-8 | 59.34B | 51.47B | 0.867 |
 
-Geomean 0.935 (-6.5%). The three MAESTRO files gain more because no voice sends to the reverb there, so `perf/reverb-idle-skip` removes the whole reverb block; the six MIDI Collection files use the reverb and save the interpolation, IIR and delay-line-length work only. Counts are deterministic (single run per build) unlike the wall-clock pairs.
+Geomean 0.909 (-9.1%). 909.mid wall-clock, 6 pairs: 5.522 s / 6.675 s, ratio 0.832 (95% CI 0.822-0.846); PCM byte-identical.
 
-### Per-branch PCM check (44.1 kHz, MuseScore General, 909.mid / ugly.mid / MAESTRO 2013 ORIG)
+### Where the remaining time goes (909.mid, combined build)
 
-Every branch alone and the combination render WAVs byte-identical to upstream on all three files.
-
-### CI decision
-
-Branch pushes do not trigger workflows and the operator asked not to open pull requests, so the five branches stay without CI runs. Local evidence: ASan/UBSan tests and renders, GCC/Clang analyzers, byte-identical PCM, deterministic instruction counts and paired wall-clock runs.
+`fluid_iir_filter_apply` 36.5%, `fluid_rvoice_dsp_interpolate` 29.9%, `fluid_rvoice_write` 5.7%, `fluid_rvoice_buffers_mix` 5.3%, `fluid_iir_filter_calc` 1.9%, chorus 1.7%. The biquad feedback chain (a1*hist1 -> sub -> sub) is 12 cycles per sample and cannot be shortened without reordering the arithmetic; the interpolator is already around six cycles per sample with no recurrence.
