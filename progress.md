@@ -159,35 +159,11 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/f5/f5a45bcd4e09b541e4b742a9f98360e40987b828666db1d50f289cd95f401a3f.txt; sha256=f5a45bcd4e09b541e4b742a9f98360e40987b828666db1d50f289cd95f401a3f; bytes=17731]
-### Final stack after the chorus and atomics work
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/10/105bb1d608c2e689c50755daf56ced0966671cab52fd09312f60e0abc7246841.txt; sha256=105bb1d608c2e689c50755daf56ced0966671cab52fd09312f60e0abc7246841; bytes=18067]
+### Correction: multithreaded renders are not byte-identical
 
-Twelve commits are now stacked in a local worktree (`combined`), all based on 2e838ae6: the eleven listed above plus `perf/builtin-atomics`. `make check` passes (51 tests) on a clean build.
+The atomics branch message first claimed byte-identical output at cpu-cores 1 and 4; that comparison was a lucky pair. Repeated `synth.cpu-cores=4` renders of ugly.mid differ from each other and from a single-threaded render in 0-24 % of the samples, by at most 1.2e-7 absolute (about 2 float ULP at full scale).
 
-Retired instructions, upstream -> final stack (CLI fast render, 44.1 kHz, taskset -c 2):
+The cause is the existing worker design: threads pull voices from `mixer->current_rvoice` with an atomic fetch-and-add, so which voices land in which worker buffer depends on timing, and the per-worker partial mixes are summed in a different grouping each run. Unmodified master behaves the same way (one of three runs differed); the global mutex used to serialize the workers, which made the grouping nearly deterministic.
 
-| file | upstream | stack | ratio |
-|---|---:|---:|---:|
-| neverending | 68.41B | 61.49B | 0.899 |
-| ugly | 48.10B | 43.24B | 0.899 |
-| class14 | 63.05B | 57.45B | 0.911 |
-| paul-simon call | 30.71B | 27.83B | 0.906 |
-| dreamadream | 74.47B | 65.99B | 0.886 |
-| 8076fe75 | 13.56B | 12.38B | 0.913 |
-| MAESTRO 2014 | 114.13B | 91.97B | 0.806 |
-| MAESTRO 2013 | 63.98B | 51.29B | 0.802 |
-| MAESTRO 2015 | 59.30B | 49.96B | 0.842 |
-
-Geometric mean 0.873 (-12.7 %).
-
-Multi-core (after `perf/builtin-atomics`), 909.mid with sinc MID interpolation (11 taps), 4 pinned cores:
-
-| synth.cpu-cores | time |
-|---:|---:|
-| 1 | 14.43 s |
-| 2 | 9.54 s |
-| 4 | 6.70 s |
-
-Byte-identical output at 1 and 4 cores. Before the atomics change, multithreaded rendering was slower than single-threaded (ugly.mid: 8.86 s at one core, 10.37 s at four cores).
-
-Final float-level check of the whole stack: 909.mid 3/10.96M samples differ from upstream by at most 1 float ULP, ugly.mid 17/17.37M, MAESTRO 2013 2/27.72M, all from the `-ffast-math` reassociation in the two IIR changes. Sinc output is byte-identical.
+Single-threaded renders are unaffected, and `test_synth_render_s16` uses default settings. The branch message now states this instead of claiming byte identity.
