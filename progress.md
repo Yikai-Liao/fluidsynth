@@ -159,18 +159,33 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/76/763f2504f5e736e38168c70b29a25d3dac69187748851f6f5ee3ed3415f6e7e7.txt; sha256=763f2504f5e736e38168c70b29a25d3dac69187748851f6f5ee3ed3415f6e7e7; bytes=16880]
-### Sinc / high-quality configuration (revisited)
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/c1/c12bda6f1bedfa781826d0bb8bd093201a5017bc5a3b332f52e6f8f593be5a9c.txt; sha256=c12bda6f1bedfa781826d0bb8bd093201a5017bc5a3b332f52e6f8f593be5a9c; bytes=18517]
+### Float-level verification of every branch (correction)
 
-The sinc path is the slowest quality setting: unmodified master evaluates sin() and cos() per tap and per sample, so the 11-tap mode needs 215 s and the 17-tap mode 335 s for POP909 909.mid (5.48M frames, 44.1 kHz, MuseScore General), against 7 s for the default fourth-order cubic. `perf/sinc-phase-table` replaced that with precomputed tables and brought it to 19.45 s / 27.27 s.
+Earlier checks compared 16-bit WAVs, which quantize away last-bit differences. Re-running every branch with `fluid_synth_write_float` (raw float32 output, 909.mid, fourth-order interpolation, 10,960,768 samples) separates them:
 
-The branch was rebased onto current `upstream/master` (`2e838ae6`) before comparing, since the original base was 46 commits older; the rebased branch is pushed as `perf/sinc-phase-table-rebased` (`7491f437`) and the numbers above are from that rebase.
+| Branch | Raw-float difference vs upstream |
+|---|---|
+| `perf/interp-buffer-steps` | none |
+| `perf/interp-tap-window` | none |
+| `perf/reverb-delay-size` | none |
+| `perf/reverb-idle-skip` | none |
+| `perf/iir-coeff-double` | 3 samples, max relative 1.1e-7 (1 float ULP) |
+| `perf/iir-steady-loop` | 3 samples, same positions and magnitude |
 
-New branch `perf/sinc-kernel-fused-taps` (`a8354c9c`, +25/-12, on top of the rebased branch):
+Both IIR branches move work out of the per-sample loop, and `fluid_iir_filter_impl.cpp` is compiled with `-ffast-math`, so GCC reassociates the biquad expression differently once the loop shape changes. The result is mathematically equivalent but no longer bit-identical at the double level; the 16-bit WAVs remain byte-identical. The two branch descriptions now state this instead of claiming byte-identical output.
 
-- The kernel took the tap window as `std::array` by value, which copied it per sample, and the main-body loop then reloaded every tap from the stack. The main body now hands the kernel a tap functor, so the tap load happens in the iteration that multiplies it. The guard regions keep the array overload, which forwards to the same implementation.
-- Taps, coefficient lerp, multiply and accumulation order are unchanged; rendered float output is byte-identical to the phase-table branch for 11, 17 and 25 taps.
-- 909.mid, single runs, taskset -c 2: MID 19.45 s -> 16.10 s (1.21x), HIGH 27.65 s -> 21.15 s (1.31x), HIGHEST 36.46 s -> 29.11 s (1.25x).
-- `test_rvoice_dsp_interpolate` under ASan+UBSan passes (covers 24-bit samples, loop guards and all sinc orders).
+With all six changes plus `perf/mixer-stable-amp`, `perf/sinc-phase-table-rebased` and `perf/sinc-kernel-fused-taps` stacked, the raw-float differences against upstream are: 909.mid 3/10.96M (max rel 1.1e-7), ugly.mid 17/17.37M (max rel 1.8e-7), MAESTRO 2013 2/27.72M (max rel 1.2e-7). Sinc output is byte-identical to the phase-table branch for all three orders.
 
-Rejected along the way (all slower or neutral, measured on the same file): reusing the tap window across samples (21.06 s vs 18.30 s at MID), splitting the coefficient lerp into a separate vectorizable pass (20.00 s vs 18.30 s), and prefetching the next table row (18.48 vs 18.57 ns/sample in a kernel-only microbenchmark).
+### Stacked build (nine changes)
+
+`perf/interp-buffer-steps`, `perf/iir-coeff-double`, `perf/interp-tap-window`, `perf/reverb-delay-size`, `perf/reverb-idle-skip`, `perf/iir-steady-loop`, `perf/mixer-stable-amp`, `perf/sinc-phase-table-rebased`, `perf/sinc-kernel-fused-taps`. All cherry-pick onto current master without conflicts.
+
+909.mid, MuseScore General, 44.1 kHz, taskset -c 2, single runs:
+
+| Interpolation | upstream | stacked | speed-up |
+|---|---:|---:|---:|
+| 4th order (default) | 6.99 s | 6.02 s | 1.16x |
+| sinc MID (11 taps) | 215.15 s | 14.37 s | 15.0x |
+| sinc HIGH (17 taps) | 335.20 s | 21.05 s | 15.9x |
+| sinc HIGHEST (25 taps) | - | 27.14 s | - |
