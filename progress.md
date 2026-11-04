@@ -305,3 +305,30 @@ Subtrees covered by the matrix: `iir_filter` (issues 1415/1417/1424/1427/1481), 
 | ugly.mid | 8.42 / 8.23 / 8.81 / 8.28 s | 8.87 / 8.60 / 8.72 / 8.64 s |
 
 Between one and two positions per sample means the added branch is unpredictable, and the mispredictions cost more than the two saved sample loads. Dropped.
+
+### Correction: per-worker buffer zeroing is ~5 %, not 20 %
+
+The earlier measurement compiled the zeroing out behind a `getenv()` check inside the worker loop, so it compared "getenv + memset" against "getenv" and charged the whole difference to the memset; the getenv call itself runs once per block per worker.
+
+Re-measured on `perf/mixer-std-atomic` (their branch, ugly.mid, `synth.cpu-cores=4`, affinity 0-3) with the flag read once at start-up, five interleaved pairs:
+
+| partner | render time |
+|---|---:|
+| zeroing on | 7.66 / 7.64 / 7.25 / 7.22 / 7.36 s |
+| zeroing off (timing only) | 7.07 / 7.10 / 6.97 / 7.11 / 6.85 s |
+
+Geomean ratio 0.945. So the per-worker zeroing is worth about 5 % of a four-core render, not 20 %. A first-write-store rework would have to thread a per-destination bitmask through `fluid_rvoice_buffers_mix()` and `fluid_mixer_buffers_mix()` to stay correct, which is not worth 5 % of a non-default configuration.
+
+### Threading picture on `perf/mixer-std-atomic`
+
+ugly.mid, affinity 0-3, one run each:
+
+| synth.cpu-cores | wall | user | sys |
+|---:|---:|---:|---:|
+| 1 | 8.60 s | 8.29 s | 0.34 s |
+| 2 | 7.62 s | 10.36 s | 1.55 s |
+| 4 | 7.48 s | 12.85 s | 3.61 s |
+
+Parallelism works on that branch (7.48 s < 8.60 s), but four cores only buy 1.15x. The sys time grows with the worker count because every worker is woken and parked once per 64-sample block; user time grows because each worker keeps and merges its own destination buffers. `fluid_synth_render_blocks()` cannot simply batch blocks to amortise that, because it stops advancing blocks as soon as an event is queued, which is what keeps event timing at block granularity.
+
+Conclusion for this session: the remaining multithreaded gap needs a wakeup-protocol change (or a larger render quantum), not a buffer-management tweak, and it belongs to the `perf/mixer-std-atomic` work.
