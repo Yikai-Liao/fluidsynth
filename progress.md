@@ -293,3 +293,15 @@ The project's own rendering matrix (`make check_rendering`, target list from `te
 - The `limiter/*` cases are excluded because both builds were configured without the signalsmith submodule, so `synth.limiter.active` does not exist and those targets fail in both runs; use `make -k` so the remaining targets still build.
 
 Subtrees covered by the matrix: `iir_filter` (issues 1415/1417/1424/1427/1481), `awe32_nrpn`, `sf2_nrpn`, `SoundFont-Spec-Test`, `sf2/GeneralUser-GS`, `portamento`, `reverb`, `exclusive_class`, `dsp_interp`, `dynamic-sample-loading`, `stacked_sf2`, `sfe`, `rpn`, `sysex/gs_dt1`, `mts`, `midi-bank-select`.
+
+### Rejected: shorter tap shift for larger phase increments
+
+`perf/interp-tap-window` reloads all four taps when a phase increment moves the index by more than one position (transposed samples alternate between one and two positions). Keeping the two newest taps for the two-position case needs only two loads instead of four, so it was measured in a scratch build:
+
+| file | tap window | + two-position shortcut |
+|---|---:|---:|
+| MAESTRO 2013 ORIG-MIDI_03 | 11.07 / 10.86 / 11.04 / 10.84 s | 11.35 / 11.32 / 11.45 / 11.30 s |
+| 909.mid | 6.71 / 6.71 / 6.83 / 6.66 s | 6.85 / 6.90 / 6.89 / 6.69 s |
+| ugly.mid | 8.42 / 8.23 / 8.81 / 8.28 s | 8.87 / 8.60 / 8.72 / 8.64 s |
+
+Between one and two positions per sample means the added branch is unpredictable, and the mispredictions cost more than the two saved sample loads. Dropped.
