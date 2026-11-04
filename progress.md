@@ -159,18 +159,14 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/d4/d421f1a7682570f3829a1c300c60d23c2f1cece66403f77b3e65a1330e272759.txt; sha256=d421f1a7682570f3829a1c300c60d23c2f1cece66403f77b3e65a1330e272759; bytes=17365]
-### ASan
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/1f/1f072e2387d06bdf2ca01648f719b760c83cae0c828d0bd9105dfc125b6f55b2.txt; sha256=1f072e2387d06bdf2ca01648f719b760c83cae0c828d0bd9105dfc125b6f55b2; bytes=17485]
+### Build option: float vs double samples
 
-The full stack was rebuilt with AddressSanitizer and run on 909.mid at `synth.cpu-cores=1` and `=4`: no sanitizer reports with `alloc_dealloc_mismatch` suppressed.
+`fluid_real_t` is `double` unless `-Denable-floats=1` is given (fluidsynth_priv.h, CMakeLists.txt:458). The same stack built with that option on this machine:
 
-That suppression is needed because upstream aborts before any rendering with:
+| file | double (default) | float |
+|---|---:|---:|
+| MAESTRO 2013 ORIG-MIDI_03 | 9.20 / 8.64 / 8.97 s | 8.07 / 8.31 / 8.08 s |
+| 909.mid | 5.79 / 5.83 / 5.85 s | 5.16 / 5.17 / 5.10 s |
 
-```
-ERROR: AddressSanitizer: alloc-dealloc-mismatch (operator new vs free)
-    #1 fluid_free            src/utils/fluid_sys.c:329
-    #2 fluid_thread_high_prio src/utils/fluid_sys.c:987
-    #3 thread_wrapper        src/utils/fluid_sys_cpp11.cpp:50
-```
-
-`new_fluid_thread()` allocates `fluid_thread_info_t` with `new` (fluid_sys_cpp11.cpp) and `fluid_thread_high_prio()` releases it with `FLUID_FREE` (fluid_sys.c). This is unchanged upstream code (verified against 2e838ae6) and only shows up when a high-priority thread is created, i.e. with `synth.cpu-cores > 1`. Not touched here.
+Geomean 0.90 and 0.89. The gain is limited because both hot loops are latency bound (IIR feedback chain, cubic coefficient chain), not SIMD-throughput bound. Recorded as a data point only; the default build stays double.
