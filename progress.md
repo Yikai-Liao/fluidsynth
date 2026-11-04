@@ -1,9 +1,9 @@
 # FluidSynth MIDI performance work
-Updated: 2026-11-04 11:40 Asia/Singapore (UTC+08:00)
+Updated: 2026-11-04 13:17 Asia/Singapore (UTC+08:00)
 
 ## Goal
 
-Continue measured performance optimization for regular MIDI rendering until 2026-11-04 18:00 Beijing time. Each accepted optimization must live on its own branch and be pushed to `origin`. Production changes must add fewer than 50 lines. Keep the original `/home/lyk/code/fluidsynth` worktree untouched because its `TODO` has unrelated uncommitted edits.
+Continue measured performance optimization for regular MIDI rendering until 2026-11-05 10:00 Beijing time. Each accepted optimization must live on its own branch and be pushed to `origin`. Production changes must add fewer than 50 lines. Keep the original `/home/lyk/code/fluidsynth` worktree untouched because its `TODO` has unrelated uncommitted edits.
 
 ## Baseline and prior work
 
@@ -30,10 +30,10 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 
 ## Next actions
 
-1. Push `perf/mixer-stable-amp` to `origin` and commit/push this progress file on `todo`.
-2. Refresh `upstream/master`; do not incorporate unrelated upstream changes without checking them.
-3. Build a current baseline and refresh function-level `perf record` on representative regular MIDI, then pick candidates outside completed `todo` work.
-4. For each candidate, benchmark alternating baseline/candidate runs on a pinned core, check PCM equality (or quantify float differences), reject noisy or regressive results, keep production additions below 50 lines, then commit and push that candidate branch.
+1. `perf/mixer-stable-amp` and `perf/rvoice-cache-phase-incr` are pushed; keep this progress file current on `todo`.
+2. Refresh `upstream/master` before starting a new candidate; inspect existing delivered and rejected work in `perf-inventory.md` first.
+3. Profile another representative ordinary MIDI set, focusing on modules not covered by delivered branches (Signalsmith FDN, limiter, event scheduling, remaining rvoice DSP).
+4. For each candidate, compare clean baseline/candidate builds with interleaved runs, inspect PCM equality or quantified float differences, require a repeatable end-to-end gain, keep production additions below 50 lines, then commit and push that candidate branch.
 5. Update this file after every experiment, accepted optimization, push, and any blocker.
 
 ## 2026-11-04 cache-line and rvoice investigation
@@ -407,3 +407,13 @@ Identical, so the portamento differences are the missing upstream fix. The branc
 ### Rebasing `perf/mixer-std-atomic` clears the matrix difference
 
 Rebasing that branch onto `2e838ae6` (two commits, no conflicts) and re-running the 85-file matrix gives **0 differing files**. So the branch is rendering-neutral; the eight files it differed in before were exactly the upstream portamento fix it was missing.
+
+
+## 2026-11-04 phase increment cache
+
+- Accepted and pushed `perf/rvoice-cache-phase-incr`, commit `a2a901f0`, stacked on `perf/mixer-stable-amp` (`d4afd04a`). Production diff: +14/-7 lines.
+- `fluid_rvoice_write()` now skips the cents-to-Hz lookup and divide when the calculated pitch is unchanged. Voice reset and `fluid_rvoice_set_root_pitch_hz()` invalidate the cached increment, so pitch and root-pitch updates still refresh it.
+- Regular conventional multi-track MIDI (generated `/tmp/fluidsynth-conventional.mid`): five alternating `perf stat` pairs gave median cycles 80.367B -> 80.003B (-0.45%); every pair improved. Instructions increased 0.11%. Render outputs were byte-identical (SHA-256 `4dd19092...cf62fae0`).
+- Fresh float-build recheck on real Bach `Shi05M.mid`: seven alternating pairs, `taskset -c 2`, median cycles 5.636B -> 5.612B (-0.44%); instructions +0.10%. Four pairs improved and three regressed, so this small gain remains workload-sensitive. All seven output hashes matched (`8452a775...83133`).
+- The earlier 9-pair real-MIDI measurement had median cycles 5.552B -> 5.534B (-0.32%), with eight of nine pairs lower; the 5-pair 128-voice sustained workload was 14.617B -> 14.548B (-0.47%). Conventional, real MIDI, and sustained outputs matched byte-for-byte in the saved comparisons.
+- Candidate rebuilt successfully in the float `RelWithDebInfo` build (`-O2`, GCC 16.2.1). `git diff --check` passed before commit; branch is clean and tracks `origin/perf/rvoice-cache-phase-incr`.

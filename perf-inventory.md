@@ -87,3 +87,8 @@
 `perf/interp-buffer-steps`、`perf/iir-coeff-double`、`perf/iir-steady-loop`、`perf/interp-tap-window`、`perf/reverb-delay-size`、`perf/reverb-idle-skip`、`perf/chorus-idle-skip`、`perf/sinc-paired-samples`、`perf/sinc-kernel-fused-taps`（后两个叠在 `perf/sinc-phase-table-rebased` 上）。
 
 指令数几何平均 0.878（−12.2 %），墙钟 0.913（−8.7 %），PCM 与上游最多差 1 个 ULP（来自 IIR 的 `-ffast-math` 重结合），sinc 路径逐字节相同。每条分支单独 `make check` 50/50 通过。
+
+
+### 2026-11-04 follow-up
+
+- `perf/rvoice-cache-phase-incr` (`a2a901f0`) is a separate pushed optimization, stacked on `perf/mixer-stable-amp`; +14/-7 production lines. It caches phase increment when pitch remains unchanged. Measurements and PCM hashes are in `progress.md`.
