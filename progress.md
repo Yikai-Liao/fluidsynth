@@ -342,3 +342,15 @@ The stack and every individual branch were rebuilt with `CC=clang CXX=clang++` (
 - output: stack vs upstream, both built with clang, 909.mid -> **byte-identical** (0 of 10,960,768 samples differ)
 
 For reference, the gcc stack differs from the gcc upstream in 3 samples by up to 4.7e-10, and clang's upstream output differs from gcc's upstream output in 7,314,124 samples by up to 8.9e-08. So the stack introduces no divergence of its own under either compiler; the gcc-only differences are how gcc reassociates the IIR expression with `-ffast-math`.
+
+### Five-pair wall clock, final stack
+
+Alternating upstream/stack process pairs, `taskset -c 2`, MuseScore_General, 44.1 kHz, gain 0.5, CLI fast render to /dev/null:
+
+| file | upstream (5 runs) | stack (5 runs) | paired geomean |
+|---|---|---|---:|
+| MAESTRO 2013 ORIG-MIDI_03 | 12.48 / 12.45 / 12.12 / 11.80 / 11.37 s | 10.68 / 10.14 / 9.93 / 9.43 / 9.32 s | 0.821 |
+| 909.mid | 6.83 / 6.90 / 6.99 / 6.85 / 6.95 s | 5.82 / 6.07 / 5.91 / 5.91 / 5.99 s | 0.860 |
+| ugly.mid | 8.53 / 9.14 / 8.44 / 8.50 / 8.57 s | 8.21 / 8.01 / 7.76 / 7.82 / 7.68 s | 0.914 |
+
+Both columns drift down during a run (turbo ramp), which is why the pairs alternate and the ratio is computed per pair. These supersede the single-pair table above for these three files; the deterministic instruction counts remain the primary metric.
