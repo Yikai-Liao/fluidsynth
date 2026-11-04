@@ -203,11 +203,15 @@ fluid_interp_sinc_coeff_table()
  * Apply linearly interpolated coefficients for a 32-bit fractional phase.
  * The table rows are normalized before interpolation, so the per-sample path
  * needs only coefficient interpolation and the sample dot product.
+ *
+ * The caller supplies the taps through c tap instead of a materialized window.
+ * Callers whose taps all come from live sample data then load a tap and
+ * accumulate it in the same iteration, so the window never has to be stored to
+ * and reloaded from the stack.
  */
-template<int SINC_ORDER>
-static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_t, SINC_ORDER> &s,
-                                                    uint32_t fractional_phase,
-                                                    const fluid_interp_sinc_coeff_table_t<SINC_ORDER> &table)
+template<int SINC_ORDER, typename TapFn>
+static inline fluid_real_t fluid_interp_sinc_kernel_from_taps(const TapFn &tap, uint32_t fractional_phase,
+                                                              const fluid_interp_sinc_coeff_table_t<SINC_ORDER> &table)
 {
     constexpr unsigned int phase_bits = 32 - FLUID_SINC_PHASE_TABLE_BITS;
     constexpr uint32_t phase_mask = (1u << phase_bits) - 1u;
@@ -222,10 +226,18 @@ static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_
     for(int i = 0; i < SINC_ORDER; i++)
     {
         const fluid_real_t coeff = coeffs0[i] + (coeffs1[i] - coeffs0[i]) * fraction;
-        result += coeff * s[i];
+        result += coeff * tap(i);
     }
 
     return result;
+}
+
+template<int SINC_ORDER>
+static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_t, SINC_ORDER> &s,
+                                                    uint32_t fractional_phase,
+                                                    const fluid_interp_sinc_coeff_table_t<SINC_ORDER> &table)
+{
+    return fluid_interp_sinc_kernel_from_taps<SINC_ORDER>([&](int i) { return s[i]; }, fractional_phase, table);
 }
 
 template<int SINC_ORDER>

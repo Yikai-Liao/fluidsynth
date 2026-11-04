@@ -601,7 +601,7 @@ fluid_rvoice_dsp_interpolate_sinc_local(fluid_rvoice_t *rvoice, fluid_real_t *FL
     /* Compute windowed sinc interpolation coefficients and apply to sample array.
      * The center tap is at position half in the array (s[half] == sample at dsp_phase_index). */
     const auto &sinc_coeff_table = fluid_interp_sinc_coeff_table<SINC_ORDER>();
-    auto interp_sinc = [&](std::array<fluid_real_t, SINC_ORDER> s)
+    auto interp_sinc = [&](const std::array<fluid_real_t, SINC_ORDER> &s)
     {
         return fluid_interp_sinc_kernel<SINC_ORDER>(s, fluid_phase_fract(dsp_phase), sinc_coeff_table);
     };
@@ -646,14 +646,15 @@ fluid_rvoice_dsp_interpolate_sinc_local(fluid_rvoice_t *rvoice, fluid_real_t *FL
 
             for(; safe_count--; dsp_i++)
             {
-                std::array<fluid_real_t, SINC_ORDER> s;
-
-                for(int j = 0; j < SINC_ORDER; j++)
+                /* Every tap of the main body is live sample data, so load each
+                 * one where it is accumulated instead of building a window. */
+                dsp_buf[dsp_i] = fluid_interp_sinc_kernel_from_taps<SINC_ORDER>(
+                                     [&](int j)
                 {
-                    s[j] = fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, dsp_phase_index + (j - half));
-                }
+                    return fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24,
+                            dsp_phase_index + (j - half));
+                }, fluid_phase_fract(dsp_phase), sinc_coeff_table);
 
-                dsp_buf[dsp_i] = interp_sinc(s);
                 fluid_phase_incr(dsp_phase, dsp_phase_incr);
                 dsp_phase_index = fluid_phase_index(dsp_phase);
             }
