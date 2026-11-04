@@ -371,3 +371,16 @@ Every delivered branch was rendered through the project's own matrix (`make chec
 | perf/sinc-kernel-fused-taps (incl. paired samples and phase table) | 0 / 85 | 0 |
 
 The single 1-LSB file is `midi-bank-select/9 - On 'Til Morning.wav`, the same one the full stack touches (170 of 22,228,352 samples). Each IIR branch produces it on its own, which confirms it comes from the `-ffast-math` reassociation those two branches enable in gcc, not from an interaction.
+
+### Rejected: caching the sin/cos table index across samples
+
+The hot path of `fluid_iir_filter_apply_samples<..., REUSE_COEFFICIENTS=true>` recomputes `fluid_iir_filter_sincos_index(fres)` for every sample of a slowly ramping cutoff. Replacing that with a tracked `[table_lo, table_hi)` range around the current entry (valid because `CENTS_STEP == 1` and the caller guarantees `|fres_incr| < CENTS_STEP`) keeps the index without the per-sample conversion, division and clipping. Output is byte-identical to `perf/iir-steady-loop` on 909.mid, MAESTRO 2013 and ugly.mid (0 differing samples).
+
+It is slower anyway:
+
+| file | steady loop | with index cache |
+|---|---:|---:|
+| MAESTRO 2013 ORIG-MIDI_03 | 11.20 / 11.51 / 11.30 / 11.26 / 11.42 s | 11.66 / 11.45 / 11.48 / 11.59 / 11.40 s |
+| 909.mid | 6.76 / 6.79 / 7.10 / 6.90 s | 6.82 / 7.17 / 6.90 / 6.78 s |
+
+A ceiling experiment (index computation replaced by the previous index, which also disables the coefficient recalculation) saves about 5 %, so the cost of that loop is the coefficient recalculation itself: with `CENTS_STEP == 1` the table entry changes almost every sample of a typical ramp, and recomputing `sin`/`cos`-derived coefficients there is what the SoundFont cutoff smoothing requires. Dropped.
