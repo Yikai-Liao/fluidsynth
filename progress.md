@@ -159,7 +159,18 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/85/854f06ff8b421701d4e37dc9f2a2e66260b814014b454cfe509005aaa1119e28.txt; sha256=854f06ff8b421701d4e37dc9f2a2e66260b814014b454cfe509005aaa1119e28; bytes=19820]
-### Tighter head-line number (10 pairs)
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/76/763f2504f5e736e38168c70b29a25d3dac69187748851f6f5ee3ed3415f6e7e7.txt; sha256=763f2504f5e736e38168c70b29a25d3dac69187748851f6f5ee3ed3415f6e7e7; bytes=16880]
+### Sinc / high-quality configuration (revisited)
 
-POP909 909.mid, all six branches, taskset -c 2, 10 pairs: 5.581 s / 6.477 s, paired geomean ratio 0.850 (95% CI 0.836-0.865). Retired instructions on the same file: 34.16B vs 40.03B (-14.7%).
+The sinc path is the slowest quality setting: unmodified master evaluates sin() and cos() per tap and per sample, so the 11-tap mode needs 215 s and the 17-tap mode 335 s for POP909 909.mid (5.48M frames, 44.1 kHz, MuseScore General), against 7 s for the default fourth-order cubic. `perf/sinc-phase-table` replaced that with precomputed tables and brought it to 19.45 s / 27.27 s.
+
+The branch was rebased onto current `upstream/master` (`2e838ae6`) before comparing, since the original base was 46 commits older; the rebased branch is pushed as `perf/sinc-phase-table-rebased` (`7491f437`) and the numbers above are from that rebase.
+
+New branch `perf/sinc-kernel-fused-taps` (`a8354c9c`, +25/-12, on top of the rebased branch):
+
+- The kernel took the tap window as `std::array` by value, which copied it per sample, and the main-body loop then reloaded every tap from the stack. The main body now hands the kernel a tap functor, so the tap load happens in the iteration that multiplies it. The guard regions keep the array overload, which forwards to the same implementation.
+- Taps, coefficient lerp, multiply and accumulation order are unchanged; rendered float output is byte-identical to the phase-table branch for 11, 17 and 25 taps.
+- 909.mid, single runs, taskset -c 2: MID 19.45 s -> 16.10 s (1.21x), HIGH 27.65 s -> 21.15 s (1.31x), HIGHEST 36.46 s -> 29.11 s (1.25x).
+- `test_rvoice_dsp_interpolate` under ASan+UBSan passes (covers 24-bit samples, loop guards and all sinc orders).
+
+Rejected along the way (all slower or neutral, measured on the same file): reusing the tap window across samples (21.06 s vs 18.30 s at MID), splitting the coefficient lerp into a separate vectorizable pass (20.00 s vs 18.30 s), and prefetching the next table row (18.48 vs 18.57 ns/sample in a kernel-only microbenchmark).
