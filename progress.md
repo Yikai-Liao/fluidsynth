@@ -384,3 +384,22 @@ It is slower anyway:
 | 909.mid | 6.76 / 6.79 / 7.10 / 6.90 s | 6.82 / 7.17 / 6.90 / 6.78 s |
 
 A ceiling experiment (index computation replaced by the previous index, which also disables the coefficient recalculation) saves about 5 %, so the cost of that loop is the coefficient recalculation itself: with `CENTS_STEP == 1` the table entry changes almost every sample of a typical ramp, and recomputing `sin`/`cos`-derived coefficients there is what the SoundFont cutoff smoothing requires. Dropped.
+
+### Integration test: idle-skip branches on top of `perf/mixer-std-atomic`
+
+`perf/reverb-idle-skip` and `perf/chorus-idle-skip` were cherry-picked onto `perf/mixer-std-atomic` in a scratch worktree (they edit `fluid_rvoice_mixer.c`, which that branch renames to `.cpp`).
+
+- `perf/reverb-idle-skip`: applied without conflicts.
+- `perf/chorus-idle-skip`: two conflicts, both trivial - the two branches add one field each to `_fluid_mixer_fx_t` (kept both) and each adds an identical `fluid_mixer_buf_is_silent()` helper (kept one).
+- result: builds, `make check` 53/53.
+
+The combined tree renders the 85-file matrix with exactly the same 8 differing files as `perf/mixer-std-atomic` alone, so the two idle-skip commits add no rendering difference.
+
+Those 8 files are not caused by that branch: it is based on `0b0bd087`, which predates upstream `c3b244dd "Fix portamento notes starting at wrong key"`. Rendering `portamento/1TOWOW.MID` with the same command gives
+
+| binary | vs `2e838ae6` |
+|---|---:|
+| `0b0bd087` (branch base, without the fix) | max abs 0.278564 |
+| `perf/mixer-std-atomic` | max abs 0.278564 |
+
+Identical, so the portamento differences are the missing upstream fix. The branch needs a rebase onto current `upstream/master` before its rendering comparison is meaningful.
