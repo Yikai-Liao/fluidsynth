@@ -282,3 +282,14 @@ Each delivered branch was checked out on its own in a scratch worktree (configur
 | perf/sinc-kernel-fused-taps (includes sinc-paired-samples and sinc-phase-table-rebased) | ok | 50/50 |
 
 All local branch tips match `origin`; `perf/builtin-atomics` is deleted on both sides.
+
+### Official manual rendering matrix (SNR gate)
+
+The project's own rendering matrix (`make check_rendering`, target list from `test/CMakeLists.txt`) was rendered with the upstream `2e838ae6` binary and with the stack binary, then compared file by file with `sox`:
+
+- 85 files rendered in both runs (`test/manual` submodule plus its nested GeneralUser-GS / ANMP-data submodules, 453 MB).
+- 84 of 85 are byte-identical.
+- The remaining file, `midi-bank-select/9 - On 'Til Morning.wav`, differs in 170 of 22,228,352 samples, each by exactly 1 LSB of 16-bit PCM (max abs 0.000031). That matches the `-ffast-math` reassociation in the two IIR branches: a 1e-10 relative difference crossing an s16 rounding boundary.
+- The `limiter/*` cases are excluded because both builds were configured without the signalsmith submodule, so `synth.limiter.active` does not exist and those targets fail in both runs; use `make -k` so the remaining targets still build.
+
+Subtrees covered by the matrix: `iir_filter` (issues 1415/1417/1424/1427/1481), `awe32_nrpn`, `sf2_nrpn`, `SoundFont-Spec-Test`, `sf2/GeneralUser-GS`, `portamento`, `reverb`, `exclusive_class`, `dsp_interp`, `dynamic-sample-loading`, `stacked_sf2`, `sfe`, `rpn`, `sysex/gs_dt1`, `mts`, `midi-bank-select`.
