@@ -332,3 +332,13 @@ ugly.mid, affinity 0-3, one run each:
 Parallelism works on that branch (7.48 s < 8.60 s), but four cores only buy 1.15x. The sys time grows with the worker count because every worker is woken and parked once per 64-sample block; user time grows because each worker keeps and merges its own destination buffers. `fluid_synth_render_blocks()` cannot simply batch blocks to amortise that, because it stops advancing blocks as soon as an event is queued, which is what keeps event timing at block granularity.
 
 Conclusion for this session: the remaining multithreaded gap needs a wakeup-protocol change (or a larger render quantum), not a buffer-management tweak, and it belongs to the `perf/mixer-std-atomic` work.
+
+### Cross-compiler check (clang 19)
+
+The stack and every individual branch were rebuilt with `CC=clang CXX=clang++` (clang 19.1.7):
+
+- all eight delivered branches: build ok, `make check` 50/50 each
+- full stack: build ok (only the two pre-existing `fluid_audio_convert.h` integer-to-float warnings), `make check` 51/51
+- output: stack vs upstream, both built with clang, 909.mid -> **byte-identical** (0 of 10,960,768 samples differ)
+
+For reference, the gcc stack differs from the gcc upstream in 3 samples by up to 4.7e-10, and clang's upstream output differs from gcc's upstream output in 7,314,124 samples by up to 8.9e-08. So the stack introduces no divergence of its own under either compiler; the gcc-only differences are how gcc reassociates the IIR expression with `-ffast-math`.
