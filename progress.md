@@ -1,10 +1,9 @@
 # FluidSynth MIDI performance work
-
-Updated: 2026-11-04 00:38 Asia/Singapore (UTC+08:00)
+Updated: 2026-11-04 11:40 Asia/Singapore (UTC+08:00)
 
 ## Goal
 
-Continue measured performance optimization for regular MIDI rendering until 2026-11-04 10:00 Beijing time. Each accepted optimization must live on its own branch and be pushed to `origin`. Production changes must add fewer than 50 lines. Keep the original `/home/lyk/code/fluidsynth` worktree untouched because its `TODO` has unrelated uncommitted edits.
+Continue measured performance optimization for regular MIDI rendering until 2026-11-04 18:00 Beijing time. Each accepted optimization must live on its own branch and be pushed to `origin`. Production changes must add fewer than 50 lines. Keep the original `/home/lyk/code/fluidsynth` worktree untouched because its `TODO` has unrelated uncommitted edits.
 
 ## Baseline and prior work
 
@@ -155,17 +154,114 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `gcc -fanalyzer` on the modified files reported `-Wreorder` for `fluid_reverb_delay_line` because the new `length` member was declared between `line_in` and `line_out` while the constructor initializes it after `line_out`. The member was moved after `line_out`; no warning, PCM unchanged.
 
-### New branch: `perf/reverb-idle-skip` (`0de60265`, +36/-0)
+### New branch: `perf/reverb-idle-skip` (`773935f6`, +82/-0 with test)
 
-`fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
+`fluid_rvoice_mixer_process_fx()` called the reverb for every block even when no voice sent to it. When the reverb has only been fed zeros since it was created or reset, its delay lines and filters still hold zeros, so processing a zero block writes zeros and only moves ring positions. The mixer now skips `processmix`/`processreplace` for such blocks.
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/d2/d2ae12b3ee9e27da7b0e4542c4d918e41da60c8691adc4c0d7ec81bb28e63cef.txt; sha256=d2ae12b3ee9e27da7b0e4542c4d918e41da60c8691adc4c0d7ec81bb28e63cef; bytes=17258]
-### Clean-build verification of the full stack
+The decision is delegated to the engine: `_fluid_revmodel_t` gained a virtual `can_skip_silence()` that defaults to false, and only the Dattorro engine answers true (fixed delay lengths, no oscillator, no DC offset). The FDN and Signalsmith engines advance modulator phases while processing and the Freeverb engine adds a DC offset to its input, so they keep running and the output stays bit-identical for every engine. `fluid_revmodel_can_skip_silence()` exposes the answer to the C mixer, and `test/test_reverb_silence_skip.c` compares a skipped run against an explicit zero-input run for both Dattorro and FDN.
 
-Fresh configure and build of the twelve-commit stack in an empty directory (`/tmp/perfwork/cleanbuild`), default double samples, multithread rendering enabled:
+Measured on reverb-only renders (no voice sends to the reverb), 6 alternating pairs, geomean ratio 0.74 / 0.77. On the full corpus: neverending -13.3 %, class14 -3.7 %, 909.mid -1.2 %; files where voices do send to the reverb are unchanged.
 
-- build: success, no compiler warnings
-- `make check`: 51/51 tests pass
-- 909.mid render against the upstream reference: 3 of 10,960,768 samples differ by at most 4.7e-10
+Review fixes applied after the first version: the capability check (so engines with moving state cannot be skipped), the `FLUID_ASSERT`-style comment accuracy, and reordering `length` in `fluid_reverb_delay_line` for `-Wreorder`.
 
-Run `ctest` alone instead of `make check` and `VintageDreamsWaves-v2.sf3_dump_test` fails with "no such file or directory" for `test/utils/dump_sfont`; that helper binary is only built by the `check` target, so this is a test-target ordering detail and not a regression.
+### New branch: `perf/chorus-idle-skip` (`35443f4d`, +182/-7 with tests)
+
+Same idea for the chorus. Upstream already avoids the full `fluid_chorus_processmix()` on silent input, but the fallback `fluid_chorus_processsilence()` still runs the whole per-sample modulator and delay-line update loop. While the chorus has never been fed a non-zero block, only its modulator state advances; the delay line stays zero. The new `fluid_chorus_processsilence()` advances exactly the same state (index rate, modulators, oscillator phases, line positions, center position) but skips the delay-line reads/writes and the output mixing, so a later non-silent block is processed as if nothing had been skipped. `test/test_chorus_silence_skip.c` compares the skipped path against feeding explicit zeros.
+
+Measured on chorus-free files: MAESTRO 2013 -3.6 %, 909.mid -2.0 %; files that use the chorus are unchanged (bit-identical).
+
+### `perf/builtin-atomics` — withdrawn
+
+An earlier branch replaced `fluid_locked_atomics.h` with a `__atomic`-builtin implementation. Withdrawn on user instruction: no compiler-specific syntax. The team already has `perf/mixer-std-atomic` (compile the rvoice mixer as C++, use `std::atomic` for mixer work scheduling), which is pending upstream, so that is the path for the mixer threading fix. The branch is deleted both locally and on origin; the numbers below no longer include it.
+
+The measurements made with it are kept only as evidence for the follow-up work:
+- multithreaded rendering was slower than single-threaded before it (ugly.mid: 8.86 s at one core, 10.37 s at four cores) because `fluid_locked_atomics.h` serialised every mixer worker on one global `std::mutex`.
+- with it, 909.mid with 11-tap sinc interpolation scaled 14.43 s / 9.54 s / 6.70 s at 1 / 2 / 4 cores.
+- once workers really run in parallel, per-worker destination buffer zeroing becomes the next cost: with `fluid_mixer_buffers_zero()` compiled out (timing only, output invalid) ugly.mid at four cores went 8.12 / 7.67 / 7.50 s -> 6.36 / 6.35 / 6.01 s. `fluid_mixer_buffers_zero()` already carries an upstream TODO about zeroing only the buffers that are used.
+
+Multithreaded output is not byte-identical and never was: worker threads take voices from `mixer->current_rvoice` with an atomic fetch-and-add, so which voices land in which worker buffer depends on timing and the per-worker partial mixes are summed in a different grouping each run. Repeated `synth.cpu-cores=4` renders of ugly.mid differ from each other and from a single-threaded render in 0-24 % of the samples, by at most 1.2e-7 (about 2 float ULP at full scale). Unmodified master shows the same effect, just less often, because the global mutex used to serialise the workers. Single-threaded renders are unaffected.
+
+### Final stack (eleven commits)
+
+`combined` worktree: `2e838ae6` plus `perf/interp-buffer-steps`, `perf/iir-coeff-double`, `perf/iir-steady-loop`, `perf/interp-tap-window`, `perf/reverb-delay-size`, `perf/reverb-idle-skip`, `perf/chorus-idle-skip`, `perf/sinc-phase-table-rebased` + `perf/sinc-paired-samples` + `perf/sinc-kernel-fused-taps`.
+
+Retired instructions, upstream -> stack (CLI fast render, 44.1 kHz, gain 0.5, MuseScore_General, `taskset -c 2`):
+
+| file | upstream | stack | ratio |
+|---|---:|---:|---:|
+| neverending | 68.41B | 61.84B | 0.904 |
+| ugly | 48.10B | 43.49B | 0.904 |
+| class14 | 63.05B | 57.58B | 0.913 |
+| paul-simon call | 30.71B | 28.01B | 0.912 |
+| dreamadream | 74.47B | 66.22B | 0.889 |
+| 8076fe75 | 13.56B | 12.47B | 0.920 |
+| MAESTRO 2014 | 114.13B | 92.51B | 0.811 |
+| MAESTRO 2013 | 63.98B | 51.68B | 0.808 |
+| MAESTRO 2015 | 59.30B | 50.21B | 0.847 |
+
+Geometric mean 0.878 (-12.2 %).
+
+Wall clock, same runs:
+
+| file | upstream | stack | ratio |
+|---|---:|---:|---:|
+| neverending | 12.45 s | 11.89 s | 0.955 |
+| ugly | 8.77 s | 8.05 s | 0.918 |
+| class14 | 10.78 s | 10.37 s | 0.962 |
+| paul-simon call | 5.59 s | 5.59 s | 1.000 |
+| dreamadream | 13.34 s | 12.71 s | 0.953 |
+| 8076fe75 | 2.65 s | 2.50 s | 0.943 |
+| MAESTRO 2014 | 20.41 s | 17.14 s | 0.840 |
+| MAESTRO 2013 | 11.62 s | 9.60 s | 0.826 |
+| MAESTRO 2015 | 10.97 s | 9.23 s | 0.841 |
+
+Geometric mean 0.913 (-8.7 %). Instruction counts are the more reliable metric here; wall clock on this box moves by 1-3 % between runs.
+
+Identity against upstream (float output, interp 4): 909.mid 3 of 10,960,768 samples differ by at most 4.7e-10, MAESTRO 2013 2 of 27.72M, ugly.mid 17 of 17.37M, all from the `-ffast-math` reassociation enabled by the two IIR changes. Sinc output is byte-identical.
+
+### Other configurations
+
+| sample rate | differing samples | max abs |
+|---|---:|---:|
+| 44.1 kHz | 3 / 10,960,768 | 4.7e-10 |
+| 48 kHz | 1 / 11,929,856 | 1.7e-18 |
+| 96 kHz | 8 / 23,859,200 | 2.3e-10 |
+
+FDN reverb (`synth.reverb.engine=fdn`) on 909.mid: 7.30 s -> 5.97 s (-18.2 %). The output differs in 99.99 % of the samples by at most 4.0e-8, because a one-ULP difference recurses through the feedback network; it does not grow over the file (quarters: 4.0e-8 / 1.5e-8 / 1.5e-8 / 1.5e-8).
+
+TimGM6mb.sf2 on 909.mid: byte-identical, 1.85 s -> 1.69 s (-8.7 %).
+
+### ASan
+
+Full stack rebuilt with AddressSanitizer, 909.mid at `synth.cpu-cores=1` and `=4`: no reports with `alloc_dealloc_mismatch` suppressed. The suppression is needed because upstream aborts first:
+
+```
+ERROR: AddressSanitizer: alloc-dealloc-mismatch (operator new vs free)
+    #1 fluid_free             src/utils/fluid_sys.c:329
+    #2 fluid_thread_high_prio src/utils/fluid_sys.c:987
+    #3 thread_wrapper         src/utils/fluid_sys_cpp11.cpp:50
+```
+
+`new_fluid_thread()` allocates `fluid_thread_info_t` with `new` and `fluid_thread_high_prio()` releases it with `FLUID_FREE`. Unchanged upstream code (verified against `2e838ae6`); it only fires when a high-priority thread is created, i.e. with `synth.cpu-cores > 1`. Not touched here, but worth a separate fix.
+
+### Build option: float vs double samples
+
+`fluid_real_t` is `double` unless `-Denable-floats=1` is given (`fluidsynth_priv.h`, `CMakeLists.txt:458`). Same stack, that option:
+
+| file | double (default) | float |
+|---|---:|---:|
+| MAESTRO 2013 ORIG-MIDI_03 | 9.20 / 8.64 / 8.97 s | 8.07 / 8.31 / 8.08 s |
+| 909.mid | 5.79 / 5.83 / 5.85 s | 5.16 / 5.17 / 5.10 s |
+
+Geomean 0.90 and 0.89. Limited because both hot loops are latency bound (IIR feedback chain, cubic coefficient chain), not SIMD-throughput bound. Recorded as a data point; the default build stays double. `make check` also passes 51/51 with `enable-floats=1`.
+
+### Clean-build verification
+
+Fresh configure and build of the eleven-commit stack in an empty directory, default double samples, multithread rendering enabled: build succeeds with no warnings, `make check` passes 51/51, and the 909.mid render matches the reference as listed above. Running `ctest` without `make check` first fails `VintageDreamsWaves-v2.sf3_dump_test` because `test/utils/dump_sfont` is only built by the `check` target.
+
+### Overlap with the branches owned by the std::atomic / IIR work
+
+- `perf/mixer-std-atomic` renames `src/rvoice/fluid_rvoice_mixer.c` to `.cpp` and adds `static_cast`s in `fluid_rvoice_mixer_process_fx()`. `perf/reverb-idle-skip` and `perf/chorus-idle-skip` insert code in that same function, so they need a rebase after it lands. No logical conflict.
+- `perf/iir-stable-block` rewrites the same region of `fluid_iir_filter_apply_samples()` that `perf/iir-steady-loop` touches, with a four-sample recurrence expansion. Both are kept on user instruction; only one should be merged.
+- `perf/iir-coeff-double` only changes how the coefficients are held inside the sample loop, which does not overlap `fluid_iir_filter_calculate_coefficients()` or `fluid_iir_filter_apply_local()` from `perf/iir-cutoff-coefficient-reuse`.
+- No overlap: `fluid_rvoice_dsp.cpp` interpolation branches, `fluid_rev_filters.h`, the reverb/chorus engine files, and the two sinc branches.
