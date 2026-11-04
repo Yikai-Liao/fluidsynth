@@ -159,14 +159,13 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/1f/1f072e2387d06bdf2ca01648f719b760c83cae0c828d0bd9105dfc125b6f55b2.txt; sha256=1f072e2387d06bdf2ca01648f719b760c83cae0c828d0bd9105dfc125b6f55b2; bytes=17485]
-### Build option: float vs double samples
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/d2/d2ae12b3ee9e27da7b0e4542c4d918e41da60c8691adc4c0d7ec81bb28e63cef.txt; sha256=d2ae12b3ee9e27da7b0e4542c4d918e41da60c8691adc4c0d7ec81bb28e63cef; bytes=17258]
+### Clean-build verification of the full stack
 
-`fluid_real_t` is `double` unless `-Denable-floats=1` is given (fluidsynth_priv.h, CMakeLists.txt:458). The same stack built with that option on this machine:
+Fresh configure and build of the twelve-commit stack in an empty directory (`/tmp/perfwork/cleanbuild`), default double samples, multithread rendering enabled:
 
-| file | double (default) | float |
-|---|---:|---:|
-| MAESTRO 2013 ORIG-MIDI_03 | 9.20 / 8.64 / 8.97 s | 8.07 / 8.31 / 8.08 s |
-| 909.mid | 5.79 / 5.83 / 5.85 s | 5.16 / 5.17 / 5.10 s |
+- build: success, no compiler warnings
+- `make check`: 51/51 tests pass
+- 909.mid render against the upstream reference: 3 of 10,960,768 samples differ by at most 4.7e-10
 
-Geomean 0.90 and 0.89. The gain is limited because both hot loops are latency bound (IIR feedback chain, cubic coefficient chain), not SIMD-throughput bound. Recorded as a data point only; the default build stays double.
+Run `ctest` alone instead of `make check` and `VintageDreamsWaves-v2.sf3_dump_test` fails with "no such file or directory" for `test/utils/dump_sfont`; that helper binary is only built by the `check` target, so this is a test-target ordering detail and not a regression.
