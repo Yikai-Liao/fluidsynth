@@ -201,6 +201,34 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
         /* filter (implement the voice filter according to SoundFont standard) */
 
         unsigned int dsp_i;
+
+        if(fres_incr_count <= 0 && q_incr_count <= 0)
+        {
+            /* Neither the cutoff nor Q is ramped in this call, and they only
+             * ever decrease here, so no sample can change the coefficients.
+             * Run the same filter without the per-sample ramp checks. */
+            for (dsp_i = 0; dsp_i < count; dsp_i++)
+            {
+                /* The filter is implemented in Direct-II form. */
+                fluid_real_t dsp_centernode = dsp_buf[dsp_i] - dsp_a1 * dsp_hist1 - dsp_a2 * dsp_hist2;
+                fluid_real_t sample = dsp_b02 * (dsp_centernode + dsp_hist2) + dsp_b1 * dsp_hist1;
+                dsp_hist2 = dsp_hist1;
+                dsp_hist1 = dsp_centernode;
+
+                if(AMPLIFY)
+                {
+                    dsp_buf[dsp_i] = dsp_amp * sample;
+                    dsp_amp += dsp_amp_incr;
+                }
+                else
+                {
+                    dsp_buf[dsp_i] = sample;
+                }
+            }
+
+        }
+        else
+        {
         for (dsp_i = 0; dsp_i < count; dsp_i++)
         {
             /* The filter is implemented in Direct-II form. */
@@ -264,6 +292,7 @@ fluid_iir_filter_apply_samples(fluid_iir_filter_t *iir_filter, fluid_real_t *FLU
                     previous_table_index = table_index;
                 }
             }
+        }
         }
 
         iir_filter->a1 = dsp_a1;
