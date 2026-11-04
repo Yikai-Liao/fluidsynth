@@ -265,3 +265,20 @@ Fresh configure and build of the eleven-commit stack in an empty directory, defa
 - `perf/iir-stable-block` rewrites the same region of `fluid_iir_filter_apply_samples()` that `perf/iir-steady-loop` touches, with a four-sample recurrence expansion. Both are kept on user instruction; only one should be merged.
 - `perf/iir-coeff-double` only changes how the coefficients are held inside the sample loop, which does not overlap `fluid_iir_filter_calculate_coefficients()` or `fluid_iir_filter_apply_local()` from `perf/iir-cutoff-coefficient-reuse`.
 - No overlap: `fluid_rvoice_dsp.cpp` interpolation branches, `fluid_rev_filters.h`, the reverb/chorus engine files, and the two sinc branches.
+
+### Per-branch verification
+
+Each delivered branch was checked out on its own in a scratch worktree (configured with the project defaults, multithread rendering enabled, tests on) and built from the upstream baseline:
+
+| branch | build | tests |
+|---|---|---|
+| perf/interp-buffer-steps | ok | 50/50 |
+| perf/iir-coeff-double | ok | 50/50 |
+| perf/iir-steady-loop | ok | 50/50 |
+| perf/interp-tap-window | ok | 50/50 |
+| perf/reverb-delay-size | ok | 50/50 |
+| perf/reverb-idle-skip | ok | 50/50 |
+| perf/chorus-idle-skip | ok | 50/50 |
+| perf/sinc-kernel-fused-taps (includes sinc-paired-samples and sinc-phase-table-rebased) | ok | 50/50 |
+
+All local branch tips match `origin`; `perf/builtin-atomics` is deleted on both sides.
