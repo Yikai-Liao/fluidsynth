@@ -354,3 +354,20 @@ Alternating upstream/stack process pairs, `taskset -c 2`, MuseScore_General, 44.
 | ugly.mid | 8.53 / 9.14 / 8.44 / 8.50 / 8.57 s | 8.21 / 8.01 / 7.76 / 7.82 / 7.68 s | 0.914 |
 
 Both columns drift down during a run (turbo ramp), which is why the pairs alternate and the ratio is computed per pair. These supersede the single-pair table above for these three files; the deterministic instruction counts remain the primary metric.
+
+### Official rendering matrix per branch
+
+Every delivered branch was rendered through the project's own matrix (`make check_rendering`, 85 files, `-j6`) and compared against the upstream `2e838ae6` renders with `sox`. A base-vs-base run of the same harness first confirmed the matrix is deterministic (0 differing files).
+
+| branch | differing files | worst abs diff |
+|---|---:|---:|
+| perf/iir-coeff-double | 1 / 85 | 0.000031 (1 LSB s16) |
+| perf/iir-steady-loop | 1 / 85 | 0.000031 (1 LSB s16) |
+| perf/interp-tap-window | 0 / 85 | 0 |
+| perf/interp-buffer-steps | 0 / 85 | 0 |
+| perf/reverb-delay-size | 0 / 85 | 0 |
+| perf/reverb-idle-skip | 0 / 85 | 0 |
+| perf/chorus-idle-skip | 0 / 85 | 0 |
+| perf/sinc-kernel-fused-taps (incl. paired samples and phase table) | 0 / 85 | 0 |
+
+The single 1-LSB file is `midi-bank-select/9 - On 'Til Morning.wav`, the same one the full stack touches (170 of 22,228,352 samples). Each IIR branch produces it on its own, which confirms it comes from the `-ffast-math` reassociation those two branches enable in gcc, not from an interaction.
