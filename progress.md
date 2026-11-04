@@ -1,5 +1,5 @@
 # FluidSynth MIDI performance work
-Updated: 2026-11-04 13:17 Asia/Singapore (UTC+08:00)
+Updated: 2026-11-04 13:24 Asia/Singapore (UTC+08:00)
 
 ## Goal
 
@@ -30,9 +30,9 @@ Continue measured performance optimization for regular MIDI rendering until 2026
 
 ## Next actions
 
-1. `perf/mixer-stable-amp` and `perf/rvoice-cache-phase-incr` are pushed; keep this progress file current on `todo`.
+1. `perf/mixer-stable-amp` is pushed. The phase-increment cache branch was measured then withdrawn after profiling showed no skipped conversion calls; keep this progress file current on `todo`.
 2. Refresh `upstream/master` before starting a new candidate; inspect existing delivered and rejected work in `perf-inventory.md` first.
-3. Profile another representative ordinary MIDI set, focusing on modules not covered by delivered branches (Signalsmith FDN, limiter, event scheduling, remaining rvoice DSP).
+3. Use the fresh line-level profile to assess the stable-amplitude mixing loop; first quantify how often exact unity gain occurs, then benchmark a no-multiply path if it is common. Keep other uncovered modules as later candidates.
 4. For each candidate, compare clean baseline/candidate builds with interleaved runs, inspect PCM equality or quantified float differences, require a repeatable end-to-end gain, keep production additions below 50 lines, then commit and push that candidate branch.
 5. Update this file after every experiment, accepted optimization, push, and any blocker.
 
@@ -409,11 +409,10 @@ Identical, so the portamento differences are the missing upstream fix. The branc
 Rebasing that branch onto `2e838ae6` (two commits, no conflicts) and re-running the 85-file matrix gives **0 differing files**. So the branch is rendering-neutral; the eight files it differed in before were exactly the upstream portamento fix it was missing.
 
 
-## 2026-11-04 phase increment cache
+## 2026-11-04 phase increment cache experiment — rejected
 
-- Accepted and pushed `perf/rvoice-cache-phase-incr`, commit `a2a901f0`, stacked on `perf/mixer-stable-amp` (`d4afd04a`). Production diff: +14/-7 lines.
-- `fluid_rvoice_write()` now skips the cents-to-Hz lookup and divide when the calculated pitch is unchanged. Voice reset and `fluid_rvoice_set_root_pitch_hz()` invalidate the cached increment, so pitch and root-pitch updates still refresh it.
-- Regular conventional multi-track MIDI (generated `/tmp/fluidsynth-conventional.mid`): five alternating `perf stat` pairs gave median cycles 80.367B -> 80.003B (-0.45%); every pair improved. Instructions increased 0.11%. Render outputs were byte-identical (SHA-256 `4dd19092...cf62fae0`).
-- Fresh float-build recheck on real Bach `Shi05M.mid`: seven alternating pairs, `taskset -c 2`, median cycles 5.636B -> 5.612B (-0.44%); instructions +0.10%. Four pairs improved and three regressed, so this small gain remains workload-sensitive. All seven output hashes matched (`8452a775...83133`).
-- The earlier 9-pair real-MIDI measurement had median cycles 5.552B -> 5.534B (-0.32%), with eight of nine pairs lower; the 5-pair 128-voice sustained workload was 14.617B -> 14.548B (-0.47%). Conventional, real MIDI, and sustained outputs matched byte-for-byte in the saved comparisons.
-- Candidate rebuilt successfully in the float `RelWithDebInfo` build (`-O2`, GCC 16.2.1). `git diff --check` passed before commit; branch is clean and tracks `origin/perf/rvoice-cache-phase-incr`.
+- Trial commits `a2a901f0` and C90 cleanup `4e36b41a` were briefly pushed on `perf/rvoice-cache-phase-incr`, stacked on `perf/mixer-stable-amp` (`d4afd04a`). The remote branch was deleted after new profile evidence contradicted the apparent small cycle gain; the worktree is detached at `d4afd04a`.
+- Candidate logic cached cents-to-Hz conversion and phase increment for identical pitch. Preliminary results appeared positive: generated conventional MIDI, five alternating pairs, median cycles 80.367B -> 80.003B (-0.45%), all pairs lower; real Bach, 9-pair median 5.552B -> 5.534B (-0.32%); 128-voice sustain, 5-pair median 14.617B -> 14.548B (-0.47%). A fresh real Bach float-build recheck had 7-pair medians 5.636B -> 5.612B (-0.44%), but only four pairs improved and three regressed. PCM hashes matched for all saved output comparisons.
+- The static `-pg` Gprof call counts on `Shi05M.mid` show `fluid_rvoice_write()` called 2,523,832 times and `fluid_ct2hz_real()` 2,526,848 times. The conversion still runs for every voice block, so the cache adds compare/state traffic without avoiding the targeted conversion on this representative MIDI. The sub-0.5% cycle changes are therefore treated as noise/compiler-layout variation and the candidate is rejected.
+- Profile of that one MIDI (float samples, GCC 16.2.1, `-O2`, static `-pg`; approximate self-time shares): interpolation 31.3%, IIR apply 30.4%, voice-buffer mixing 19.1%, Dattorro reverb 7.0%, `fluid_rvoice_write` 4.4%, chorus 1.7%. Gprof line attribution puts the stable-amplitude mix multiply-add at `fluid_rvoice_mixer.c:490` at about 17.4% of total sampled time. This is a call-graph timer profile, not hardware-counter sampling.
+- Current environment has `/proc/sys/kernel/perf_event_paranoid=2`; `perf record` cannot open `cycles:u`. Callgrind aborts in the dynamic loader on an AVX-512 instruction unsupported by installed Valgrind 3.25. Static Gprof works, but Signalsmith/limiter support was unavailable in that configure. Revisit hardware profiling if permissions/runtime change; retain these module-level shares as directional evidence only.
