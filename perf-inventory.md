@@ -31,7 +31,7 @@
 | 混音时增益已稳定则跳过每样本 ramp 运算（新增向量化分支） | `perf/mixer-stable-amp` | `d4afd04a` | 团队 |
 | 完成声部移除走物理 membership 索引，O(1)，保留重复/陈旧成员的扫描回退 | `perf/dev-mixer-finished-index` | `b2045d6c` | 团队 |
 | 用全局锁原子替换为 `__atomic` 内建（单线程 −1.3~1.9 %） | ~~`perf/builtin-atomics`~~ | 已删除 | **撤回**（编译器特定语法；由 std::atomic 分支负责） |
-| 发现（无分支）：worker 每块重复清零自己的目标缓冲约占 4 核渲染 20 %；每块唤醒 worker 的上下文切换带来明显 sys 时间 | — | — | 待做，需与 std::atomic 分支配套 |
+| 发现（无分支）：worker 每块重复清零自己的目标缓冲约占 4 核渲染 5 %（早期 20 % 的测量把 worker 循环里的 `getenv` 也计入了）；每块唤醒 worker 的上下文切换带来明显 sys 时间（4 核 3.6 s sys） | — | — | 待做，需与 std::atomic 分支配套；5 % 的收益不足以支撑改 `fluid_rvoice_buffers_mix`
 
 ## 4. 混响 `src/rvoice/fluid_rev*`
 
