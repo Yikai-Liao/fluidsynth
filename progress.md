@@ -403,3 +403,7 @@ Those 8 files are not caused by that branch: it is based on `0b0bd087`, which pr
 | `perf/mixer-std-atomic` | max abs 0.278564 |
 
 Identical, so the portamento differences are the missing upstream fix. The branch needs a rebase onto current `upstream/master` before its rendering comparison is meaningful.
+
+### Rebasing `perf/mixer-std-atomic` clears the matrix difference
+
+Rebasing that branch onto `2e838ae6` (two commits, no conflicts) and re-running the 85-file matrix gives **0 differing files**. So the branch is rendering-neutral; the eight files it differed in before were exactly the upstream portamento fix it was missing.
