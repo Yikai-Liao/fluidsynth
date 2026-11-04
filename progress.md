@@ -159,11 +159,18 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/10/105bb1d608c2e689c50755daf56ced0966671cab52fd09312f60e0abc7246841.txt; sha256=105bb1d608c2e689c50755daf56ced0966671cab52fd09312f60e0abc7246841; bytes=18067]
-### Correction: multithreaded renders are not byte-identical
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/8b/8bb92a6d865fc4c0679ff9ab298d1f868fc190675e34018fc702b7717cdd166b.txt; sha256=8bb92a6d865fc4c0679ff9ab298d1f868fc190675e34018fc702b7717cdd166b; bytes=17609]
+### Remaining multithreaded overhead: per-worker buffer zeroing
 
-The atomics branch message first claimed byte-identical output at cpu-cores 1 and 4; that comparison was a lucky pair. Repeated `synth.cpu-cores=4` renders of ugly.mid differ from each other and from a single-threaded render in 0-24 % of the samples, by at most 1.2e-7 absolute (about 2 float ULP at full scale).
+With `perf/builtin-atomics` the workers run in parallel, but the parallel path is still inefficient: at `synth.cpu-cores=4` a render of ugly.mid costs 11.9 s user + 3.7 s sys against 7.5 s + 0.5 s single-threaded, for a wall-clock gain of only 7.9 s -> 6.9 s.
 
-The cause is the existing worker design: threads pull voices from `mixer->current_rvoice` with an atomic fetch-and-add, so which voices land in which worker buffer depends on timing, and the per-worker partial mixes are summed in a different grouping each run. Unmodified master behaves the same way (one of three runs differed); the global mutex used to serialize the workers, which made the grouping nearly deterministic.
+Measured on a scratch build with the worker-side `fluid_mixer_buffers_zero()` call compiled out (output invalid, timing only), ugly.mid, 3 pairs:
 
-Single-threaded renders are unaffected, and `test_synth_render_s16` uses default settings. The branch message now states this instead of claiming byte identity.
+| worker zeroing | render time |
+|---|---:|
+| on | 8.12 / 7.67 / 7.50 s |
+| off | 6.36 / 6.35 / 6.01 s |
+
+So roughly 20 % of the four-core render time goes to zeroing per-worker destination buffers. Each worker zeroes `buf_count + fx_buf_count` stereo buffers (6 KB for a 64-sample block at the default voice routing) every block, and with three extra workers that is four times the single-threaded zeroing volume. The sys time comes from the same place indirectly: workers sleep and wake every block, because the file renderer calls the synth with one 64-sample block per `fluid_file_renderer_process_block()`.
+
+Neither is fixed here: `fluid_mixer_buffers_zero()` already carries an upstream TODO about zeroing only the buffers that are used, and changing the wakeup granularity or the per-worker buffer layout is a mixer-thread redesign that touches the same code as the `perf/dev-mixer-*` branches.
