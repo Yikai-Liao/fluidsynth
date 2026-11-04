@@ -159,18 +159,35 @@ Re-measured with the guard, POP909 909.mid, 6 pairs: 6.386 s / 6.726 s, geomean 
 
 `fluid_rvoice_mixer_process_fx()` called the reverb for every block. When no voice sends to the reverb (MIDI without CC91 or SF2 reverb
 
-[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/ed/ed0f2d92c46487dc8c8b6bfac34619b41cf2ef38a9f9786f550e05079c5a08b5.txt; sha256=ed0f2d92c46487dc8c8b6bfac34619b41cf2ef38a9f9786f550e05079c5a08b5; bytes=19115]
-### Compiler atomics instead of one global mutex (new branch)
+[Exact evidence: /root/.pi/agent/sessions/--root-code-fluidsynth--/pi-fold-evidence/pi-session/sha256/f5/f5a45bcd4e09b541e4b742a9f98360e40987b828666db1d50f289cd95f401a3f.txt; sha256=f5a45bcd4e09b541e4b742a9f98360e40987b828666db1d50f289cd95f401a3f; bytes=17731]
+### Final stack after the chorus and atomics work
 
-`perf/builtin-atomics` (+80/-0): `fluid_locked_atomics.h` wraps every atomic operation in `_atomic_lock`, a single global mutex. The mixer worker threads hand their buffers over through those atomics, so `synth.cpu-cores > 1` serialized on that mutex. `fluid_builtin_atomics.h` implements the same API with GCC/Clang `__atomic` builtins (usable from C and C++ sources), seq-cst like the mutex version, and `fluid_sys_cpp11.h` picks it when either compiler is in use; other compilers keep the locked fallback.
+Twelve commits are now stacked in a local worktree (`combined`), all based on 2e838ae6: the eleven listed above plus `perf/builtin-atomics`. `make check` passes (51 tests) on a clean build.
 
-ugly.mid, CLI fast render:
+Retired instructions, upstream -> final stack (CLI fast render, 44.1 kHz, taskset -c 2):
 
-| synth.cpu-cores | before | after |
-|---:|---:|---:|
-| 1 | 8.86 s | 8.92 s |
-| 2 | 9.19 s | 8.02 s |
-| 4 | 10.37 s | 7.16 s |
-| 6 | 12.09 s | 8.10 s |
+| file | upstream | stack | ratio |
+|---|---:|---:|---:|
+| neverending | 68.41B | 61.49B | 0.899 |
+| ugly | 48.10B | 43.24B | 0.899 |
+| class14 | 63.05B | 57.45B | 0.911 |
+| paul-simon call | 30.71B | 27.83B | 0.906 |
+| dreamadream | 74.47B | 65.99B | 0.886 |
+| 8076fe75 | 13.56B | 12.38B | 0.913 |
+| MAESTRO 2014 | 114.13B | 91.97B | 0.806 |
+| MAESTRO 2013 | 63.98B | 51.29B | 0.802 |
+| MAESTRO 2015 | 59.30B | 49.96B | 0.842 |
 
-Single-threaded renders gain 1.3-1.9 % (paired geomean 0.987 on 909.mid, 0.981 on MAESTRO 2013); the mutex was 1.2 % of a single-threaded profile. With the whole stack applied, ugly.mid goes 8.88 / 8.91 / 10.01 s (base, cores 1/2/4) to 8.17 / 7.15 / 6.64 s. Output is byte-identical at cpu-cores 1 and 4, and `make check` passes.
+Geometric mean 0.873 (-12.7 %).
+
+Multi-core (after `perf/builtin-atomics`), 909.mid with sinc MID interpolation (11 taps), 4 pinned cores:
+
+| synth.cpu-cores | time |
+|---:|---:|
+| 1 | 14.43 s |
+| 2 | 9.54 s |
+| 4 | 6.70 s |
+
+Byte-identical output at 1 and 4 cores. Before the atomics change, multithreaded rendering was slower than single-threaded (ugly.mid: 8.86 s at one core, 10.37 s at four cores).
+
+Final float-level check of the whole stack: 909.mid 3/10.96M samples differ from upstream by at most 1 float ULP, ugly.mid 17/17.37M, MAESTRO 2013 2/27.72M, all from the `-ffast-math` reassociation in the two IIR changes. Sinc output is byte-identical.
