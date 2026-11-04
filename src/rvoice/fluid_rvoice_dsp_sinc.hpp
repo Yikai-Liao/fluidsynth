@@ -232,6 +232,40 @@ static inline fluid_real_t fluid_interp_sinc_kernel_from_taps(const TapFn &tap, 
     return result;
 }
 
+/**
+ * Two-sample variant of the tap-based kernel.
+ *
+ * Both accumulations keep their own sequence of additions, but the two
+ * sequences are independent, so the processor can overlap them instead of
+ * waiting for one addition chain per sample.
+ */
+template<int SINC_ORDER, typename TapFnA, typename TapFnB>
+static inline void fluid_interp_sinc_kernel_pair(const TapFnA &tap_a, const TapFnB &tap_b,
+                                                 uint32_t frac_a, uint32_t frac_b,
+                                                 const fluid_interp_sinc_coeff_table_t<SINC_ORDER> &table,
+                                                 fluid_real_t &out_a, fluid_real_t &out_b)
+{
+    constexpr unsigned int phase_bits = 32 - FLUID_SINC_PHASE_TABLE_BITS;
+    constexpr uint32_t phase_mask = (1u << phase_bits) - 1u;
+    constexpr fluid_real_t phase_scale = static_cast<fluid_real_t>(1.0 / (1u << phase_bits));
+
+    const auto &a0 = table[frac_a >> phase_bits];
+    const auto &a1 = table[(frac_a >> phase_bits) + 1];
+    const auto &b0 = table[frac_b >> phase_bits];
+    const auto &b1 = table[(frac_b >> phase_bits) + 1];
+    const fluid_real_t x_a = static_cast<fluid_real_t>(frac_a & phase_mask) * phase_scale;
+    const fluid_real_t x_b = static_cast<fluid_real_t>(frac_b & phase_mask) * phase_scale;
+
+    out_a = 0.0f;
+    out_b = 0.0f;
+
+    for(int i = 0; i < SINC_ORDER; i++)
+    {
+        out_a += (a0[i] + (a1[i] - a0[i]) * x_a) * tap_a(i);
+        out_b += (b0[i] + (b1[i] - b0[i]) * x_b) * tap_b(i);
+    }
+}
+
 template<int SINC_ORDER>
 static inline fluid_real_t fluid_interp_sinc_kernel(const std::array<fluid_real_t, SINC_ORDER> &s,
                                                     uint32_t fractional_phase,

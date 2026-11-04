@@ -644,6 +644,35 @@ fluid_rvoice_dsp_interpolate_sinc_local(fluid_rvoice_t *rvoice, fluid_real_t *FL
         {
             auto safe_count = compute_interpolation_steps(dsp_phase, dsp_phase_incr, end_index, dsp_i);
 
+            /* Two samples per iteration: the two dot products are independent,
+             * so their addition chains overlap instead of running one after the
+             * other. Each sample keeps its own taps, coefficients and addition
+             * order, so the values are unchanged. */
+            for(; safe_count >= 2; safe_count -= 2, dsp_i += 2)
+            {
+                const unsigned int first_a = dsp_phase_index - half;
+                const uint32_t frac_a = fluid_phase_fract(dsp_phase);
+
+                fluid_phase_incr(dsp_phase, dsp_phase_incr);
+                dsp_phase_index = fluid_phase_index(dsp_phase);
+
+                const unsigned int first_b = dsp_phase_index - half;
+                const uint32_t frac_b = fluid_phase_fract(dsp_phase);
+
+                fluid_phase_incr(dsp_phase, dsp_phase_incr);
+                dsp_phase_index = fluid_phase_index(dsp_phase);
+
+                fluid_interp_sinc_kernel_pair<SINC_ORDER>(
+                    [&](int j)
+                {
+                    return fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, first_a + j);
+                },
+                [&](int j)
+                {
+                    return fluid_rvoice_get_float_sample<IS_24BIT>(dsp_data, dsp_data24, first_b + j);
+                }, frac_a, frac_b, sinc_coeff_table, dsp_buf[dsp_i], dsp_buf[dsp_i + 1]);
+            }
+
             for(; safe_count--; dsp_i++)
             {
                 /* Every tap of the main body is live sample data, so load each
