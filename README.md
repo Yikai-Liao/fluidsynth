@@ -24,7 +24,7 @@ Yikai-Liao 的 **21 个 PR：20 已合并，#1878 关闭未合并，无开放 PR
 
 - 历史原曲 Two of Us.1.mid 在默认 Poly／note-cut=0／polyphony=256 下，GeneralUser GS 与 TimGM6mb 都已复现；不是靠开启特殊 Mono 模式制造问题。一个样本不等于普遍高发生率。
 - 根因和修复局部，不改公开 API、不加状态／索引、不改 MIDI player 或踏板协议。保护同周期正常重弹，同时排除已 release 尾音。
-- 生产逻辑只加一个 has_noteoff 条件；连同解释注释为 +2/−2，复用 test_voice_callback.c 加 24 行回归，共两个文件、+26/−2。规模小且有实际音频证据，符合双方降低审核成本的方向。
+- 生产只改一行 has_noteoff 判断，保留原注释；复用 test_voice_callback.c 加 24 行回归，共两个文件、+25/−1。规模小且有实际音频证据，符合双方降低审核成本的方向。
 - 当前 open PR 中未见同项修复；最新上游源码仍缺此条件。没有将 F46 重复 CC66、router 清规则或 #1880 踏板转交并入。
 
 **本次新测，而非历史结果：** 在上游 8210cb1b 的临时 worktree 单独移植 dev 分支的两个提交改动，未移动原 dev／master refs。
@@ -44,13 +44,13 @@ cmake -S <source> -B <build> -G Ninja -DCMAKE_BUILD_TYPE=Debug \
 cmake --build <build> --target check -j 6
 ~~~
 
-**已整理并推送：** [fix/sostenuto-cycle](https://github.com/Yikai-Liao/fluidsynth/tree/fix/sostenuto-cycle) @ [dad8ff06](https://github.com/Yikai-Liao/fluidsynth/commit/dad8ff06818b6987988d1e091e01a2ba7816490b)，以 8210cb1b 为唯一父提交，作者 Yikai-Liao，单 commit；dev 历史未改。自查覆盖命名、注释、commit 消息与现有设施复用；仅收紧回归计数复位位置，仍为 +24 行测试。最终 GCC double／float、Clang double 各 check 51/51；去掉修复会在跨周期断言失败，错用 fluid_voice_is_on() 会在同周期保护断言失败。**尚未创建上游 PR**；余项是远端 CI、完整原曲与 check_rendering 新基线 PCM 对照，sanitizer 未重跑。
+**已整理并推送：** [fix/sostenuto-cycle](https://github.com/Yikai-Liao/fluidsynth/tree/fix/sostenuto-cycle) @ [03e5f8f2](https://github.com/Yikai-Liao/fluidsynth/commit/03e5f8f23f237713cce7243f82c68a6608382c62)，以 8210cb1b 为唯一父提交，作者 Yikai-Liao，单 commit；dev 历史未改。自查覆盖命名、注释、commit 消息与现有设施复用；收紧回归计数复位位置，保留生产原注释，测试注释改为直接描述场景，仍为 +24 行测试。此前同逻辑版本 GCC double／float、Clang double 各 check 51/51；本次仅改注释后重跑 GCC double 定向回归通过。去掉修复会在跨周期断言失败，错用 fluid_voice_is_on() 会在同周期保护断言失败。**尚未创建上游 PR**；余项是新 head 远端 CI、完整原曲与 check_rendering 新基线 PCM 对照，sanitizer 未重跑。
 
 ## 下一项与暂缓队列
 
 | 主题／分支 | 条件、状态与取舍 |
 |---|---|
-| **已准备：fix/sostenuto-cycle** @ dad8ff06 | 上述跨周期问题，最新上游上的单提交；原 fix/dev-sostenuto-cycle @ a492c976 保留不动 |
+| **已准备：fix/sostenuto-cycle** @ 03e5f8f2 | 上述跨周期问题，最新上游上的单提交；原 fix/dev-sostenuto-cycle @ a492c976 保留不动 |
 | **次选：fix/dev-sostenuto-repeat** @ 58a97453 | F46，重复 CC66 高值错误重捕新音；用户已提高优先级。历史 MS Basic 原生播放确认；生产涉及旧值传递与逐声道 global-controller 路径，较首选更广，本次未重测 |
 | fix/dev-router-sostenuto-release @ 575c0376 | 需播放中 router_clear；原生 EOF 会复位踏板，不称永久挂音。继续独立保存 |
 | fix/dev-shrink-finished-voices @ e18868ca | 需宿主运行中缩容 256→64；完成计数遗留可阻塞 DONE，共同 PCM 相同，不称可听挂音 |
