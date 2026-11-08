@@ -16,18 +16,20 @@ Yikai-Liao 的 **22 个 PR：20 已合并，#1878 关闭未合并，[#1904](http
 
 ## 本周投稿安排：11 月 9–15 日（UTC+08）
 
-目标新增 **2 个 PR，另留 1 个候选**，按下面顺序逐个推进。日期是准备／投稿窗口，不是自动发布任务；每项仍需自查、当前上游验证、单提交非 dev 分支和 CI。建议自己的开放 PR 不超过 2 个；有评审反馈先处理，排期顺延，不催审。
+目标新增 **1 个正确性 PR＋1 个性能 PR**，缩容修复作为性能验证未达标时的替补，按下面顺序逐个推进。日期是准备／投稿窗口，不是自动发布任务；每项仍需自查、当前上游验证、单提交非 dev 分支和 CI。建议自己的开放 PR 不超过 2 个；有评审反馈先处理，排期顺延，不催审。
 
 | 时间 | 工作与拟提交 PR | 提交前完成 |
 |---|---|---|
 | 11/9 周一 | 跟进已提交 #1904；准备 F46 重复 CC66 | 查 #1904 macOS 重跑与上游 CI；将 fix/dev-sostenuto-repeat 独立移植到最新上游，自查旧值传递是否已是最小实现 |
 | 11/10–11 周二／三 | **第 1 个：Capture sostenuto notes only on pedal-down transitions**；fix/sostenuto-repeat | 回归修复前失败／后通过；覆盖重复高值、63→64、global controller 各目标声道旧值不同；复用 test_synth_reset_cc.c，float/double 与 CI；核对历史 MS Basic 原曲的新基线 PCM |
-| 11/12–13 周四／五 | **第 2 个：Fix finished voice lookup after reducing polyphony**；fix/shrink-finished-voices | 从 fix/dev-shrink-finished-voices 提取独立修复；确认 nvoice 与 polyphony 的边界，复用现有 voice 测试；重现缩容后 active count／DONE，检查不缩容与缩容后再扩容；float/double 与 CI |
-| 11/14–15 周六／日 | **候选第 3 个：Preserve pending sostenuto releases when clearing MIDI router rules**；fix/router-sostenuto-release | 前两项审核推进顺畅再提交；从 fix/dev-router-sostenuto-release 整理，复核等待移除规则的生命周期、sustain/sostenuto 与 64/63 阈值；自查独立测试文件的必要性，复测原曲 router_clear 路径与 CI |
+| 11/12–13 周四／五 | **第 2 个首选：Skip gain ramp arithmetic when the voice gain is stable**；perf/mixer-stable-amp | 将 d4afd04a 独立移植到当前 C++ mixer；复用现有测试，覆盖稳定／变化增益和不足一块的尾音；用普通完整 MIDI、相同 SoundFont 和配置交错配对测端到端 wall time，float/double、GCC/Clang、PCM 与 CI。收益可重复再投稿 |
+| 11/14–15 周六／日 | 性能结果整理、响应评审；**替补：Fix finished voice lookup after reducing polyphony**；fix/shrink-finished-voices | 若 mixer 优化未建立稳定收益，则先保留实验，改提缩容修复；确认 nvoice／polyphony 边界，复用现有 voice 测试，重现缩容后 active count／DONE，检查不缩容与再扩容，float/double 与 CI。router 清规则修复顺延 |
 
-顺序依据：F46 有真实 MIDI＋MS Basic 音频证据，且用户已提高优先级；缩容问题会阻塞播放器结束，现有修复生产仅一行、测试 16 行；router 问题需宿主清规则且原生 EOF 会复位踏板，排在其后。三项相互独立，不叠分支，也不与 #1904 合包。
+顺序依据：F46 有真实 MIDI＋MS Basic 音频证据，且用户已提高优先级；mixer 稳定增益优化生产 +10/−1、不新增状态，历史真实 12 秒 MIDI 的 cycles 下降约 1.5%／4.2%，PCM 相同，值得优先做完整曲目新基线复测。缩容修复生产一行、测试 16 行，可作为替补；router 需要宿主清规则，后移。各项独立，不叠分支，也不与 #1904 合包。
 
-本周不排性能、插值／sinc、DLS、播放器重构和 CI 迁移；保留既有暂缓决定。新选题与新基线验证尚未完成，不把历史分支 CI 当成本周交付结果。
+性能后备：perf/iir-coeff-double 生产 +12/−2，历史 909.mid 渲染循环耗时约降 4.1%，仍需多曲目／当前编译器复测与量化 fast-math 差异；IIR W4 为第二梯队，保留原暂缓安排，其 micro 与旧版本端到端数字不当作当前结果。reverb-delay-size 的历史整曲置信区间跨 1，不列本周首选。
+
+插值／sinc、DLS、播放器重构和 CI 迁移仍暂缓。新基线性能与 CI 尚未验证，不把历史结果写成本周交付结果。
 
 ## 已提交：CC66 跨周期旧 voice ID 修复
 
