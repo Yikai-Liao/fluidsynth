@@ -10,18 +10,18 @@
 
 ## 当前状态
 
-Yikai-Liao 的 **22 个 PR：20 已合并，#1878 关闭未合并，[#1904](https://github.com/FluidSynth/fluidsynth/pull/1904) 开放**。#1900、#1901、#1902 均于 11 月 6 日合并，旧记录中的“待合并”已失效；#1878 被覆盖更全的 #1871 替代，不重提。合并、发布、历史 head 的 CI 是不同状态，不因合并便宣称已进入 2.6.2 或全部 CI 成功。
+Yikai-Liao 的 **23 个 PR：20 已合并，#1878 关闭未合并，[#1904](https://github.com/FluidSynth/fluidsynth/pull/1904)／[#1905](https://github.com/FluidSynth/fluidsynth/pull/1905) 开放**。#1900、#1901、#1902 均于 11 月 6 日合并，旧记录中的“待合并”已失效；#1878 被覆盖更全的 #1871 替代，不重提。合并、发布、历史 head 的 CI 是不同状态，不因合并便宣称已进入 2.6.2 或全部 CI 成功。
 
 上游其他 open PR：[#1894 DSP 插值](https://github.com/FluidSynth/fluidsynth/pull/1894)（derselbst）、[#1889 RMIDI](https://github.com/FluidSynth/fluidsynth/pull/1889)、[#1718 POSIX OSAL](https://github.com/FluidSynth/fluidsynth/pull/1718)。不要重复维护者正在做的插值工作。#1897 仍 open 不代表 #1900/#1901 没有合并。
 
 ## 本周投稿安排：11 月 9–15 日（UTC+08）
 
-目标新增 **1 个正确性 PR＋1 个性能 PR**，缩容修复作为性能验证未达标时的替补，按下面顺序逐个推进。日期是准备／投稿窗口，不是自动发布任务；每项仍需自查、当前上游验证、单提交非 dev 分支和 CI。建议自己的开放 PR 不超过 2 个；有评审反馈先处理，排期顺延，不催审。
+用户决定两个独立根因的 CC66 修复同日提交，现已开 **#1904／#1905**；本周再准备 **1 个性能 PR**，缩容修复作为性能验证未达标时的替补。日期是准备／投稿窗口，不是自动发布任务；每项仍需自查、当前上游验证、单提交非 dev 分支和 CI。建议自己的开放 PR 不超过 2 个；有评审反馈先处理，排期顺延，不催审。
 
 | 时间 | 工作与拟提交 PR | 提交前完成 |
 |---|---|---|
-| 11/9 周一 | 跟进已提交 #1904；准备 F46 重复 CC66 | 查 #1904 macOS 重跑与上游 CI；将 fix/dev-sostenuto-repeat 独立移植到最新上游，自查旧值传递是否已是最小实现 |
-| 11/10–11 周二／三 | **第 1 个：Capture sostenuto notes only on pedal-down transitions**；fix/sostenuto-repeat | 回归修复前失败／后通过；覆盖重复高值、63→64、global controller 各目标声道旧值不同；复用 test_synth_reset_cc.c，float/double 与 CI；核对历史 MS Basic 原曲的新基线 PCM |
+| 11/9 周一 | **已提交 #1904 与 #1905**：CC66 跨周期 ID／重复高值两项独立修复 | 两分支同基线、不相互依赖；双向试合并无冲突，组合 Debug check 51/51。标题与正文明确 CC66，等待评审及剩余 CI |
+| 11/10–11 周二／三 | 跟进 CC66 两项 CI／评审；准备性能与缩容分支 | 反馈优先，不催审；F46 历史 MS Basic 完整原曲的新基线 PCM 未重测，不冒充本次结果 |
 | 11/12–13 周四／五 | **第 2 个首选：Skip gain ramp arithmetic when the voice gain is stable**；perf/mixer-stable-amp | 将 d4afd04a 独立移植到当前 C++ mixer；复用现有测试，覆盖稳定／变化增益和不足一块的尾音；用普通完整 MIDI、相同 SoundFont 和配置交错配对测端到端 wall time，float/double、GCC/Clang、PCM 与 CI。收益可重复再投稿 |
 | 11/14–15 周六／日 | 性能结果整理、响应评审；**替补：Fix finished voice lookup after reducing polyphony**；fix/shrink-finished-voices | 若 mixer 优化未建立稳定收益，则先保留实验，改提缩容修复；确认 nvoice／polyphony 边界，复用现有 voice 测试，重现缩容后 active count／DONE，检查不缩容与再扩容，float/double 与 CI。router 清规则修复顺延 |
 
@@ -33,7 +33,7 @@ Yikai-Liao 的 **22 个 PR：20 已合并，#1878 关闭未合并，[#1904](http
 
 ## 已提交：CC66 跨周期旧 voice ID 修复
 
-建议标题：**Do not inherit released voice IDs across sostenuto cycles**。
+PR 标题：**Fix CC66 voice ID inheritance across sostenuto cycles**。
 
 前一个 sostenuto 周期的同音声部已进入 release，但状态仍可满足 sostenuto 判断。下一次踏板按下后新弹的同音继承其旧 ID，被误认为在本次按踏板前就已存在，Note Off 后仍被保持。
 
@@ -63,12 +63,18 @@ cmake --build <build> --target check -j 6
 
 **已整理并推送：** [fix/sostenuto-cycle](https://github.com/Yikai-Liao/fluidsynth/tree/fix/sostenuto-cycle) @ [03e5f8f2](https://github.com/Yikai-Liao/fluidsynth/commit/03e5f8f23f237713cce7243f82c68a6608382c62)，以 8210cb1b 为唯一父提交，作者 Yikai-Liao，单 commit；dev 历史未改。自查覆盖命名、注释、commit 消息与现有设施复用；收紧回归计数复位位置，保留生产原注释，测试注释改为直接描述场景，仍为 +24 行测试。此前同逻辑版本 GCC double／float、Clang double 各 check 51/51；本次仅改注释后重跑 GCC double 定向回归通过。去掉修复会在跨周期断言失败，错用 fluid_voice_is_on() 会在同周期保护断言失败。**已提交 [#1904](https://github.com/FluidSynth/fluidsynth/pull/1904)**。最新 head 的 8 个 fork workflow 成功；macOS 因 MacPorts 安装依赖时报 Port libsndfile not found、编译前失败，已重跑失败任务并在 PR 注明。完整原曲与 check_rendering 新基线 PCM 对照、sanitizer 未重跑。
 
+## 已提交：CC66 重复高值错误重捕新音
+
+[#1905](https://github.com/FluidSynth/fluidsynth/pull/1905)：**Capture CC66 sostenuto notes only on pedal-down transitions**；[fix/sostenuto-repeat](https://github.com/Yikai-Liao/fluidsynth/tree/fix/sostenuto-repeat) @ 945242a5，唯一父提交 8210cb1b，原 dev 历史未动。生产 +9/−7，既有 test_synth_reset_cc.c +29 行，无新文件／构建配置；自查过旧值传递、逐声道 global-controller、命名、注释和 commit。
+
+本次 GCC Debug float／double、Clang Debug double 各 check 51/51；回退生产修复，新回归失败；global 路径错误使用旧值 0 的反例在逐声道断言失败。与 #1904 双向试合并得到相同无冲突 tree，组合 GCC Debug double check 51/51。fork CI 尚在运行，未宣称全绿；原曲 MS Basic 新基线与 sanitizer 未重跑。
+
 ## 下一项与暂缓队列
 
 | 主题／分支 | 条件、状态与取舍 |
 |---|---|
 | **PR #1904：fix/sostenuto-cycle** @ 03e5f8f2 | 上述跨周期问题，最新上游上的单提交，等待评审；原 fix/dev-sostenuto-cycle @ a492c976 保留不动 |
-| **次选：fix/dev-sostenuto-repeat** @ 58a97453 | F46，重复 CC66 高值错误重捕新音；用户已提高优先级。历史 MS Basic 原生播放确认；生产涉及旧值传递与逐声道 global-controller 路径，较首选更广，本次未重测 |
+| **PR #1905：fix/sostenuto-repeat** @ 945242a5 | F46 重复 CC66，高值仅 off→on 捕获；上述本地回归已测，等待评审／CI。原 fix/dev-sostenuto-repeat @ 58a97453 保留 |
 | fix/dev-router-sostenuto-release @ 575c0376 | 需播放中 router_clear；原生 EOF 会复位踏板，不称永久挂音。继续独立保存 |
 | fix/dev-shrink-finished-voices @ e18868ca | 需宿主运行中缩容 256→64；完成计数遗留可阻塞 DONE，共同 PCM 相同，不称可听挂音 |
 | fix/dev-mono-cc123-sustain @ d0b0510e | 需显式 Mono＋note-cut=2；默认 Poly 负控不变，后放 |
