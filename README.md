@@ -10,9 +10,9 @@
 
 ## 当前状态
 
-Yikai-Liao 的 **21 个 PR：20 已合并，#1878 关闭未合并，无开放 PR**。#1900、#1901、#1902 均于 11 月 6 日合并，旧记录中的“待合并”已失效；#1878 被覆盖更全的 #1871 替代，不重提。合并、发布、历史 head 的 CI 是不同状态，不因合并便宣称已进入 2.6.2 或全部 CI 成功。
+Yikai-Liao 的 **22 个 PR：20 已合并，#1878 关闭未合并，[#1904](https://github.com/FluidSynth/fluidsynth/pull/1904) 开放**。#1900、#1901、#1902 均于 11 月 6 日合并，旧记录中的“待合并”已失效；#1878 被覆盖更全的 #1871 替代，不重提。合并、发布、历史 head 的 CI 是不同状态，不因合并便宣称已进入 2.6.2 或全部 CI 成功。
 
-上游现有 open PR：[#1894 DSP 插值](https://github.com/FluidSynth/fluidsynth/pull/1894)（derselbst）、[#1889 RMIDI](https://github.com/FluidSynth/fluidsynth/pull/1889)、[#1718 POSIX OSAL](https://github.com/FluidSynth/fluidsynth/pull/1718)。不要重复维护者正在做的插值工作。#1897 仍 open 不代表 #1900/#1901 没有合并。
+上游其他 open PR：[#1894 DSP 插值](https://github.com/FluidSynth/fluidsynth/pull/1894)（derselbst）、[#1889 RMIDI](https://github.com/FluidSynth/fluidsynth/pull/1889)、[#1718 POSIX OSAL](https://github.com/FluidSynth/fluidsynth/pull/1718)。不要重复维护者正在做的插值工作。#1897 仍 open 不代表 #1900/#1901 没有合并。
 
 ## 今晚建议：只准备 CC66 跨周期旧 voice ID 修复
 
@@ -44,13 +44,13 @@ cmake -S <source> -B <build> -G Ninja -DCMAKE_BUILD_TYPE=Debug \
 cmake --build <build> --target check -j 6
 ~~~
 
-**已整理并推送：** [fix/sostenuto-cycle](https://github.com/Yikai-Liao/fluidsynth/tree/fix/sostenuto-cycle) @ [03e5f8f2](https://github.com/Yikai-Liao/fluidsynth/commit/03e5f8f23f237713cce7243f82c68a6608382c62)，以 8210cb1b 为唯一父提交，作者 Yikai-Liao，单 commit；dev 历史未改。自查覆盖命名、注释、commit 消息与现有设施复用；收紧回归计数复位位置，保留生产原注释，测试注释改为直接描述场景，仍为 +24 行测试。此前同逻辑版本 GCC double／float、Clang double 各 check 51/51；本次仅改注释后重跑 GCC double 定向回归通过。去掉修复会在跨周期断言失败，错用 fluid_voice_is_on() 会在同周期保护断言失败。**尚未创建上游 PR**；余项是新 head 远端 CI、完整原曲与 check_rendering 新基线 PCM 对照，sanitizer 未重跑。
+**已整理并推送：** [fix/sostenuto-cycle](https://github.com/Yikai-Liao/fluidsynth/tree/fix/sostenuto-cycle) @ [03e5f8f2](https://github.com/Yikai-Liao/fluidsynth/commit/03e5f8f23f237713cce7243f82c68a6608382c62)，以 8210cb1b 为唯一父提交，作者 Yikai-Liao，单 commit；dev 历史未改。自查覆盖命名、注释、commit 消息与现有设施复用；收紧回归计数复位位置，保留生产原注释，测试注释改为直接描述场景，仍为 +24 行测试。此前同逻辑版本 GCC double／float、Clang double 各 check 51/51；本次仅改注释后重跑 GCC double 定向回归通过。去掉修复会在跨周期断言失败，错用 fluid_voice_is_on() 会在同周期保护断言失败。**已提交 [#1904](https://github.com/FluidSynth/fluidsynth/pull/1904)**。最新 head 的 8 个 fork workflow 成功；macOS 因 MacPorts 安装依赖时报 Port libsndfile not found、编译前失败，已重跑失败任务并在 PR 注明。完整原曲与 check_rendering 新基线 PCM 对照、sanitizer 未重跑。
 
 ## 下一项与暂缓队列
 
 | 主题／分支 | 条件、状态与取舍 |
 |---|---|
-| **已准备：fix/sostenuto-cycle** @ 03e5f8f2 | 上述跨周期问题，最新上游上的单提交；原 fix/dev-sostenuto-cycle @ a492c976 保留不动 |
+| **PR #1904：fix/sostenuto-cycle** @ 03e5f8f2 | 上述跨周期问题，最新上游上的单提交，等待评审；原 fix/dev-sostenuto-cycle @ a492c976 保留不动 |
 | **次选：fix/dev-sostenuto-repeat** @ 58a97453 | F46，重复 CC66 高值错误重捕新音；用户已提高优先级。历史 MS Basic 原生播放确认；生产涉及旧值传递与逐声道 global-controller 路径，较首选更广，本次未重测 |
 | fix/dev-router-sostenuto-release @ 575c0376 | 需播放中 router_clear；原生 EOF 会复位踏板，不称永久挂音。继续独立保存 |
 | fix/dev-shrink-finished-voices @ e18868ca | 需宿主运行中缩容 256→64；完成计数遗留可阻塞 DONE，共同 PCM 相同，不称可听挂音 |
