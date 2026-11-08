@@ -14,7 +14,22 @@ Yikai-Liao 的 **22 个 PR：20 已合并，#1878 关闭未合并，[#1904](http
 
 上游其他 open PR：[#1894 DSP 插值](https://github.com/FluidSynth/fluidsynth/pull/1894)（derselbst）、[#1889 RMIDI](https://github.com/FluidSynth/fluidsynth/pull/1889)、[#1718 POSIX OSAL](https://github.com/FluidSynth/fluidsynth/pull/1718)。不要重复维护者正在做的插值工作。#1897 仍 open 不代表 #1900/#1901 没有合并。
 
-## 今晚建议：只准备 CC66 跨周期旧 voice ID 修复
+## 本周投稿安排：11 月 9–15 日（UTC+08）
+
+目标新增 **2 个 PR，另留 1 个候选**，按下面顺序逐个推进。日期是准备／投稿窗口，不是自动发布任务；每项仍需自查、当前上游验证、单提交非 dev 分支和 CI。建议自己的开放 PR 不超过 2 个；有评审反馈先处理，排期顺延，不催审。
+
+| 时间 | 工作与拟提交 PR | 提交前完成 |
+|---|---|---|
+| 11/9 周一 | 跟进已提交 #1904；准备 F46 重复 CC66 | 查 #1904 macOS 重跑与上游 CI；将 fix/dev-sostenuto-repeat 独立移植到最新上游，自查旧值传递是否已是最小实现 |
+| 11/10–11 周二／三 | **第 1 个：Capture sostenuto notes only on pedal-down transitions**；fix/sostenuto-repeat | 回归修复前失败／后通过；覆盖重复高值、63→64、global controller 各目标声道旧值不同；复用 test_synth_reset_cc.c，float/double 与 CI；核对历史 MS Basic 原曲的新基线 PCM |
+| 11/12–13 周四／五 | **第 2 个：Fix finished voice lookup after reducing polyphony**；fix/shrink-finished-voices | 从 fix/dev-shrink-finished-voices 提取独立修复；确认 nvoice 与 polyphony 的边界，复用现有 voice 测试；重现缩容后 active count／DONE，检查不缩容与缩容后再扩容；float/double 与 CI |
+| 11/14–15 周六／日 | **候选第 3 个：Preserve pending sostenuto releases when clearing MIDI router rules**；fix/router-sostenuto-release | 前两项审核推进顺畅再提交；从 fix/dev-router-sostenuto-release 整理，复核等待移除规则的生命周期、sustain/sostenuto 与 64/63 阈值；自查独立测试文件的必要性，复测原曲 router_clear 路径与 CI |
+
+顺序依据：F46 有真实 MIDI＋MS Basic 音频证据，且用户已提高优先级；缩容问题会阻塞播放器结束，现有修复生产仅一行、测试 16 行；router 问题需宿主清规则且原生 EOF 会复位踏板，排在其后。三项相互独立，不叠分支，也不与 #1904 合包。
+
+本周不排性能、插值／sinc、DLS、播放器重构和 CI 迁移；保留既有暂缓决定。新选题与新基线验证尚未完成，不把历史分支 CI 当成本周交付结果。
+
+## 已提交：CC66 跨周期旧 voice ID 修复
 
 建议标题：**Do not inherit released voice IDs across sostenuto cycles**。
 
