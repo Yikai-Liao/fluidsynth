@@ -34,6 +34,7 @@ Yikai-Liao 的 **21 个 PR：20 已合并，#1878 关闭未合并，无开放 PR
 | 上游生产代码＋新增回归，Linux Debug double | test_voice_callback 在新周期 Note Off 的 noteoff_count > 0 断言失败 |
 | 同一源码＋独立修复，Linux Debug double | check 51/51 |
 | 同一源码＋独立修复，Linux Debug float | check 51/51 |
+| 最终整理版，Linux Debug Clang double | check 51/51 |
 
 工具链：Linux x86-64／GCC 16.2.1，cpp11 OSAL，SF3／mixer threads 开启；OpenMP、Signalsmith、native DLS 关闭。未启用 sanitizer；这是内存合成测试，不是实设备测试。核心构建命令（float 对照再加 -Denable-floats=ON）：
 
@@ -43,13 +44,13 @@ cmake -S <source> -B <build> -G Ninja -DCMAKE_BUILD_TYPE=Debug \
 cmake --build <build> --target check -j 6
 ~~~
 
-**提交前余项：** 用户确认选题后，从届时上游整理单提交 fix/sostenuto-cycle，保留 dev 原历史；再核对最终差异与 CI，补受影响 MIDI 的新基线 PCM／check_rendering 对照。此次未重跑完整原曲、Clang、sanitizer 或跨平台 CI，不能把历史结果算到新基线。今晚只完成选题与本地验证，**没有创建上游 PR 或推送代码修复**。
+**已整理并推送：** [fix/sostenuto-cycle](https://github.com/Yikai-Liao/fluidsynth/tree/fix/sostenuto-cycle) @ [dad8ff06](https://github.com/Yikai-Liao/fluidsynth/commit/dad8ff06818b6987988d1e091e01a2ba7816490b)，以 8210cb1b 为唯一父提交，作者 Yikai-Liao，单 commit；dev 历史未改。自查覆盖命名、注释、commit 消息与现有设施复用；仅收紧回归计数复位位置，仍为 +24 行测试。最终 GCC double／float、Clang double 各 check 51/51；去掉修复会在跨周期断言失败，错用 fluid_voice_is_on() 会在同周期保护断言失败。**尚未创建上游 PR**；余项是远端 CI、完整原曲与 check_rendering 新基线 PCM 对照，sanitizer 未重跑。
 
 ## 下一项与暂缓队列
 
 | 主题／分支 | 条件、状态与取舍 |
 |---|---|
-| **首选：fix/dev-sostenuto-cycle** @ a492c976 | 上述跨周期问题；dev 基线旧，本次独立移植验证不是 dev 已 rebase |
+| **已准备：fix/sostenuto-cycle** @ dad8ff06 | 上述跨周期问题，最新上游上的单提交；原 fix/dev-sostenuto-cycle @ a492c976 保留不动 |
 | **次选：fix/dev-sostenuto-repeat** @ 58a97453 | F46，重复 CC66 高值错误重捕新音；用户已提高优先级。历史 MS Basic 原生播放确认；生产涉及旧值传递与逐声道 global-controller 路径，较首选更广，本次未重测 |
 | fix/dev-router-sostenuto-release @ 575c0376 | 需播放中 router_clear；原生 EOF 会复位踏板，不称永久挂音。继续独立保存 |
 | fix/dev-shrink-finished-voices @ e18868ca | 需宿主运行中缩容 256→64；完成计数遗留可阻塞 DONE，共同 PCM 相同，不称可听挂音 |
