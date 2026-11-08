@@ -484,7 +484,16 @@ fluid_rvoice_buffers_mix(fluid_rvoice_buffers_t *buffers,
          * But it seems like having two separate loops is easier for compilers to understand, and therefore
          * auto-vectorizing the loops.
          */
-        if(sample_count < FLUID_BUFSIZE)
+        /* Skip the per-sample ramp calculation when the gain is already stable. */
+        if(target_amp == current_amp)
+        {
+            #pragma omp simd aligned(dsp_buf,buf:FLUID_DEFAULT_ALIGNMENT)
+            for(dsp_i = 0; dsp_i < sample_count; dsp_i++)
+            {
+                buf[start_block * FLUID_BUFSIZE + dsp_i] += target_amp * dsp_buf[start_block * FLUID_BUFSIZE + dsp_i];
+            }
+        }
+        else if(sample_count < FLUID_BUFSIZE)
         {
             // scalar loop variant, the voice will have finished afterwards
             for(dsp_i = 0; dsp_i < sample_count; dsp_i++)
