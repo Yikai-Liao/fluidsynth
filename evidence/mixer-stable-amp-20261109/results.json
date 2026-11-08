@@ -1,0 +1,1379 @@
+{
+  "source_base": "8210cb1bdc42718db5d68c2bc5aaea99ed434472",
+  "source_candidate": "ea8e842ec1329ca1c7a646610c6f8a7d55ae8e0a",
+  "platform": "Linux-6.12.69-2-cachyos-lts-lto-x86_64-with-glibc2.44",
+  "cpu": "\t: Intel(R) Core(TM) i7-10875H CPU @ 2.30GHz",
+  "cpu_affinity": 2,
+  "clock": "perf_counter_ns; whole subprocess including startup/load/cleanup; raw output to /dev/null",
+  "rows": [
+    {
+      "config": "gcc-double",
+      "song": "Dance_GM",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-gcc-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-gcc-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "raw_ab": [
+        [
+          1.515914182,
+          1.464962232
+        ],
+        [
+          1.508162406,
+          1.46232873
+        ],
+        [
+          1.512400934,
+          1.466004642
+        ],
+        [
+          1.515814745,
+          1.484436419
+        ],
+        [
+          1.50453608,
+          1.462448297
+        ],
+        [
+          1.51310411,
+          1.490694844
+        ],
+        [
+          1.519708288,
+          1.468492721
+        ],
+        [
+          1.538308313,
+          1.470381893
+        ],
+        [
+          1.514874866,
+          1.465238927
+        ],
+        [
+          1.513040259,
+          1.464246177
+        ],
+        [
+          1.510779181,
+          1.472524955
+        ],
+        [
+          1.51286192,
+          1.46969912
+        ]
+      ],
+      "ab": {
+        "pairs": 12,
+        "base_median_s": 1.5130721845,
+        "candidate_median_s": 1.4672486815,
+        "paired_geomean_ratio": 0.9704010123919892,
+        "bootstrap_95pct": [
+          0.9665868586619862,
+          0.9743630227489498
+        ]
+      },
+      "raw_aa": [
+        [
+          1.517133724,
+          1.527758102
+        ],
+        [
+          1.507383142,
+          1.527377033
+        ],
+        [
+          1.511954593,
+          1.513076265
+        ],
+        [
+          1.507710751,
+          1.513430319
+        ],
+        [
+          1.511689032,
+          1.507304625
+        ],
+        [
+          1.508598802,
+          1.515186256
+        ]
+      ],
+      "aa": {
+        "pairs": 6,
+        "base_median_s": 1.5101439170000002,
+        "candidate_median_s": 1.5143082875,
+        "paired_geomean_ratio": 1.0043654689752641,
+        "bootstrap_95pct": [
+          1.0005607506996557,
+          1.0085424159294427
+        ]
+      }
+    },
+    {
+      "config": "gcc-double",
+      "song": "e1m1",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-gcc-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-gcc-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "raw_ab": [
+        [
+          0.992828739,
+          0.978093284
+        ],
+        [
+          1.005794139,
+          0.989763562
+        ],
+        [
+          0.996709004,
+          0.983155398
+        ],
+        [
+          0.99727994,
+          0.979833805
+        ],
+        [
+          1.00172329,
+          0.981123591
+        ],
+        [
+          1.010154919,
+          0.979699152
+        ],
+        [
+          1.0023909,
+          0.980156606
+        ],
+        [
+          1.002500672,
+          0.982582582
+        ],
+        [
+          0.996136324,
+          0.984120453
+        ],
+        [
+          0.998916703,
+          0.978827825
+        ],
+        [
+          1.000177524,
+          0.988192674
+        ],
+        [
+          0.998363831,
+          0.985517156
+        ]
+      ],
+      "ab": {
+        "pairs": 12,
+        "base_median_s": 0.9995471135,
+        "candidate_median_s": 0.9818530865,
+        "paired_geomean_ratio": 0.9823485426019892,
+        "bootstrap_95pct": [
+          0.9792999583303945,
+          0.9850089238641729
+        ]
+      },
+      "raw_aa": [
+        [
+          0.99428482,
+          0.997747564
+        ],
+        [
+          1.003751082,
+          1.017960646
+        ],
+        [
+          1.00503248,
+          1.001364499
+        ],
+        [
+          1.002681798,
+          0.997829502
+        ],
+        [
+          0.995976437,
+          0.997225626
+        ],
+        [
+          0.995438888,
+          1.000400281
+        ]
+      ],
+      "aa": {
+        "pairs": 6,
+        "base_median_s": 0.9993291175000001,
+        "candidate_median_s": 0.9991148914999999,
+        "paired_geomean_ratio": 1.0025451722779901,
+        "bootstrap_95pct": [
+          0.9979546505077825,
+          1.0078579862832087
+        ]
+      }
+    },
+    {
+      "config": "gcc-double",
+      "song": "Etude",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-gcc-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-gcc-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "raw_ab": [
+        [
+          1.02293792,
+          1.009104913
+        ],
+        [
+          1.025549682,
+          1.009756798
+        ],
+        [
+          1.025206639,
+          1.010102295
+        ],
+        [
+          1.028485904,
+          1.007152467
+        ],
+        [
+          1.026101099,
+          1.008434037
+        ],
+        [
+          1.030470937,
+          1.013435605
+        ],
+        [
+          1.027841484,
+          1.009921466
+        ],
+        [
+          1.026521951,
+          1.006766551
+        ],
+        [
+          1.029787958,
+          1.011874741
+        ],
+        [
+          1.024927438,
+          1.007262302
+        ],
+        [
+          1.028906914,
+          1.009115221
+        ],
+        [
+          1.031827755,
+          1.0089277
+        ]
+      ],
+      "ab": {
+        "pairs": 12,
+        "base_median_s": 1.0271817175,
+        "candidate_median_s": 1.009110067,
+        "paired_geomean_ratio": 0.9824232567793253,
+        "bootstrap_95pct": [
+          0.9810320589625479,
+          0.9837269021045456
+        ]
+      },
+      "raw_aa": [
+        [
+          1.02569699,
+          1.026424993
+        ],
+        [
+          1.023689414,
+          1.023269916
+        ],
+        [
+          1.025770057,
+          1.026026573
+        ],
+        [
+          1.027129307,
+          1.030615859
+        ],
+        [
+          1.033691574,
+          1.029550043
+        ],
+        [
+          1.028973623,
+          1.033747932
+        ]
+      ],
+      "aa": {
+        "pairs": 6,
+        "base_median_s": 1.026449682,
+        "candidate_median_s": 1.027987518,
+        "paired_geomean_ratio": 1.0007591121407955,
+        "bootstrap_95pct": [
+          0.9985319294581627,
+          1.0029133592074897
+        ]
+      }
+    },
+    {
+      "config": "gcc-float",
+      "song": "Dance_GM",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-gcc-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-gcc-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "raw_ab": [
+        [
+          1.495412851,
+          1.488118385
+        ],
+        [
+          1.494468233,
+          1.487551173
+        ],
+        [
+          1.488751418,
+          1.484735767
+        ],
+        [
+          1.487750335,
+          1.48231811
+        ],
+        [
+          1.49486576,
+          1.481166907
+        ],
+        [
+          1.487639829,
+          1.479851175
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 1.4916098255,
+        "candidate_median_s": 1.4835269385,
+        "paired_geomean_ratio": 0.9949555185366001,
+        "bootstrap_95pct": [
+          0.9931626403353592,
+          0.9963406641187418
+        ]
+      }
+    },
+    {
+      "config": "gcc-float",
+      "song": "e1m1",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-gcc-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-gcc-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "raw_ab": [
+        [
+          0.977071119,
+          0.976900079
+        ],
+        [
+          0.973981782,
+          0.984148904
+        ],
+        [
+          0.975600757,
+          0.979212982
+        ],
+        [
+          1.412525724,
+          1.003161076
+        ],
+        [
+          1.364233054,
+          1.184837209
+        ],
+        [
+          0.995203841,
+          1.040669812
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 0.98613748,
+        "candidate_median_s": 0.99365499,
+        "paired_geomean_ratio": 0.9316741655860424,
+        "bootstrap_95pct": [
+          0.8250900347136553,
+          1.0184622910096346
+        ]
+      }
+    },
+    {
+      "config": "gcc-float",
+      "song": "Etude",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-gcc-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-gcc-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "raw_ab": [
+        [
+          1.012464921,
+          1.005203577
+        ],
+        [
+          1.029178543,
+          1.02080755
+        ],
+        [
+          1.009580242,
+          1.018648906
+        ],
+        [
+          1.006759099,
+          1.011372203
+        ],
+        [
+          1.027345168,
+          1.039751065
+        ],
+        [
+          1.029114509,
+          1.101083881
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 1.0199050445000002,
+        "candidate_median_s": 1.019728228,
+        "paired_geomean_ratio": 1.013042508578559,
+        "bootstrap_95pct": [
+          0.9971349036822686,
+          1.0367429165099504
+        ]
+      }
+    },
+    {
+      "config": "clang-double",
+      "song": "Dance_GM",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-clang-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-clang-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "raw_ab": [
+        [
+          1.313811232,
+          1.268239778
+        ],
+        [
+          1.315736653,
+          1.298077609
+        ],
+        [
+          1.312808008,
+          1.265757729
+        ],
+        [
+          1.309923138,
+          1.264055089
+        ],
+        [
+          1.319257699,
+          1.273403409
+        ],
+        [
+          1.309294868,
+          1.264314624
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 1.31330962,
+        "candidate_median_s": 1.2669987535,
+        "paired_geomean_ratio": 0.9686211592209035,
+        "bootstrap_95pct": [
+          0.9647525742118681,
+          0.9758761510457582
+        ]
+      }
+    },
+    {
+      "config": "clang-double",
+      "song": "e1m1",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-clang-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-clang-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "raw_ab": [
+        [
+          0.943732548,
+          0.870402206
+        ],
+        [
+          0.888079121,
+          0.873983046
+        ],
+        [
+          0.892248405,
+          0.875903561
+        ],
+        [
+          0.89015165,
+          0.863299957
+        ],
+        [
+          0.8864031,
+          0.880961364
+        ],
+        [
+          0.886129573,
+          0.86505827
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 0.8891153855,
+        "candidate_median_s": 0.8721926259999999,
+        "paired_geomean_ratio": 0.9710555151835074,
+        "bootstrap_95pct": [
+          0.9499967534366566,
+          0.9861334243771633
+        ]
+      }
+    },
+    {
+      "config": "clang-double",
+      "song": "Etude",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-clang-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-clang-double/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "raw_ab": [
+        [
+          0.909934273,
+          0.900733846
+        ],
+        [
+          0.932552537,
+          0.896417717
+        ],
+        [
+          0.999786702,
+          0.895783203
+        ],
+        [
+          1.245783275,
+          1.500988647
+        ],
+        [
+          0.974350788,
+          0.914761557
+        ],
+        [
+          0.915951488,
+          0.917564413
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 0.9534516625,
+        "candidate_median_s": 0.9077477015,
+        "paired_geomean_ratio": 0.9942641588390166,
+        "bootstrap_95pct": [
+          0.9344459125245458,
+          1.0825011573763732
+        ]
+      }
+    },
+    {
+      "config": "clang-float",
+      "song": "Dance_GM",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-clang-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-clang-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Dance_GM.mid"
+      ],
+      "raw_ab": [
+        [
+          1.213355711,
+          1.221013107
+        ],
+        [
+          1.205855027,
+          1.205303276
+        ],
+        [
+          1.21813335,
+          1.207748307
+        ],
+        [
+          1.208829449,
+          1.208094669
+        ],
+        [
+          1.212808276,
+          1.208604987
+        ],
+        [
+          1.209613406,
+          1.206424716
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 1.211210841,
+        "candidate_median_s": 1.207921488,
+        "paired_geomean_ratio": 0.9984265898058812,
+        "bootstrap_95pct": [
+          0.9949828354969761,
+          1.0021908435890963
+        ]
+      }
+    },
+    {
+      "config": "clang-float",
+      "song": "e1m1",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-clang-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-clang-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/e1m1.mid"
+      ],
+      "raw_ab": [
+        [
+          0.850361704,
+          0.843056387
+        ],
+        [
+          0.84013401,
+          0.839149271
+        ],
+        [
+          0.840224956,
+          0.843072631
+        ],
+        [
+          0.848418593,
+          0.842180439
+        ],
+        [
+          0.845271814,
+          0.841627173
+        ],
+        [
+          0.84245537,
+          0.844870673
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 0.8438635919999999,
+        "candidate_median_s": 0.842618413,
+        "paired_geomean_ratio": 0.9974606634861638,
+        "bootstrap_95pct": [
+          0.9939598146437096,
+          1.0011671356412
+        ]
+      }
+    },
+    {
+      "config": "clang-float",
+      "song": "Etude",
+      "command_base": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-base-rel-clang-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "command_candidate": [
+        "taskset",
+        "-c",
+        "2",
+        "/tmp/fs-mixer-rel-clang-float/src/fluidsynth",
+        "-niq",
+        "-r",
+        "44100",
+        "-o",
+        "synth.cpu-cores=1",
+        "-F",
+        "/dev/null",
+        "-T",
+        "raw",
+        "-O",
+        "float",
+        "/tmp/fs-bench-assets/GM_Roland.sf2",
+        "/tmp/fs-bench-assets/Etude.mid"
+      ],
+      "raw_ab": [
+        [
+          0.873276742,
+          0.871664316
+        ],
+        [
+          0.865950953,
+          0.866821415
+        ],
+        [
+          0.870807784,
+          0.865613963
+        ],
+        [
+          0.867332813,
+          0.863691952
+        ],
+        [
+          0.863199427,
+          0.86737547
+        ],
+        [
+          0.86804158,
+          0.915182772
+        ]
+      ],
+      "ab": {
+        "pairs": 6,
+        "base_median_s": 0.8676871964999999,
+        "candidate_median_s": 0.8670984425,
+        "paired_geomean_ratio": 1.0078100300156174,
+        "bootstrap_95pct": [
+          0.9965662065581712,
+          1.0267688874560976
+        ]
+      }
+    }
+  ],
+  "pcm": [
+    {
+      "config": "gcc-double",
+      "song": "Dance_GM",
+      "equal": true,
+      "hashes": [
+        "208c445f83135bc20adc785cd0416ffc83dc9b84ed11582ffae8410f50df8993",
+        "208c445f83135bc20adc785cd0416ffc83dc9b84ed11582ffae8410f50df8993"
+      ],
+      "bytes": [
+        34375680,
+        34375680
+      ]
+    },
+    {
+      "config": "gcc-double",
+      "song": "e1m1",
+      "equal": true,
+      "hashes": [
+        "1b1868c731582330978b9a7d227a856fd15a50adb565bf79e515e9d67992d999",
+        "1b1868c731582330978b9a7d227a856fd15a50adb565bf79e515e9d67992d999"
+      ],
+      "bytes": [
+        35401728,
+        35401728
+      ]
+    },
+    {
+      "config": "gcc-double",
+      "song": "Etude",
+      "equal": true,
+      "hashes": [
+        "1f85d5073ecf30d0c280e9e0825a4ccea166765eedfc544258afb8c0d968d64a",
+        "1f85d5073ecf30d0c280e9e0825a4ccea166765eedfc544258afb8c0d968d64a"
+      ],
+      "bytes": [
+        40257536,
+        40257536
+      ]
+    },
+    {
+      "config": "gcc-float",
+      "song": "Dance_GM",
+      "equal": true,
+      "hashes": [
+        "a854257b652446745b2e2cbb6e58e58958ca71ccfb747c0e24f003439242bb0d",
+        "a854257b652446745b2e2cbb6e58e58958ca71ccfb747c0e24f003439242bb0d"
+      ],
+      "bytes": [
+        34375680,
+        34375680
+      ]
+    },
+    {
+      "config": "gcc-float",
+      "song": "e1m1",
+      "equal": true,
+      "hashes": [
+        "822faaced3e91b3487029429e8f3fabc3021a8010b823cc3977b4ffa69f34988",
+        "822faaced3e91b3487029429e8f3fabc3021a8010b823cc3977b4ffa69f34988"
+      ],
+      "bytes": [
+        35401728,
+        35401728
+      ]
+    },
+    {
+      "config": "gcc-float",
+      "song": "Etude",
+      "equal": true,
+      "hashes": [
+        "9487a66186358ed3fafd4d9fdceee185e6104524d91310ea1acb4c6b1e9d9983",
+        "9487a66186358ed3fafd4d9fdceee185e6104524d91310ea1acb4c6b1e9d9983"
+      ],
+      "bytes": [
+        40257536,
+        40257536
+      ]
+    },
+    {
+      "config": "clang-double",
+      "song": "Dance_GM",
+      "equal": true,
+      "hashes": [
+        "b9bbf29b3ad42118c6a633348f44ec4b372b773e6822f0441dc357e13d75520e",
+        "b9bbf29b3ad42118c6a633348f44ec4b372b773e6822f0441dc357e13d75520e"
+      ],
+      "bytes": [
+        34375680,
+        34375680
+      ]
+    },
+    {
+      "config": "clang-double",
+      "song": "e1m1",
+      "equal": true,
+      "hashes": [
+        "1b1868c731582330978b9a7d227a856fd15a50adb565bf79e515e9d67992d999",
+        "1b1868c731582330978b9a7d227a856fd15a50adb565bf79e515e9d67992d999"
+      ],
+      "bytes": [
+        35401728,
+        35401728
+      ]
+    },
+    {
+      "config": "clang-double",
+      "song": "Etude",
+      "equal": true,
+      "hashes": [
+        "99be2c0d8d8d48f410cc3a50afa8af1c90a416f2170cbebf2a4954f4789d39ff",
+        "99be2c0d8d8d48f410cc3a50afa8af1c90a416f2170cbebf2a4954f4789d39ff"
+      ],
+      "bytes": [
+        40257536,
+        40257536
+      ]
+    },
+    {
+      "config": "clang-float",
+      "song": "Dance_GM",
+      "equal": true,
+      "hashes": [
+        "6bb49eea5dc436ef9825b93d3442d92b47defe269ba7001036af535bd0915d02",
+        "6bb49eea5dc436ef9825b93d3442d92b47defe269ba7001036af535bd0915d02"
+      ],
+      "bytes": [
+        34375680,
+        34375680
+      ]
+    },
+    {
+      "config": "clang-float",
+      "song": "e1m1",
+      "equal": true,
+      "hashes": [
+        "15959a7a03de5b2a788fad3f1fbbe27ff078fed08d0d46aa135644f10d03af26",
+        "15959a7a03de5b2a788fad3f1fbbe27ff078fed08d0d46aa135644f10d03af26"
+      ],
+      "bytes": [
+        35401728,
+        35401728
+      ]
+    },
+    {
+      "config": "clang-float",
+      "song": "Etude",
+      "equal": true,
+      "hashes": [
+        "dc167ef1ed09dccf3bf82197eb6adf6429754aaf2ed2c0b4c6e6cfc60bbfd2fb",
+        "dc167ef1ed09dccf3bf82197eb6adf6429754aaf2ed2c0b4c6e6cfc60bbfd2fb"
+      ],
+      "bytes": [
+        40257536,
+        40257536
+      ]
+    }
+  ],
+  "assets": {
+    "Etude.mid": {
+      "bytes": 3998,
+      "sha256": "433e35f1282987e212b9c8c352fa158a5558e47ce787bcf829dd5e6463819c41"
+    },
+    "GM_Roland.sf2": {
+      "bytes": 3367466,
+      "sha256": "b7b7abb9ece1ed9b169402b7eb76cc16286937683a548eedc2435a3b1804a1fb"
+    },
+    "e1m1.mid": {
+      "bytes": 17756,
+      "sha256": "e91d54ffb02afa7db6631bfdedf8424d0264c01a343c0896835566db4072581f"
+    },
+    "Dance_GM.mid": {
+      "bytes": 37126,
+      "sha256": "370722f5e58bf28b402ab5dffa4d5cec26ada70e9e73a890452b9da28de2d3cf"
+    }
+  },
+  "binaries": {
+    "base-gcc-double": {
+      "binary": "47f31edc412777d0d5b5c2e51b1e5c97f990745fab517c2a6ad0b6e0a9477be3",
+      "library": "a616d7acf14c214e5beecf11554615dd7b35137e49386807881edb00684e5bfd"
+    },
+    "mixer-gcc-double": {
+      "binary": "b8636ee25f9ac3c8def457450df835696e3f71bbbf9f3b3e31c44ba7f6e7b4c0",
+      "library": "a1243174608b4113c20e3630f7f73b88d1a1958bd8f94a9ade94ab588d438d0d"
+    },
+    "base-gcc-float": {
+      "binary": "0e803001870907afb4377e05c0b6e4b736eba68285d985de959d7f3831f772ce",
+      "library": "523bacddc6c46b58045134dcb1216972a7a4734f023981fb930d9d2041d6cf31"
+    },
+    "mixer-gcc-float": {
+      "binary": "5168ede4840e4739b109621bffe2e4cd515642e3a0455741c501b2a5a55422d0",
+      "library": "60eb0cafea9e67c49f94fab9ff0344b8a286e4623889a19d7c39ae0790cd31fc"
+    },
+    "base-clang-double": {
+      "binary": "faf7784d4622a90871d583b936437dd0211d7a05def38d8df0cc4c30ab42a6b0",
+      "library": "6d776c372dc8e47b2731aa3fbd45416aa5f35a06919ccbe9f3fc0f17b7b9a38d"
+    },
+    "mixer-clang-double": {
+      "binary": "65d039788e09640e530f60f209ee34e1f1cda8cd119221d4adb90659911666ef",
+      "library": "79ce6a046269188d3f55a80a974f26681227edae0b537bde1f50ef902d38ad18"
+    },
+    "base-clang-float": {
+      "binary": "dc8474771d66492c6a4e11ea6f9633e3cba93da0eaa7d6b5e2240b1f62465361",
+      "library": "a15d66de53cdf3c8d910daf178fb31cf21c7b0d493fdbda39958077786aa268e"
+    },
+    "mixer-clang-float": {
+      "binary": "0eeef257056e50b8dfbd19de340c443b4caf4a0e0f3778f29c985c41ba296552",
+      "library": "a7feeca4c5ef4e10d442d11640f131f41e5b23e763783550fd0c4ed647991ab7"
+    }
+  },
+  "testdata_commit": "ee1d71ab92da9812d51a7af0d7915bbbf3960123",
+  "asset_sources": {
+    "GM_Roland.sf2": "https://raw.githubusercontent.com/FluidSynth/testdata/ee1d71ab92da9812d51a7af0d7915bbbf3960123/awe32_nrpn/Filter/GM_Roland.sf2",
+    "Dance_GM.mid": "https://raw.githubusercontent.com/FluidSynth/testdata/ee1d71ab92da9812d51a7af0d7915bbbf3960123/midi-bank-select/Dance_GM.mid",
+    "e1m1.mid": "https://raw.githubusercontent.com/FluidSynth/testdata/ee1d71ab92da9812d51a7af0d7915bbbf3960123/exclusive_class/e1m1.mid",
+    "Etude.mid": "https://raw.githubusercontent.com/Yikai-Liao/symusic/3cdd0ee22d990d577db8efc9c7b4f369d34f0c31/tests/testcases/One_track_MIDIs/6338816_Etude%20No.%204.mid"
+  },
+  "toolchains": {
+    "gcc": "gcc (GCC) 16.2.1 20260810",
+    "clang": "clang version 23.1.4"
+  },
+  "build_settings": {
+    "generator": "Ninja",
+    "CMAKE_BUILD_TYPE": "Release",
+    "enable-openmp": false,
+    "synth.cpu-cores": 1,
+    "effects": "default",
+    "sample_rate": 44100,
+    "output": "interleaved stereo raw float",
+    "fast_math": "upstream defaults; no custom optimization flags"
+  },
+  "api_checks": {
+    "gcc-double": {
+      "base": "cd9efeba86ed0ba69b4ce8a6a0655b790fb1c7936175f45efe2d2c181c878223 53830",
+      "candidate": "cd9efeba86ed0ba69b4ce8a6a0655b790fb1c7936175f45efe2d2c181c878223 53830",
+      "scenario": "12 notes, program 0/127, pan and gain changes, note offs, output requests 1/63/64/65/127/128/257 frames; effects off"
+    },
+    "gcc-float": {
+      "base": "a3e615e41b93b04fdd9f67882001aeabf9789ae6031d98ebcb15479837adc464 53830",
+      "candidate": "a3e615e41b93b04fdd9f67882001aeabf9789ae6031d98ebcb15479837adc464 53830",
+      "scenario": "12 notes, program 0/127, pan and gain changes, note offs, output requests 1/63/64/65/127/128/257 frames; effects off"
+    },
+    "clang-double": {
+      "base": "0b3d860738ea961492c0b22ee6bfe231c72ab4a6972d3a01dbf07c1e0234d0d9 53830",
+      "candidate": "0b3d860738ea961492c0b22ee6bfe231c72ab4a6972d3a01dbf07c1e0234d0d9 53830",
+      "scenario": "12 notes, program 0/127, pan and gain changes, note offs, output requests 1/63/64/65/127/128/257 frames; effects off"
+    },
+    "clang-float": {
+      "base": "d4835149e6ef67d7925da372551a8c4dc23bd7d656ae99ef459ea93b0dbb0c3f 53830",
+      "candidate": "d4835149e6ef67d7925da372551a8c4dc23bd7d656ae99ef459ea93b0dbb0c3f 53830",
+      "scenario": "12 notes, program 0/127, pan and gain changes, note offs, output requests 1/63/64/65/127/128/257 frames; effects off"
+    }
+  }
+}

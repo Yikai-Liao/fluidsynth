@@ -29,7 +29,7 @@ Yikai-Liao 的 **23 个 PR：20 已合并，#1878 关闭未合并，[#1904](http
 
 性能后备：perf/iir-coeff-double 生产 +12/−2，历史 909.mid 渲染循环耗时约降 4.1%，仍需多曲目／当前编译器复测与量化 fast-math 差异；IIR W4 为第二梯队，保留原暂缓安排，其 micro 与旧版本端到端数字不当作当前结果。reverb-delay-size 的历史整曲置信区间跨 1，不列本周首选。
 
-插值／sinc、DLS、播放器重构和 CI 迁移仍暂缓。新基线性能与 CI 尚未验证，不把历史结果写成本周交付结果。
+插值／sinc、DLS、播放器重构和 CI 迁移仍暂缓。mixer 当前上游完整 MIDI 测量已完成，见下方准备结果；待投稿分支远端 CI 尚未完成，不把历史结果或本地通过写成远端全绿。
 
 ## 已提交：CC66 跨周期旧 voice ID 修复
 
@@ -69,6 +69,11 @@ cmake --build <build> --target check -j 6
 
 本次 GCC Debug float／double、Clang Debug double 各 check 51/51；回退生产修复，新回归失败；global 路径错误使用旧值 0 的反例在逐声道断言失败。与 #1904 双向试合并得到相同无冲突 tree，组合 GCC Debug double check 51/51。fork CI 尚在运行，未宣称全绿；原曲 MS Basic 新基线与 sanitizer 未重跑。
 
+## 已准备、未投稿的两个分支
+
+- **[perf/mixer-stable-amp](https://github.com/Yikai-Liao/fluidsynth/tree/perf/mixer-stable-amp) @ ea8e842e**：8210cb1b 上的单提交，生产 +10/−1，无新文件／状态／缓存；已审命名、注释、commit 与设施复用。GCC／Clang × float／double 的 Release check 各 51/51；12 组完整 MIDI PCM 对照及四配置声像／增益变化补充检查全部一致。GCC double 三曲端到端耗时下降约 1.8%–3.0%；float 多数未建立稳定收益，详见[当前测量与原始数据](evidence/mixer-stable-amp-20261109/README.md)。perf/dev-mixer-stable-amp 保留原 d4afd04a 历史并合入当前移植，最终非 dev 分支仍只有一个提交。远端 CI 在跑，未开 PR。
+- **[fix/shrink-finished-voices](https://github.com/Yikai-Liao/fluidsynth/tree/fix/shrink-finished-voices) @ 4ef1802a**：8210cb1b 上的单提交，生产一行＋既有 fixture 16 行；已审逻辑、命名、注释与 commit。GCC Debug float／double、Clang Debug double 各 check 51/51；去掉修复回归失败，临时补充缩容后再扩容场景也通过，最终提交只保留最小回归。原 fix/dev-shrink-finished-voices @ e18868ca 未动。远端 CI 在跑，未开 PR。
+
 ## 下一项与暂缓队列
 
 | 主题／分支 | 条件、状态与取舍 |
@@ -76,11 +81,11 @@ cmake --build <build> --target check -j 6
 | **PR #1904：fix/sostenuto-cycle** @ 03e5f8f2 | 上述跨周期问题，最新上游上的单提交，等待评审；原 fix/dev-sostenuto-cycle @ a492c976 保留不动 |
 | **PR #1905：fix/sostenuto-repeat** @ 945242a5 | F46 重复 CC66，高值仅 off→on 捕获；上述本地回归已测，等待评审／CI。原 fix/dev-sostenuto-repeat @ 58a97453 保留 |
 | fix/dev-router-sostenuto-release @ 575c0376 | 需播放中 router_clear；原生 EOF 会复位踏板，不称永久挂音。继续独立保存 |
-| fix/dev-shrink-finished-voices @ e18868ca | 需宿主运行中缩容 256→64；完成计数遗留可阻塞 DONE，共同 PCM 相同，不称可听挂音 |
+| **已准备：fix/shrink-finished-voices** @ 4ef1802a | 需宿主运行中缩容；完成计数遗留可阻塞 DONE，不称可听挂音。当前回归已测，远端 CI 在跑，原 dev @ e18868ca 保留 |
 | fix/dev-mono-cc123-sustain @ d0b0510e | 需显式 Mono＋note-cut=2；默认 Poly 负控不变，后放 |
 | fix/dev-reverb-reset-history @ e33ce9f6、fix/dev-lexverb-zero-room-reset @ f61728df | 非默认引擎／设置，真实路径差异很小，无听感验证，后放 |
 | perf/iir-stable-block @ 707b52d6 | 统一 float/double W4，生产 +39/−5；不是已合并 #1867。MPFR 与 micro 历史验证保留，最终最小回归、PCM、普通 MIDI 端到端收益仍需复核；与 perf/iir-steady-loop 同区域方案择一，不自动恢复投稿 |
-| perf/mixer-stable-amp @ d4afd04a | 已保存小型优化；历史普通 MIDI 结果保留，当前上游未重新定论，不凭旧数字直接投稿 |
+| **已准备：perf/mixer-stable-amp** @ ea8e842e | 当前上游独立优化，+10/−1；上述完整 MIDI 新测已完成，收益主要在 double，远端 CI 在跑，未开 PR |
 | perf/interp-buffer-steps、perf/interp-tap-window；perf/sinc-* | 历史实验保留；插值已有维护者 #1894，sinc 由维护者处理，先不 review／投稿 |
 | perf/iir-coeff-double、perf/iir-steady-loop、perf/reverb-delay-size、perf/reverb-idle-skip、perf/chorus-idle-skip | fork 性能实验，旧组合结果不作为当前独立收益；idle-skip 要保留引擎相位、DC 偏置与尾音约束 |
 | perf/dev-channel-voice-index、perf/dev-exclusive-*、perf/dev-finished-voice-owner*、perf/dev-mixer-finished-index、perf/dev-lowest-free-voice、perf/dev-same-key-event-batch | 保留索引／位图／owner／批处理实验；需普通 MIDI 显著可重复端到端收益，不用 Black MIDI 或局部扫描次数替代；exclusive standalone 另有每 synth 8 KiB 成本 |
