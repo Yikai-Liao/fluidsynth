@@ -61,6 +61,7 @@ ADD_FLUID_TEST(test_voice_callback)
 ADD_FLUID_TEST(test_voice_reuse_gain)
 ADD_FLUID_TEST(test_basic_channel)
 ADD_FLUID_TEST(test_rvoice_dsp_interpolate)
+ADD_FLUID_TEST(test_rvoice_mixer LINK_AS_ARCHIVE)
 ADD_FLUID_TEST(test_iir_coefficient_reuse)
 
 if ( NOT OSAL STREQUAL "embedded" )
