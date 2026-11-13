@@ -1,13 +1,14 @@
 # 贡献历史与偏好依据
 
-核对：2026-11-09（UTC+08）；上游 master：`8210cb1bdc42718db5d68c2bc5aaea99ed434472`。
+首次完整核对：2026-11-09（UTC+08），上游 master `8210cb1b`。增量核对：2026-11-14（UTC+08），上游 master `3ac3b3b4c3e236b0f850b374a3dd36f632341550`。
 
 ## 覆盖范围
 
-- GitHub 账户 Yikai-Liao 提交的全部 21 个 PR：20 merged，1 closed/unmerged，无 open；逐个阅读正文、全部 conversation comments、reviews 与 inline comments，核对最终变更规模。
+- 首次完整核对覆盖当时 Yikai-Liao 的全部 21 个 PR：20 merged，1 closed/unmerged；逐个阅读正文、全部 conversation comments、reviews 与 inline comments，核对最终变更规模。
+- 本次增量补读 #1904/#1905/#1908/#1909/#1910 的正文、conversation comments、reviews 与 inline comments，并重查账户全部 PR 状态：共 26 个，24 merged，1 closed/unmerged，1 open。下列全仓库评论流和 Discussions 数量仍是 11 月 9 日的调查范围，不声称本次重新全量扫描。
 - 交叉检查全仓库可见的 6,901 条 issue/PR conversation comments 与 1,149 条 inline review comments，找到本账户 11 条 conversation comments、3 条 inline comments，展开相关完整往返。GitHub involves 搜索漏掉了 #1718，已由评论流补齐；不只依赖搜索索引。
 - 枚举全部 216 个公开 Discussions，检查正文、comments、replies；本账户只参与 #1869，相关分页无遗漏。
-- 合计 21 个自己的 PR、3 个他人的 PR（#1718/#1865/#1889）、3 个 issue（#1856/#1866/#1882）和 1 个 Discussion。#1897 另作安全披露背景读取。本账户给出的 review 也纳入检查。
+- 首次调查合计 21 个自己的 PR、3 个他人的 PR（#1718/#1865/#1889）、3 个 issue（#1856/#1866/#1882）和 1 个 Discussion。#1897 另作安全披露背景读取。本账户给出的 review 也纳入检查。
 - 不包含不可见的私信、邮件、已删除内容和私有 security advisory。用户偏好来自 fork 原有记录，不冒充本轮获取的完整私人对话。
 
 ## 维护者与作者明确说过什么
@@ -26,6 +27,9 @@
 | [derselbst：回归音频 #1863](https://github.com/FluidSynth/fluidsynth/pull/1863#issuecomment-6247911952) | 亲自重听 regression 差异后接受修复造成的变化 | 音频修复不是绝对 bit-identical 门槛，要解释和验证差异；不是可以忽略 CI |
 | [derselbst：插值 #1867](https://github.com/FluidSynth/fluidsynth/pull/1867#pullrequestreview-5574660115) | “keep off issue 1826 for the moment”；维护者想自己做 | 尊重明确工作归属。2026-11-09 #1894 仍由 derselbst 开放推进，先核对而不是抢做 |
 | [derselbst：RMIDI #1889](https://github.com/FluidSynth/fluidsynth/pull/1889#discussion_r4427594958) | 评审中又改 1,100 行，使其必须从头开始 | 评审中控制增量、交代变更，不持续大面积重写 |
+| [derselbst：向量化 #1910](https://github.com/FluidSynth/fluidsynth/pull/1910#pullrequestreview-5893812978) | 感谢 Godbolt 示例便于亲自试验；缩小 start_block 类型或提升乘法到 size_t 可使 GCC 向量化，但 MSVC 仍报 reason 1200；“I will buy your pointer-offset trick”，要求补入 PR 描述 | 提供可操作的最小编译示例，解释跨编译器取舍；索引乘法溢出顾虑是其推测，不是已证实根因。类型变更是诊断实验，不是要求采用的实现；认可方案不等于 APPROVED 或已合并 |
+| [derselbst：buf 断言 #1910](https://github.com/FluidSynth/fluidsynth/pull/1910#discussion_r4565307518)、[dsp_buf 断言](https://github.com/FluidSynth/fluidsynth/pull/1910#discussion_r4565352933) | 先偏移指针，再检查字节边界对齐；删除第二条冗余断言 | 断言应验证实际用于 SIMD 的指针，不只验证变换前的输入；不以更多重复检查代替正确检查位置 |
+| [derselbst：缩容 #1909](https://github.com/FluidSynth/fluidsynth/pull/1909#pullrequestreview-5861837284) | “Nice finding in legacy code!”；合并前稍调测试注释措辞 | 肯定这次旧代码修复；没有给出通用措辞规则，不从这句肯定推导所有宿主场景都优先 |
 | [贡献规范](https://github.com/FluidSynth/fluidsynth/blob/master/CONTRIBUTING.md)、[安全披露反馈 #1897](https://github.com/FluidSynth/fluidsynth/issues/1897#issuecomment-6581824492) | 要动机、可复现问题、诚实披露 AI／最好精确模型；反对未报告便公开 CVE，不会被迫立刻发版 | 人工复核与负责披露是贡献条件；新漏洞按 SECURITY.md 私下报告 |
 
 公开往返也包括这些正向例子：#1856 中我们先比较方案、询问约束再实现；#1879 按评审补齐 CC120 同类入口；#1884 配合维护者分支集成；#1889 给出三个具体简化点，而不是要求整块重写。#1866 的跨轨 merge 建议技术上得到认可，但用户后来决定暂缓，技术成立不等于当前应推进。
@@ -39,11 +43,12 @@
 - 2026-10-28：重复 CC66 因真实 MIDI＋MS Basic 证据提高至下一批优先考虑，但不自动授权开 PR。
 - 2026-10-30：新增索引／位图／缓存需普通 MIDI 显著、可重复的端到端收益；同属 CC66 的独立缺陷分别保存和投稿。
 - 保留 dev 历史，review 完成才整理干净 PR 分支；测试也要最小、贴合既有结构；正文简短、如实披露 AI；DLS 后放，Android 等用户 review，Windows CI 以后再说。
-- 2026-11-09 本轮追加：todo 文档精简，不堆分析报告和会话流水；注释贴合邻近代码，不写防御性说明，原注释够用则保留。当前队列只写根 README，历史细节用固定提交回查。
+- 2026-11-09 追加：todo 文档精简，不堆分析报告和会话流水；注释贴合邻近代码，不写防御性说明，原注释够用则保留。当前队列只写根 README，历史细节用固定提交回查。
+- 2026-11-14 处理 #1910 review：用户要求先翻译与展示拟议改法，确认后落地，不 force push；实际在原 head 后新增普通修正提交并普通 push。此处是用户的历史保护要求，不归因为维护者偏好。
 
-## 全部 21 个用户 PR
+## 用户 PR 索引（截至增量核对共 26 个）
 
-截至核对日全部已结束；下表只陈述提交／合并结果，不代表每个历史 head CI 全绿，也不代表已进入同一 release。
+下表合并日期沿用 GitHub 的 UTC 日期，只陈述提交／合并结果和当时反馈，不代表每个历史 head CI 全绿，也不代表已进入同一 release。当前 head、CI 与下一步只维护根 README。
 
 | PR | 内容与结果 | 对后续贡献的启示 |
 |---|---|---|
@@ -68,5 +73,10 @@
 | [#1900](https://github.com/FluidSynth/fluidsynth/pull/1900) | SF2 mod destination 收窄前检查；merged 11-06 | 文件边界保留原始信息；维护者另补 linked-mod 检查 |
 | [#1901](https://github.com/FluidSynth/fluidsynth/pull/1901) | voice 接纳 modulator 时检查；merged 11-06 | 核心边界覆盖多入口；与 #1900 互补，不以 void setter 拒值 |
 | [#1902](https://github.com/FluidSynth/fluidsynth/pull/1902) | mixer std::atomic；merged 11-06 | 可解释的两步迁移；承认 OSAL_posix 更快、稀疏负载噪声和并行求和差异 |
+| [#1904](https://github.com/FluidSynth/fluidsynth/pull/1904) | CC66 跨周期 ID 继承；merged 11-09 | “Nice catch, thanks!”；保护同周期正常重弹，独立修复，不把肯定扩展为新规则 |
+| [#1905](https://github.com/FluidSynth/fluidsynth/pull/1905) | CC66 只在 off→on 捕获；merged 11-09 | 与 #1904 同日独立合并；保留逐声道旧值与 63/64 边沿回归 |
+| [#1908](https://github.com/FluidSynth/fluidsynth/pull/1908) | router 清规则时保留 CC66 release；merged 11-11 | 需宿主清规则条件仍明确披露；复用通用 test_midi_router.c，不与其他 CC66 根因合包 |
+| [#1909](https://github.com/FluidSynth/fluidsynth/pull/1909) | 缩容后搜索全部已分配 voice；merged 11-11 | 附 ZMusic／GZDoom 公共 API 复现；维护者小调测试注释，不据此添加笼统注释规范 |
+| [#1910](https://github.com/FluidSynth/fluidsynth/pull/1910) | sample-relative mixer indexing；open | 明确认可指针偏移方案，要求补正文技术理由及调整两处断言；没有正式 APPROVED，不提前记录合并 |
 
-由此可推断（不是对方明说的硬规则）：双方最成功的贡献形态是“真实问题 → 聚焦实现 → 小型回归 → 能追溯的证据”，并非“只能修一行”或“只接受 bug、不接受优化”。20/21 已合并说明此前合作有效，不能据此推导下一个 PR 必然会合并。
+由此可推断（不是对方明说的硬规则）：双方最成功的贡献形态是“真实问题 → 聚焦实现 → 小型回归 → 能追溯的证据”，并非“只能修一行”或“只接受 bug、不接受优化”。持续合并聚焦修复说明此前合作有效，不能据此推导下一个 PR 必然会合并。
