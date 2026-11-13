@@ -43,7 +43,10 @@ description: >-
 
 ## 分支、正文与评审
 
-1. 开发分支用 fix/dev-<topic>、perf/dev-<topic>、ci/dev-<topic>、refactor/dev-<topic>，topic 为简短英文 kebab-case，不加日期或临时版本后缀；保留原开发提交历史。先完成自查和必要测试，再从最新上游建立去掉 dev- 的对应分支（例如 fix/dev-sostenuto-cycle → fix/sostenuto-cycle），整理成一个完整 commit，不把 dev 历史或 todo 混入。初次投稿仅有明确审查分层需求时才保留多提交；已有 PR head 不擅自改写历史。按用户在 #1910 中的明确要求，评审修正新增普通提交并普通 push，不为维持单提交而 amend／rebase／force push；需要改写时另取授权。推送前核对相对上游的提交数与完整 diff。
+1. 开发分支用 fix/dev-<topic>、perf/dev-<topic>、ci/dev-<topic>、refactor/dev-<topic>，topic 为简短英文 kebab-case，不加日期或临时版本后缀；保留原开发提交历史。先完成自查和必要测试，再从最新上游建立去掉 dev- 的对应分支（例如 fix/dev-sostenuto-cycle → fix/sostenuto-cycle），不把 dev 历史或 todo 混入。
+   - **首次投稿阶段（维护者尚未 review）：** 尽量只领先最新上游一个完整提交；有明确审查分层需求时可保留多提交。可以 amend／rebase 整理投稿分支，并 force push 覆盖已推送版本；覆盖前核对远端 head，优先用带明确预期旧 head 的 --force-with-lease，避免覆盖他人更新。此许可不用于改写保留的 dev 历史。
+   - **维护者已做 review 后：** 修正新增普通提交并普通 push，不再 force push；不为维持单提交而 amend／rebase 已评审历史。
+   推送前核对相对最新上游的提交数与完整 diff；维护者 review 后的追加修正允许领先多个提交。
 2. 提交作者按用户约定使用 Yikai-Liao。Commit 标题用简短英文动词短语，直接说明行为变化，沿用上游风格，不强套 Conventional Commits；正文交代触发条件、根因、为何此修复足够及关键回归，不塞入整份审计／实验报告。PR 正文同样简短：场景与后果 → 根因和最小修复 → 实际验证及限制 → 关联 issue 与 AI 披露；详细数据只有帮助判断时才放图表或折叠段。
    自查必须覆盖生产逻辑、测试规模与职责、函数／变量命名、注释、commit 消息、仓库设施复用及完整 diff；修复旧 bug 的同时保护邻近合法行为。不要仅因代码少或测试通过就宣称已精简完成。
    MIDI controller 修复在 PR 标题和正文写明具体编号（例如 CC66），不只用踏板英文名，方便搜索和区分。同日提交相近问题时保持独立基线与最小 diff；投稿前验证双向试合并无冲突，并跑组合回归，避免给维护者增加处理冲突的负担。
