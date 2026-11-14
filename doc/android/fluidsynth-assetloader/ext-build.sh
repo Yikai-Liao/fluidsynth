@@ -1,16 +1,12 @@
-PWD=`pwd`
-
-ABIS="x86 x86_64 armeabi-v7a arm64-v8a"
-
-HOST_OS=`uname | tr [:upper:] [:lower:]`
-
-ANDROID_NDK_PATH=~/android-sdk-$HOST_OS/ndk-bundle
-CMAKEFILE=$ANDROID_NDK_PATH/build/cmake/android.toolchain.cmake
-
-for A_ABI in $ABIS ; do
-    mkdir -p build/$A_ABI && \
-	    cd build/$A_ABI && \
-	    cmake -DCMAKE_TOOLCHAIN_FILE=$CMAKEFILE -DANDROID_PLATFORM=android-27 -DANDROID_ABI=$A_ABI ../.. && \
-	    make &&
-	    cd ../.. ;
+#!/bin/sh
+set -eu
+assetloader_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+host_os=$(uname | tr '[:upper:]' '[:lower:]')
+ndk=${ANDROID_NDK_HOME:-"$HOME/android-sdk-$host_os/ndk-bundle"}
+for abi in x86 x86_64 armeabi-v7a arm64-v8a; do
+    cmake -S "$assetloader_dir" -B "$assetloader_dir/build/$abi" \
+        "-DCMAKE_TOOLCHAIN_FILE=$ndk/build/cmake/android.toolchain.cmake" \
+        -DANDROID_PLATFORM=android-27 "-DANDROID_ABI=$abi" \
+        "-DFluidSynth_DIR=$assetloader_dir/../build/$abi"
+    cmake --build "$assetloader_dir/build/$abi"
 done
