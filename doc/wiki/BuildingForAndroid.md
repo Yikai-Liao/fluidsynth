@@ -81,8 +81,8 @@ the consuming application's responsibility.
 `build-and-install` builds the existing unit test executables. The `check` target
 still does not execute cross-compiled tests automatically. `package` stages the
 executables, test data, libraries and CMake-generated CTest definitions together
-under `<build>/tests`. The test launcher maps CTest's executable paths into the
-Android test directory, so this directory can be moved to another host.
+under `<build>/tests`. Android tests are registered with staged executable names
+rather than build-tree paths, so this directory can be moved to another host.
 
 For a connected device or an already running emulator:
 

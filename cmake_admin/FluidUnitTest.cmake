@@ -37,7 +37,13 @@ macro ( ADD_FLUID_TEST _test )
 
     # add the test to ctest
     if( NOT ANDROID OR CMAKE_CROSSCOMPILING_EMULATOR )
-        ADD_TEST(NAME ${_test} COMMAND ${_test})
+        if( ANDROID )
+            # Android suites are staged separately from their build tree. A target
+            # reference would make CTest require the original executable path.
+            ADD_TEST(NAME ${_test} COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} "./${_test}")
+        else()
+            ADD_TEST(NAME ${_test} COMMAND ${_test})
+        endif()
         # All unit tests run fairly quick within a few seconds.
         # Set a timeout of 120 seconds to ensure that tests do not hang indefinitely.
         set_tests_properties(${_test} PROPERTIES TIMEOUT 120)
