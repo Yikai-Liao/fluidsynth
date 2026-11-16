@@ -500,7 +500,7 @@ fluid_synth_noteon_mono_staccato(fluid_synth_t *synth, int chan, int key, int ve
     /* Get possible 'fromkey portamento'   */
     fluid_synth_get_fromkey_portamento_legato(channel, INVALID_NOTE);
     /* The note needs to be played by voices allocation  */
-    return fluid_preset_noteon(channel->preset, synth, chan, key, vel);
+    return fluid_synth_noteon_preset(synth, channel->preset, chan, key, vel);
 }
 
 /**
@@ -716,5 +716,5 @@ int fluid_synth_noteon_monopoly_legato(fluid_synth_t *synth, int chan,
 
     /* May be,tokey will enter in new others Insrument Zone(s),Preset Zone(s), in
        this case it needs to be played by voices allocation  */
-    return fluid_preset_noteon(channel->preset, synth, chan, tokey, vel);
+    return fluid_synth_noteon_preset(synth, channel->preset, chan, tokey, vel);
 }

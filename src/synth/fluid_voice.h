@@ -76,6 +76,9 @@ struct _fluid_voice_t
 					   it's used for noteoff's  */
     unsigned int start_time;
     fluid_channel_t *channel;
+    int preset_sfont_id;            /* Preset identity at voice allocation */
+    int preset_bank;
+    int preset_num;
 
     /* basic parameters */
     fluid_real_t output_rate;        /* the sample rate of the synthesizer (dupe in rvoice) */
