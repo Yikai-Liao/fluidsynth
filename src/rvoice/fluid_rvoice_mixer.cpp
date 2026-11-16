@@ -1022,11 +1022,17 @@ void fluid_rvoice_mixer_set_ladspa(fluid_rvoice_mixer_t *mixer,
 #endif
 
 #ifdef SIGNALSMITH_SUPPORT
-int fluid_rvoice_mixer_set_limiter(fluid_rvoice_mixer_t *mixer, fluid_real_t sample_rate, fluid_limiter_settings_t* settings)
+int fluid_rvoice_mixer_set_limiter(fluid_rvoice_mixer_t *mixer, fluid_real_t sample_rate, fluid_limiter_settings_t* settings, int active)
 {
-    mixer->limiter = new_fluid_limiter(sample_rate, settings);
+    mixer->limiter = new_fluid_limiter(sample_rate, settings, active);
 
     return mixer->limiter != NULL;
+}
+
+DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_set_limiter_param)
+{
+    auto mixer = static_cast<fluid_rvoice_mixer_t *>(obj);
+    fluid_limiter_set(mixer->limiter, (enum fluid_limiter_param)param[0].i, param[1].real);
 }
 #endif /* SIGNALSMITH_SUPPORT */
 

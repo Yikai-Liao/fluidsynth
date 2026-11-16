@@ -31,14 +31,14 @@
                             Limiter API
 -----------------------------------------------------------------------------*/
 /*
-* Creates a limiter with default parameters
+* Creates limiter control state and, if active, its DSP buffers.
 *
 * @param sample_rate actual sample rate needed in Hz.
 * @return pointer on the new limiter or NULL if memory error.
 * Limiter API.
 */
 fluid_limiter_t *
-new_fluid_limiter(fluid_real_t sample_rate, fluid_limiter_settings_t* settings)
+new_fluid_limiter(fluid_real_t sample_rate, fluid_limiter_settings_t* settings, int active)
 {
     fluid_limiter_t *lim;
 
@@ -47,7 +47,7 @@ new_fluid_limiter(fluid_real_t sample_rate, fluid_limiter_settings_t* settings)
         return NULL;
     }
 
-    lim = fluid_limiter_impl_new(sample_rate, settings, FLUID_BUFSIZE);
+    lim = fluid_limiter_impl_new(sample_rate, settings, FLUID_BUFSIZE, active);
 
     if(lim == NULL)
     {
