@@ -64,9 +64,9 @@ void delete_fluid_limiter(fluid_limiter_t* lim);
 
 int fluid_limiter_samplerate_change(fluid_limiter_t* lim, fluid_real_t sample_rate);
 
-/* Called on the rendering thread. Changes are applied together at the next
- * run; enabling or changing attack/hold may allocate and reset DSP history.
- * Allocation failure is logged and leaves the previous DSP in use. */
+/* Called on the rendering thread. Changes are coalesced at rendering
+ * boundaries. A replacement first fills its lookahead, then crossfades from
+ * the previous output. Allocation failure leaves the previous DSP in use. */
 void fluid_limiter_set(fluid_limiter_t *lim, enum fluid_limiter_param param, fluid_real_t value);
 
 void fluid_limiter_run(fluid_limiter_t *lim, fluid_real_t *buf_l, fluid_real_t *buf_r, int block_count);

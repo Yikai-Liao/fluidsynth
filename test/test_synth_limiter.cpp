@@ -3,6 +3,118 @@
 #include "../src/rvoice/fluid_rvoice_mixer.cpp"
 #include <cmath>
 
+static void check_bypass(fluid_synth_t *synth);
+
+/* Keep audio running across updates: silence before an assertion would hide a
+ * cleared delay line. Bound steps by the input slope plus a 10 ms fade (and
+ * the permitted 1 ms attack under limiting). An unchanged DC signal must
+ * never drop out. */
+static void check_live_transitions()
+{
+    constexpr double rate = 48000;
+    for(int signal = 0; signal < 3; signal++)
+    {
+        auto settings = new_fluid_settings();
+        TEST_SUCCESS(fluid_settings_setnum(settings, "synth.sample-rate", rate));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.active", 1));
+        TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", 0.9));
+        auto synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != NULL);
+        auto mixer = synth->eventhandler->mixer;
+        fluid_real_t *left, *right;
+        fluid_rvoice_mixer_get_bufs(mixer, &left, &right);
+        double previous[2] = {};
+        int position = 0;
+        const char *change = "initial state";
+        auto render = [&](int blocks, bool check)
+        {
+            fluid_synth_process_event_queue(synth);
+            for(int block = 0; block < blocks; block++)
+            {
+                for(int i = 0; i < FLUID_BUFSIZE; i++, position++)
+                {
+                    left[i] = signal == 2 ? 2 : 0.5;
+                    right[i] = signal == 2 ? -0.75 : -0.25;
+                    if(signal == 1)
+                    {
+                        left[i] = 0.3 + 0.2 * std::sin(2 * M_PI * 437 * position / rate);
+                        right[i] += 0.1 * std::sin(2 * M_PI * 613 * position / rate);
+                    }
+                }
+                fluid_rvoice_mixer_process_fx(mixer, 1);
+                for(int i = 0; i < FLUID_BUFSIZE; i++)
+                {
+                    double values[] = {left[i], right[i]};
+                    for(int channel = 0; channel < 2; channel++)
+                    {
+                        double step = std::abs(values[channel] - previous[channel]);
+                        double max_step = signal == 1
+                            ? 2 * (channel ? 0.1 : 0.2) * (std::sin(M_PI * (channel ? 613 : 437) / rate) + 1 / (0.010 * rate)) + 1e-5
+                            : signal == 2 ? 2 / (0.001 * rate) + 2 / (0.010 * rate) + 1e-5 : 0.01;
+                        if(check && step > max_step)
+                        {
+                            fprintf(stderr, "signal=%d change=%s channel=%d sample=%d step=%g limit=%g\n",
+                                    signal, change, channel, position - FLUID_BUFSIZE + i, step, max_step);
+                        }
+                        TEST_ASSERT(std::isfinite(values[channel]));
+                        TEST_ASSERT(!check || step <= max_step);
+                        if(check && signal == 0)
+                        {
+                            TEST_ASSERT(std::abs(values[channel] - (channel ? -0.25 : 0.5)) < 1e-5);
+                        }
+                        previous[channel] = values[channel];
+                    }
+                }
+            }
+        };
+        render(400, false);
+        const struct { const char *name; double value; bool integer; } changes[] = {
+            {"synth.limiter.attack", 250, false}, {"synth.limiter.attack", 1, false},
+            {"synth.limiter.hold", 250, false}, {"synth.limiter.hold", 0, false},
+            {"synth.limiter.active", 0, true}, {"synth.limiter.active", 1, true},
+            {"synth.limiter.release", 250, false}, {"synth.limiter.release", 0, false},
+            {"synth.limiter.smoothing-stages", 2, true}, {"synth.limiter.smoothing-stages", 1, true},
+            {"synth.limiter.smoothing-stages", 3, true},
+            {"synth.limiter.link-channels", 0, false}, {"synth.limiter.link-channels", 1, false},
+            {"synth.limiter.output-limit", signal == 2 ? 0.3 : 0.6, false},
+            {"synth.limiter.output-limit", 0.9, false}
+        };
+        for(const auto &event : changes)
+        {
+            change = event.name;
+            if(event.integer)
+            {
+                TEST_SUCCESS(fluid_settings_setint(settings, event.name, (int)event.value));
+            }
+            else
+            {
+                TEST_SUCCESS(fluid_settings_setnum(settings, event.name, event.value));
+            }
+            render(240, true);
+        }
+        /* New requests during warm-up/fading must not discard audible state. */
+        change = "rapid updates";
+        for(int i = 0; i < 100; i++)
+        {
+            TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.attack", i % 2 ? 250 : 1));
+            TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.active", i % 3 != 0));
+            render(1, true);
+        }
+        TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.attack", 3));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.active", 1));
+        TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", signal == 2 ? 0.4 : 0.8));
+        render(500, true);
+        if(signal == 2)
+        {
+            TEST_ASSERT(std::abs(previous[0] - 0.4) < 1e-3);
+        }
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+    }
+}
+
 /* Inject a deterministic stereo signal at the final processing stage. This
  * exercises settings callbacks and mixer bypass without a SoundFont fixture. */
 static void compare_audio(fluid_synth_t *synth, const fluid_limiter_settings_t &params)
@@ -15,8 +127,7 @@ static void compare_audio(fluid_synth_t *synth, const fluid_limiter_settings_t &
      * the hot output-limit change is checked separately below. */
     TEST_SUCCESS(fluid_settings_setint(synth->settings, "synth.limiter.active", 0));
     fluid_synth_process_event_queue(synth);
-    fluid_real_t silence[2][FLUID_BUFSIZE] = {};
-    fluid_limiter_run(mixer->limiter, silence[0], silence[1], 1);
+    check_bypass(synth);
     TEST_SUCCESS(fluid_settings_setint(synth->settings, "synth.limiter.active", 1));
     fluid_synth_process_event_queue(synth);
 #endif
@@ -70,12 +181,14 @@ static void check_bypass(fluid_synth_t *synth)
 {
     fluid_real_t *left, *right;
     fluid_rvoice_mixer_get_bufs(synth->eventhandler->mixer, &left, &right);
-    for(int i = 0; i < FLUID_BUFSIZE; i++)
+    /* Drain any in-flight replacement, then finish the fade to bypass. */
+    int blocks = (int)std::ceil(0.6 * synth->sample_rate / FLUID_BUFSIZE);
+    for(int block = 0; block < blocks; block++)
     {
-        left[i] = 2;
-        right[i] = -2;
+        std::fill_n(left, FLUID_BUFSIZE, 2);
+        std::fill_n(right, FLUID_BUFSIZE, -2);
+        fluid_rvoice_mixer_process_fx(synth->eventhandler->mixer, 1);
     }
-    fluid_rvoice_mixer_process_fx(synth->eventhandler->mixer, 1);
     for(int i = 0; i < FLUID_BUFSIZE; i++)
     {
         TEST_ASSERT(left[i] == 2 && right[i] == -2);
@@ -84,6 +197,7 @@ static void check_bypass(fluid_synth_t *synth)
 
 int main(void)
 {
+    check_live_transitions();
     fluid_settings_t *settings = new_fluid_settings();
     TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
     TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
