@@ -31,6 +31,25 @@ ADD_FLUID_TEST(test_seqbind_unregister)
 ADD_FLUID_TEST(test_synth_chorus_reverb)
 if(SIGNALSMITH_SUPPORT)
     ADD_FLUID_TEST(test_synth_limiter LINK_AS_ARCHIVE)
+    # Explicit manual target: never opens an audio device during ctest.
+    add_executable(limiter_audio_probe EXCLUDE_FROM_ALL limiter_audio_probe.cpp)
+    # Like test_synth_limiter, supply the mixer from its source so the analytic
+    # input can enter immediately before the real final processing stage.
+    add_library(limiter_audio_probe-archive STATIC EXCLUDE_FROM_ALL
+        $<TARGET_OBJECTS:libfluidsynth-OBJ> $<TARGET_OBJECTS:fluid_limiter_impl-OBJ>)
+    target_link_libraries(limiter_audio_probe-archive PUBLIC libfluidsynth-OBJ fluid_limiter_impl-OBJ)
+    target_link_libraries(limiter_audio_probe PRIVATE limiter_audio_probe-archive)
+    target_compile_features(limiter_audio_probe PRIVATE cxx_std_11)
+    target_include_directories(limiter_audio_probe PRIVATE
+        ${PROJECT_BINARY_DIR}/include ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/src $<TARGET_PROPERTY:libfluidsynth-OBJ,INCLUDE_DIRECTORIES>)
+    if(PIPEWIRE_SUPPORT)
+        target_compile_definitions(limiter_audio_probe PRIVATE PROBE_PIPEWIRE)
+        target_link_libraries(limiter_audio_probe PRIVATE PipeWire::PipeWire)
+    endif()
+    # Keep the script's executable path stable with multi-configuration generators.
+    set_target_properties(limiter_audio_probe PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/$<0:>)
 endif()
 ADD_FLUID_TEST(test_snprintf)
 ADD_FLUID_TEST(test_synth_process)

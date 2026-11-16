@@ -5,6 +5,7 @@
 #include <array>
 #include <new>
 #include <cstdlib>
+#include <vector>
 #if !OSAL_embedded
 #include <atomic>
 #include <thread>
@@ -291,8 +292,113 @@ static void check_latency(fluid_synth_t *synth, int milliseconds, int hold)
     }
 }
 
+/* Backends request arbitrary lengths through different public interfaces.
+ * Their buffer partitioning must preserve the same stream, including limiter
+ * transitions that straddle callback boundaries. Compare with a single public
+ * float request, rather than another copy of the limiter's transition logic. */
+static void check_public_rendering()
+{
+    constexpr int frames = 32768;
+    const int lengths[] = {1, 7, 63, 64, 65, 127, 257, 509};
+    for(int rate : {44100, 48000, 96000})
+    {
+        std::vector<float> expected;
+        for(int api = 0; api < 4; api++)
+        {
+            auto settings = new_fluid_settings();
+            TEST_SUCCESS(fluid_settings_setnum(settings, "synth.sample-rate", rate));
+            TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+            TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
+            TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.active", 1));
+            TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", 0.35));
+            auto synth = new_fluid_synth(settings);
+            TEST_ASSERT(synth != NULL);
+            int font = fluid_synth_sfload(synth, TEST_SOUNDFONT, 1);
+            TEST_ASSERT(font >= 0);
+            TEST_SUCCESS(fluid_synth_program_select(synth, 0, font, 0, 5));
+            for(int note : {48, 60, 67})
+            {
+                TEST_SUCCESS(fluid_synth_noteon(synth, 0, note, 100));
+            }
+            std::vector<float> left(frames), right(frames);
+            std::vector<short> pcm(frames * 2);
+            for(int phase = 0; phase < 5; phase++)
+            {
+                if(phase == 1)
+                {
+                    TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", 0.12));
+                    TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.hold", 250));
+                }
+                if(phase == 2 || phase == 3)
+                {
+                    TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.attack", phase == 2 ? 250 : 1));
+                }
+                if(phase == 3 || phase == 4)
+                {
+                    TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.active", phase == 4));
+                }
+                std::fill(left.begin(), left.end(), 0);
+                std::fill(right.begin(), right.end(), 0);
+                for(int offset = 0, request = 0; offset < frames; request++)
+                {
+                    int count = api == 0 ? frames : std::min(lengths[request % 8], frames - offset);
+                    if(api == 2)
+                    {
+                        float *out[] = {left.data() + offset, right.data() + offset};
+                        TEST_SUCCESS(fluid_synth_process(synth, count, 0, NULL, 2, out));
+                    }
+                    else if(api == 3)
+                    {
+                        TEST_SUCCESS(fluid_synth_write_s16(synth, count, pcm.data(), 2 * offset, 2, pcm.data(), 2 * offset + 1, 2));
+                        for(int i = offset; i < offset + count; i++)
+                        {
+                            /* Legacy s16 uses 32766 headroom before dithering. */
+                            left[i] = pcm[2 * i] / 32766.0f;
+                            right[i] = pcm[2 * i + 1] / 32766.0f;
+                        }
+                    }
+                    else
+                    {
+                        TEST_SUCCESS(fluid_synth_write_float(synth, count, left.data(), offset, 1, right.data(), offset, 1));
+                    }
+                    offset += count;
+                }
+                for(int i = 0; i < frames; i++)
+                {
+                    for(float sample : {left[i], right[i]})
+                    {
+                        TEST_ASSERT(std::isfinite(sample));
+                    }
+                    if(api == 0)
+                    {
+                        expected.push_back(left[i]);
+                        expected.push_back(right[i]);
+                    }
+                    else
+                    {
+                        /* TPDF dither plus rounding is bounded by two LSBs. */
+                        double tolerance = api == 3 ? 2.0 / 32766 : 1e-6;
+                        size_t index = 2 * (phase * frames + i);
+                        if(std::abs(left[i] - expected[index]) > tolerance ||
+                           std::abs(right[i] - expected[index + 1]) > tolerance)
+                        {
+                            fprintf(stderr, "public limiter rate=%d api=%d phase=%d frame=%d left=%.9g expected=%.9g right=%.9g expected=%.9g\n",
+                                    rate, api, phase, i, left[i], expected[index], right[i], expected[index + 1]);
+                        }
+                        TEST_ASSERT(std::abs(left[i] - expected[index]) <= tolerance);
+                        TEST_ASSERT(std::abs(right[i] - expected[index + 1]) <= tolerance);
+                    }
+                }
+            }
+            delete_fluid_synth(synth);
+            delete_fluid_settings(settings);
+        }
+    }
+}
+
 int main(void)
 {
+    check_public_rendering();
     check_live_transitions();
 #if !OSAL_embedded
     check_concurrent_updates();
