@@ -5434,6 +5434,12 @@ fluid_synth_alloc_voice_LOCAL(fluid_synth_t *synth, fluid_sample_t *sample, int 
         return NULL;
     }
 
+    /* Copy the source preset's identity; the channel may select another preset
+     * while this voice is still playing. */
+    voice->preset_sfont_id = synth->store_preset ? fluid_sfont_get_id(synth->store_preset->sfont) : -1;
+    voice->preset_bank = synth->store_preset ? fluid_preset_get_banknum(synth->store_preset) : -1;
+    voice->preset_num = synth->store_preset ? fluid_preset_get_num(synth->store_preset) : -1;
+
     /* add the default modulators to the synthesis process. */
     /* custom_breath2att_modulator is not a default modulator specified in SF
       it is intended to replace default_vel2att_mod for this channel on demand using
@@ -5494,7 +5500,7 @@ fluid_synth_kill_by_exclusive_class_LOCAL(fluid_synth_t *synth,
         return;
     }
 
-    /* Kill all notes on the same channel with the same exclusive class */
+    /* Exclusive classes are scoped to the preset, on the same channel. */
     for(i = 0; i < synth->polyphony; i++)
     {
         fluid_voice_t *existing_voice = synth->voice[i];
@@ -5504,6 +5510,9 @@ fluid_synth_kill_by_exclusive_class_LOCAL(fluid_synth_t *synth,
 
         if(fluid_voice_is_playing(existing_voice)
                 && fluid_voice_get_channel(existing_voice) == fluid_voice_get_channel(new_voice)
+                && existing_voice->preset_sfont_id == new_voice->preset_sfont_id
+                && existing_voice->preset_bank == new_voice->preset_bank
+                && existing_voice->preset_num == new_voice->preset_num
                 && fluid_voice_gen_value(existing_voice, GEN_EXCLUSIVECLASS) == excl_class
                 && fluid_voice_get_id(existing_voice) != fluid_voice_get_id(new_voice))
         {
@@ -8103,6 +8112,20 @@ fluid_synth_handle_midi_event(void *data, fluid_midi_event_t *event)
     return FLUID_FAILED;
 }
 
+/* Run a preset's noteon callback with its source available to voice allocation. */
+int
+fluid_synth_noteon_preset(fluid_synth_t *synth, fluid_preset_t *preset,
+                        int chan, int key, int vel)
+{
+    fluid_preset_t *previous_preset = synth->store_preset;
+    int result;
+
+    synth->store_preset = preset;
+    result = fluid_preset_noteon(preset, synth, chan, key, vel);
+    synth->store_preset = previous_preset;
+    return result;
+}
+
 /**
  * Create and start voices using an arbitrary preset and a MIDI note on event.
  *
@@ -8146,7 +8169,7 @@ fluid_synth_start(fluid_synth_t *synth, unsigned int id, fluid_preset_t *preset,
     else
     {
         synth->storeid = id;
-        result = fluid_preset_noteon(preset, synth, chan, key, vel);
+        result = fluid_synth_noteon_preset(synth, preset, chan, key, vel);
     }
 
     FLUID_API_RETURN(result);

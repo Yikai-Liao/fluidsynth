@@ -157,6 +157,7 @@ struct _fluid_synth_t
     int active_voice_count;            /**< count of active voices */
     unsigned int noteid;               /**< the id is incremented for every new note. it's used for noteoff's  */
     unsigned int storeid;
+    fluid_preset_t *store_preset;      /**< Preset whose noteon callback is running */
     int fromkey_portamento;            /**< fromkey portamento */
     fluid_rvoice_eventhandler_t *eventhandler;
 
@@ -311,6 +312,8 @@ fluid_synth_write_float_LOCAL(fluid_synth_t *synth, int len,
 void fluid_synth_settings(fluid_settings_t *settings);
 
 void fluid_synth_set_sample_rate_immediately(fluid_synth_t *synth, float sample_rate);
+
+int fluid_synth_noteon_preset(fluid_synth_t *synth, fluid_preset_t *preset, int chan, int key, int vel);
 
 
 /* extern declared in fluid_synth_monopoly.c */
