@@ -37,7 +37,7 @@ using Limiter = signalsmith::basics::LimiterDouble;
 /* The renderer owns both pending parameters and the DSP. Applying once per
  * run coalesces queued changes and keeps allocation proportional to the actual
  * lookahead, rather than reserving the maximum range for every instance. */
-struct FluidLimiter
+struct _fluid_limiter_t
 {
     fluid_limiter_settings_t settings;
     fluid_real_t sample_rate;
@@ -50,6 +50,7 @@ struct FluidLimiter
     int fade_remaining = 0;
     int fade_length = 0;
 
+    /* Initialize library parameters before configuring a replacement. */
     static void assign(Limiter &lim, const fluid_limiter_settings_t &settings)
     {
         lim.inputGain = settings.input_gain;
@@ -61,6 +62,20 @@ struct FluidLimiter
         lim.linkChannels = settings.link_channels;
     }
 
+    /* Compare the audible configuration with the latest requested values. */
+    bool matches() const
+    {
+        return processor && processor->config.sampleRate == sample_rate
+            && processor->inputGain == settings.input_gain
+            && processor->outputLimit == settings.output_limit
+            && processor->attackMs == settings.attack_ms
+            && processor->holdMs == settings.hold_ms
+            && processor->releaseMs == settings.release_ms
+            && processor->smoothingStages == settings.smoothing_stages
+            && processor->linkChannels == settings.link_channels;
+    }
+
+    /* Allocate only the capacity required by the requested lookahead. */
     std::unique_ptr<Limiter> create_processor()
     {
         /* Peak-hold adds independently rounded attack and hold lengths;
@@ -77,11 +92,14 @@ struct FluidLimiter
         return prepared;
     }
 
+    /* Start a transition after coalescing all currently queued settings. */
     void apply()
     {
         dirty = false;
-        if(active && (!processor || processor->attackMs != settings.attack_ms ||
-                processor->holdMs != settings.hold_ms || processor->config.sampleRate != sample_rate))
+        /* Library parameters are not uniformly smoothed (e.g. stage 2 clamps
+         * gain immediately when the limit drops). Use one transition protocol
+         * for every actual configuration change. */
+        if(active && !matches())
         {
             pending = create_processor();
             if(!pending)
@@ -100,12 +118,9 @@ struct FluidLimiter
             fade_length = (int)std::ceil(sample_rate * processor->paramFadeMs() * 0.001);
             fade_remaining = fade_length;
         }
-        else if(processor)
-        {
-            assign(*processor, settings);
-        }
     }
 
+    /* Keep the current path audible while warming and fading its replacement. */
     void process(fluid_real_t *bufs[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE], unsigned int count)
     {
         if(!fade_remaining)
@@ -154,16 +169,15 @@ struct FluidLimiter
 
 extern "C" void fluid_limiter_impl_set_sample_rate(fluid_limiter_t* lim, fluid_real_t sample_rate, unsigned int block_size)
 {
-    auto limiter = (FluidLimiter *)lim;
-    limiter->sample_rate = sample_rate;
-    limiter->block_size = block_size;
-    limiter->dirty = true;
+    lim->sample_rate = sample_rate;
+    lim->block_size = block_size;
+    lim->dirty = true;
 }
 
 extern "C" fluid_limiter_t *fluid_limiter_impl_new(fluid_real_t sample_rate, fluid_limiter_settings_t* settings, unsigned int block_size, int active)
 try
 {
-    std::unique_ptr<FluidLimiter> lim(new FluidLimiter{*settings, sample_rate, block_size, active != 0});
+    std::unique_ptr<fluid_limiter_t> lim(new fluid_limiter_t{*settings, sample_rate, block_size, active != 0});
     if(active)
     {
         lim->processor = lim->create_processor();
@@ -179,11 +193,10 @@ catch(const std::bad_alloc &)
 
 extern "C" void fluid_limiter_set(fluid_limiter_t *lim, enum fluid_limiter_param param, fluid_real_t value)
 {
-    auto limiter = (FluidLimiter *)lim;
-    auto &settings = limiter->settings;
+    auto &settings = lim->settings;
     switch(param)
     {
-    case FLUID_LIMITER_ACTIVE: limiter->active = value != 0; break;
+    case FLUID_LIMITER_ACTIVE: lim->active = value != 0; break;
     case FLUID_LIMITER_OUTPUT_LIMIT: settings.output_limit = value; break;
     case FLUID_LIMITER_ATTACK: settings.attack_ms = value; break;
     case FLUID_LIMITER_HOLD: settings.hold_ms = value; break;
@@ -191,12 +204,12 @@ extern "C" void fluid_limiter_set(fluid_limiter_t *lim, enum fluid_limiter_param
     case FLUID_LIMITER_SMOOTHING_STAGES: settings.smoothing_stages = (int)value; break;
     case FLUID_LIMITER_LINK_CHANNELS: settings.link_channels = value; break;
     }
-    limiter->dirty = true;
+    lim->dirty = true;
 }
 
 extern "C" void fluid_limiter_impl_delete(fluid_limiter_t* lim)
 {
-    delete(FluidLimiter*)lim;
+    delete lim;
 }
 
 extern "C" void fluid_limiter_impl_process_buffers(
@@ -204,14 +217,13 @@ extern "C" void fluid_limiter_impl_process_buffers(
     fluid_real_t *bufs[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE],
     unsigned int block_size)
 {
-    auto limiter = (FluidLimiter *)lim;
     /* Serialize transitions and coalesce requests arriving during a fade.
      * There can be at most two DSP instances, even under rapid automation. */
-    if(limiter->dirty && !limiter->fade_remaining)
+    if(lim->dirty && !lim->fade_remaining)
     {
         try
         {
-            limiter->apply();
+            lim->apply();
         }
         catch(const std::bad_alloc &)
         {
@@ -219,7 +231,7 @@ extern "C" void fluid_limiter_impl_process_buffers(
             fluid_log(FLUID_ERR, "Out of memory updating limiter");
         }
     }
-    limiter->process(bufs, block_size);
+    lim->process(bufs, block_size);
 }
 
 #endif /* SIGNALSMITH_SUPPORT */

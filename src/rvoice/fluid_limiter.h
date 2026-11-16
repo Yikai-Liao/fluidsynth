@@ -44,7 +44,7 @@ typedef struct
     fluid_real_t link_channels;
 } fluid_limiter_settings_t;
 
-typedef void fluid_limiter_t;
+typedef struct _fluid_limiter_t fluid_limiter_t;
 
 enum fluid_limiter_param
 {

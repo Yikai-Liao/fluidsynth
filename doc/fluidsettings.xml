@@ -166,7 +166,7 @@ Developers:
             <def>0 (FALSE)</def>
             <realtime/>
             <desc>
-                When set to 1 (TRUE) a look-ahead limiter is added at the end of fluidsynth's audio processing chain. This limiter helps to prevent clipping and distortion by limiting the gain of the output signal. Limiter settings can be changed while rendering. The buffers are sized to the current attack and hold times. Enabling or changing attack or hold may allocate a replacement at a rendering boundary. The previous output continues while the replacement fills its lookahead buffer, then the outputs are crossfaded over 20 milliseconds. Disabling crossfades to bypass and releases the DSP buffers. At most two DSP instances are retained during a transition; further changes are coalesced and applied after it finishes. <note>The limiter requires FluidSynth to be compiled with Signalsmith Audio Basics support, otherwise any of the limiter related settings will return FLUID_FAILED when attempting to set or get them.</note></desc>
+                When set to 1 (TRUE) a look-ahead limiter is added at the end of fluidsynth's audio processing chain. This limiter helps to prevent clipping and distortion by limiting the gain of the output signal. Limiter settings can be changed while rendering. The buffers are sized to the current attack and hold times. Enabling or changing parameters may allocate a replacement at a rendering boundary; setting an unchanged value does not replace the DSP. The previous output continues while the replacement fills its lookahead buffer, then the outputs are crossfaded over 20 milliseconds. Disabling crossfades to bypass and releases the DSP buffers. At most two DSP instances are retained during a transition; further changes are coalesced and applied after it finishes. <note>The limiter requires FluidSynth to be compiled with Signalsmith Audio Basics support, otherwise any of the limiter related settings will return FLUID_FAILED when attempting to set or get them.</note></desc>
         </setting>
         <setting>
             <name>limiter.attack</name>
@@ -176,7 +176,7 @@ Developers:
             <max>250</max>
             <realtime/>
             <desc>
-                When the limiter "sees" an incoming gain-peak, the attack specifies the look-ahead time in milliseconds, i.e. how much time before that peak the output gain will start to be reduced. Higher values allow the limiter to react more smoothly, but also increase latency because the generated audio must be delayed accordingly. Changing this setting while rendering crossfades between the old and new delays; see <code>synth.limiter.active</code>.</desc>
+                When the limiter "sees" an incoming gain-peak, the attack specifies the look-ahead time in milliseconds, i.e. how much time before that peak the output gain will start to be reduced. Higher values allow the limiter to react more smoothly, but also increase latency because the generated audio must be delayed accordingly. Changing this setting while rendering crossfades between the old and new delays; see <code>synth.limiter.active</code>. Different delays change the signal phase, so this transition can temporarily change its amplitude.</desc>
         </setting>
         <setting>
             <name>limiter.hold</name>
