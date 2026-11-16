@@ -1,33 +1,52 @@
 # FluidSynth fork 待办
 
-更新：2026-11-14（UTC+08）。本次核对上游 master 为 [3ac3b3b4](https://github.com/FluidSynth/fluidsynth/commit/3ac3b3b4c3e236b0f850b374a3dd36f632341550)；最新 release 为 [2.6.2](https://github.com/FluidSynth/fluidsynth/releases/tag/v2.6.2)。fork master 仍为 c7ba7b49，未移动。todo 是独立根历史的文档分支，不合入代码 PR。
+更新：2026-11-16（UTC+08）。本次通过 gh 核对上游 master 为 [6d43acdd](https://github.com/FluidSynth/fluidsynth/commit/6d43acddbdb0a8d3f1f3f09f90fa6de3d8938d8f)；最新 release 为 [2.6.2](https://github.com/FluidSynth/fluidsynth/releases/tag/v2.6.2)。fork master 仍为 c7ba7b49，未移动。todo 是独立根历史的文档分支，不合入代码 PR。
 
 ## 使用入口
 
 - **贡献方式与双方偏好：** [fluidsynth-contributing skill](.agents/skills/fluidsynth-contributing/SKILL.md)。[依据与全部 PR 索引](.agents/skills/fluidsynth-contributing/references/history.md)只放稳定出处，不重复维护当前队列。
+- **全部分支与遗漏候选：** [分支盘点](branch-inventory.md)，逐项记录 82 个远端分支，并恢复旧 N01–N21 音频问题的入口；分支存在、历史复现和当前可投稿分别判断。
 - **复现材料：** [真实 MIDI 验证](evidence/real-midi-20261030/README.md)，保留原来源、哈希和 94-byte 派生夹具，不含整曲／PCM／私有日志。
 - Skill 位于 todo，不会自动出现在代码分支。后续可从 todo worktree 读取；需要全局自动发现时，自行复制完整 skill 目录到 ~/.agents/skills/，再 /reload。这里不改用户全局配置。
 
 ## 当前状态
 
-Yikai-Liao 的 **26 个 PR：24 已合并，#1878 关闭未合并，仅 [#1910](https://github.com/FluidSynth/fluidsynth/pull/1910) 开放**。#1904/#1905 已于 11 月 9 日合并，#1908/#1909 已于 11 月 12 日合并（UTC 为 11 月 11 日），不再列入待投稿或待评审队列；#1878 被覆盖更全的 #1871 替代，不重提。合并、发布、历史 head 的 CI 是不同状态，不因合并便宣称已进入 2.6.2 或全部 CI 成功。
+Yikai-Liao 的 **27 个 PR：26 已合并，#1878 关闭未合并，当前没有开放 PR**。最新两项为 [#1910](https://github.com/FluidSynth/fluidsynth/pull/1910) mixer 连续访问优化和 [#1912](https://github.com/FluidSynth/fluidsynth/pull/1912) LFO 更新方向修复，均获 APPROVED 后合并。#1878 被覆盖更全的 #1871 替代，不重提。最新正式版仍为 2.6.2；维护者在 [#1310](https://github.com/FluidSynth/fluidsynth/issues/1310#issuecomment-6894325944) 说明 LFO 修复将进入 2.6.3，尚未发布。合并与发布、历史 head 的 CI 分开记录。
 
 上游其他 open PR：[#1894 DSP 插值](https://github.com/FluidSynth/fluidsynth/pull/1894)（derselbst）、[#1889 RMIDI](https://github.com/FluidSynth/fluidsynth/pull/1889)、[#1718 POSIX OSAL](https://github.com/FluidSynth/fluidsynth/pull/1718)。不要重复维护者正在做的插值工作。#1897 仍 open 不代表 #1900/#1901 没有合并。
 
 ## 当前安排
 
-11 月 9–15 日准备的两个 CC66 修复、router 清规则修复和缩容修复均已合并；本周性能投稿最终是 **#1910 的 mixer 连续访问优化**，不是原计划的稳定增益分支。先处理 #1910 的后续 review 与 CI，不因旧排期自动追加 PR，不催审；建议自己的开放 PR 不超过 2 个。后备实验与既有暂缓决定保留，不自动恢复投稿。
+现有 PR 已处理完，可以选择下一项；本次只更新记录与选题，没有新开 PR。重新检查远端分支、100 个旧分支归档、旧 F/N 审计和性能报告后，建议如下。这里是下一轮工作的建议顺序，不代表恢复所有暂缓任务。
 
-## 评审中：mixer sample-relative indexing（#1910）
+| 建议顺序 | 主题与现有材料 | 为什么值得做／完成投稿前缺什么 |
+|---|---|---|
+| **修复首选：N14 跨 preset 排他类别** | 旧 todo 的 N14，尚无独立修复分支；不是 perf/dev-exclusive-* 的扫描优化 | 已有发布数据集完整 MIDI＋官方 MS Basic 的自然触发、身份对照和单事件因果对照。当前源码仍只比较 channel/class/note ID，没有 preset 边界。先在新上游重现，再明确 preset 身份的生命周期和自定义 loader 契约，做最小修复；不能只比较 channel 当前 program，因为旧 voice 属于先前 preset |
+| **性能首选复测：perf/iir-coeff-double @ e3341732** | 小型系数提升，历史生产 +12/−2；与已合并 #1867 的系数复用不同 | 无新索引／持久状态；历史 909.mid 渲染循环约降 4.1%，当前源码仍在 sample 循环使用 IIR_COEFF_T。需核对当前 GCC/Clang 汇编、float/double、多曲目完整进程收益和 fast-math 误差，不能照搬旧数字 |
+| **性能第二候选：perf/mixer-gain @ 8ff0c280** | 与 perf/mixer-stable-amp 同一稳定增益思路，含聚焦测试 | 旧普通 MIDI 有约 1.8%–3.0% GCC double 完整进程收益；#1910 已改变同一循环的向量化，必须先测新增分支的边际收益。复用已合并 test_rvoice_mixer，不能重复新增文件或恢复旧块下标 |
+| **值得恢复调查：N12／N11** | 主增益零后恢复仍丢音；chorus level setter 重置相位；两者均只有旧诊断，未有独立修复 | N12 另有 Qsynth v1.0.6 的 Master Gain 真实调用链，不能漏掉后续补充，也不能当现场复现；N11 属默认 chorus 的宿主实时控制。先验证新上游及真实操作路径、契约与修复成本，再决定是否超过已有修复候选 |
+| **已有分支的修复后备** | fix/dev-initial-rate-iir-table、fix/dev-mono-cc123-sustain、fix/dev-short-loop-interpolation | 分别是 JACK 启动换率、显式 Mono＋note-cut=2、短循环音色条件；有现成补丁和历史回归，仍需当前复现及实际素材。短循环和维护者 #1894 有区域重叠，先沟通范围 |
 
-**Improve voice mixer vectorization with sample-relative indexing**；[perf/mixer-contiguous-access](https://github.com/Yikai-Liao/fluidsynth/tree/perf/mixer-contiguous-access) @ [8ac616a2](https://github.com/Yikai-Liao/fluidsynth/commit/8ac616a2c87aada1a318ce3cbf8c5f1dc5a5d0af)。基于当前上游 3ac3b3b4，初始实现 cadc40e6，随后新增一个评审修正提交；没有 amend／rebase／force push，原开发分支未改写。
+N14 是从旧记录恢复的遗漏项，尚非可立即提交的补丁。若下一步要做一个正确性修复，先推进它；若选择性能工作，先独立复测 IIR 系数提升，再测稳定增益。不以“当前没有 open PR”作为批量投稿理由。其余候选及暂缓理由见[完整盘点](branch-inventory.md)。
+
+## 已合并：mixer sample-relative indexing（#1910）
+
+**Improve voice mixer vectorization with sample-relative indexing**；[perf/mixer-contiguous-access](https://github.com/Yikai-Liao/fluidsynth/tree/perf/mixer-contiguous-access) @ [8ac616a2](https://github.com/Yikai-Liao/fluidsynth/commit/8ac616a2c87aada1a318ce3cbf8c5f1dc5a5d0af)。投稿基线为 3ac3b3b4，初始实现 cadc40e6，随后新增一个评审修正提交；没有 amend／rebase／force push，原开发分支未改写。
 
 - **实现：** 将块偏移一次性应用到 source／destination 指针，循环只用相对 sample 下标，不改增益算术。新增聚焦的 test_rvoice_mixer，覆盖非零块偏移、partial／full block、增益变化和混音区间外样本。
-- **维护者反馈：** [review 5893812978](https://github.com/FluidSynth/fluidsynth/pull/1910#pullrequestreview-5893812978) 认可指针偏移方案，并要求将 GCC／MSVC 的技术差异写进 PR 描述；两条 inline 意见要求偏移后再检查对齐，并删掉冗余断言。状态是 COMMENTED，不是正式 APPROVED，也尚未合并。
+- **维护者反馈：** [review 5893812978](https://github.com/FluidSynth/fluidsynth/pull/1910#pullrequestreview-5893812978) 认可指针偏移方案，并要求将 GCC／MSVC 的技术差异写进 PR 描述；两条 inline 意见要求偏移后再检查对齐，并删掉冗余断言。初次状态为 COMMENTED；维护者随后于 11/14 03:15（UTC+08）正式 APPROVED，03:17 合并为 f51e95ff。
 - **已完成响应：** 8ac616a2 调整 buf／dsp_buf 的断言位置，删除第二条 dsp_buf 断言；PR 正文已补充类型缩小／提升只解决 GCC、不能解决 MSVC reason 1200 的对照。32 位乘法溢出顾虑仍标为 review 实验提示的可能解释，不写成确定根因。
 - **此前测量（初始实现）：** Linux x86-64、i7-10875H、GCC 16.2.1、Release -O3，无 -march=native；三首完整 MIDI／GM_Roland.sf2／44.1 kHz／单合成核，period 64／512，float／double、OpenMP OFF／ON，完整进程耗时下降约 3.46%–16.69%。交错配对与 A/A 对照；Clang 23.1.4、OpenMP OFF、period 64 基本中性（−0.11% 至 +0.36%）。完整表格与 Godbolt 示例见 [PR 正文](https://github.com/FluidSynth/fluidsynth/pull/1910)。MinGW／ARM64／MSVC 只有编译对照，不声称目标平台实测。
-- **验证分开记录：** 初始实现 GCC／Clang × float／double 的 check 各 53/53，24 组完整 MIDI PCM 与上游逐位相同，GCC 两种精度的四项定向测试通过 ASan+UBSan。此次评审修正后，新跑 GCC Debug、OpenMP ON、float／double 各 check 53/53，断言启用；没有重跑全性能／PCM／sanitizer 矩阵，不把历史结果说成本次重测。
-- **远端 CI（11 月 14 日 00:59 UTC+08 快照）：** 新 head 8ac616a2 部分通过，其余仍运行／排队；[mingw32 cpp11](https://github.com/FluidSynth/fluidsynth/actions/runs/43467864206/job/132031710044) 失败在 Setup MSYS2，Configure／Build／Test 均未执行。不能记为全绿，也不能据此判为本补丁代码失败。下一步跟进 CI 最终结果与维护者反馈，必要修正仍以普通追加提交处理。
+- **验证分开记录：** 初始实现 GCC／Clang × float／double 的 check 各 53/53，24 组完整 MIDI PCM 与上游逐位相同，GCC 两种精度的四项定向测试通过 ASan+UBSan。11 月 14 日投稿阶段的评审修正后，另跑 GCC Debug、OpenMP ON、float／double 各 check 53/53，断言启用；该次没有重跑全性能／PCM／sanitizer 矩阵；本轮仅核对记录，未重跑测试。
+- **远端 CI 终态（head 8ac616a2）：** 63 SUCCESS、2 FAILURE、4 SKIPPED；失败为 sonarcloud 和 mingw32 cpp11。mingw32 失败在 Setup MSYS2，未执行项目 Configure／Build／Test；SonarCloud 失败原因本轮未判定。不再等待此 head 的 CI，不记为全绿。上游后来以 [a24ded4a](https://github.com/FluidSynth/fluidsynth/commit/a24ded4aa4282cc279b3df40d861751fb51ab851) 移除了失败的 mingw32 job，不自动重启 Windows CI 整理。
+
+## 已合并：LFO 更新方向（#1912／旧 N15）
+
+[Preserve LFO direction during frequency updates](https://github.com/FluidSynth/fluidsynth/pull/1912)，fix/lfo-frequency-direction 与 dev @ 07bd2b54；基线 f51e95ff。连续 CC1 更新会使下降中的 LFO 反复转向；保留 increment 的符号，并在 voice reset 时清零。共享 setter 覆盖 vibrato／modulation LFO。维护者 11/15 20:30 APPROVED，20:32 合并为 8f0d65a3（UTC+08），#1310 已关闭。
+
+- 原 issue 的 SoundFont 和连续 CC1 音频示例已用于对照；旧 N15 与此为同一根因，不再留作待修项目。evidence/lfo-frequency-1310 @ 787f0d82 保存图表材料。
+- PR 记录的 GCC／Clang × float／double Debug check 各 54/54；回归覆盖双向更新与下降后 reset，旧实现和分别撤销两处修复均失败。这是投稿时验证，本轮未重跑。
+- head 07bd2b54 的远端 CI 终态为 60 SUCCESS、3 FAILURE、5 SKIPPED。失败为 sonarcloud、macos-26 MacPorts 和 mingw32 cpp11；MacPorts 失败位于 Build and test the universal SDK，原因未进一步判定，不归为本补丁故障或依赖故障。
 
 ## 本轮已合并
 
@@ -49,11 +68,11 @@ Yikai-Liao 的 **26 个 PR：24 已合并，#1878 关闭未合并，仅 [#1910](
 
 | 主题／分支 | 条件、状态与取舍 |
 |---|---|
-| **PR #1910：perf/mixer-contiguous-access** @ 8ac616a2 | review 要求已落地并补正文，等待 CI 最终结果与后续反馈；#1904/#1905/#1908/#1909 均已合并，不重复排队 |
+| N14、perf/iir-coeff-double、perf/mixer-gain | 见上方新建议顺序与分支盘点；#1910/#1912 已合并，不再作为阻塞项 |
 | fix/dev-mono-cc123-sustain @ d0b0510e | 需显式 Mono＋note-cut=2；默认 Poly 负控不变，后放 |
 | fix/dev-reverb-reset-history @ e33ce9f6、fix/dev-lexverb-zero-room-reset @ f61728df | 非默认引擎／设置，真实路径差异很小，无听感验证，后放 |
 | perf/iir-stable-block @ 707b52d6 | 统一 float/double W4，生产 +39/−5；不是已合并 #1867。MPFR 与 micro 历史验证保留，最终最小回归、PCM、普通 MIDI 端到端收益仍需复核；与 perf/iir-steady-loop 同区域方案择一，不自动恢复投稿 |
-| perf/mixer-stable-amp @ ea8e842e、perf/mixer-gain | 未投稿的后备实验；上述数字仅适用于原基线，不沿用为 #1910 之后的独立收益；先跟进现有 PR |
+| perf/mixer-stable-amp @ ea8e842e、perf/mixer-gain | 未投稿的后备实验；上述数字仅适用于原基线，不沿用为 #1910 之后的独立收益；先在 #1910 后测独立边际收益 |
 | perf/interp-buffer-steps、perf/interp-tap-window；perf/sinc-* | 历史实验保留；插值已有维护者 #1894，sinc 由维护者处理，先不 review／投稿 |
 | perf/iir-coeff-double、perf/iir-steady-loop、perf/reverb-delay-size、perf/reverb-idle-skip、perf/chorus-idle-skip | fork 性能实验，旧组合结果不作为当前独立收益；idle-skip 要保留引擎相位、DC 偏置与尾音约束 |
 | perf/dev-channel-voice-index、perf/dev-exclusive-*、perf/dev-finished-voice-owner*、perf/dev-mixer-finished-index、perf/dev-lowest-free-voice、perf/dev-same-key-event-batch | 保留索引／位图／owner／批处理实验；需普通 MIDI 显著可重复端到端收益，不用 Black MIDI 或局部扫描次数替代；exclusive standalone 另有每 synth 8 KiB 成本 |
@@ -63,7 +82,7 @@ Yikai-Liao 的 **26 个 PR：24 已合并，#1878 关闭未合并，仅 [#1910](
 | ci/dev-android-migration、ci/dev-android-developer-probe | 等用户有空 review；不是继续补实现或催审的指令 |
 | ci/dev-windows-build | 用户决定以后再说，先接受现有 CI 速度 |
 
-其余并发初始化、MIDI 边界、短循环、采样 guard-frame、资源释放等候选留在既有 fix/dev-* 分支与历史审计索引，未自动恢复投稿。F13/F14/F18/F30/F39 等旧内存安全发现须按当前源码重查，旧 ASan 报告不是本次重现；F12 两个边界修复已由 #1900/#1901 合并；SDL3 的 #1893 只覆盖部分问题，不能整包勾完。安全问题按最新 SECURITY.md 处理。
+此前被一行概括的并发初始化、MIDI 边界、短循环、采样 guard-frame、资源释放，以及完全漏列的 fix/dev-midi-tempo-drift，现均逐分支列入[盘点](branch-inventory.md)。tempo drift 与暂停／排序不同，但仍涉及播放器时钟和 tempo API；恢复前单独决定范围，不自动解除播放器暂缓。F13/F14/F18/F30/F39 等旧内存安全发现须按当前源码重查，旧 ASan 报告不是本次重现；F12 两个边界修复已由 #1900/#1901 合并；SDL3 的 #1893 只覆盖部分问题，不能整包勾完。安全问题按最新 SECURITY.md 处理。
 
 用户记得“约一秒的声音／效果偏移”仍未定位，明确不是 #1872 的 4 ms predelay；不得用近似问题替代。
 
@@ -71,7 +90,7 @@ Yikai-Liao 的 **26 个 PR：24 已合并，#1878 关闭未合并，仅 [#1910](
 
 - 相位增量缓存未在代表性 MIDI 减少目标转换调用，unity-gain 分支普通 MIDI 回退；ADSR 快路径／布局、预取、双位置 tap shift 等无可靠端到端收益，暂不重启。worker 缓冲清零的早期 20% 含测量污染，修正约 5%；不足以单独支撑复杂缓冲协议。
 - 历史组合栈结果、旧 CI、精度实验和原有审计都可在下方固定快照回查，不复制成新的当前结果。已保存分支不等于已完成 review、rebase 或授权投稿。
-- 当前安排只维护本 README；稳定贡献判断维护 skill；具体证据放一个专题目录。每项只记结论、条件、版本与下一步，不再按会话追加流水。
+- 当前安排维护本 README；完整分支覆盖和未排期雷达维护 branch-inventory.md；稳定贡献判断维护 skill；具体证据放一个专题目录。每项只记结论、条件、版本与下一步，不再按会话追加流水。
 
 ## 历史回查（不丢证据，不在当前队列重复展开）
 
