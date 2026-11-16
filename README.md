@@ -5,7 +5,7 @@
 ## 使用入口
 
 - **贡献方式与双方偏好：** [fluidsynth-contributing skill](.agents/skills/fluidsynth-contributing/SKILL.md)。[依据与全部 PR 索引](.agents/skills/fluidsynth-contributing/references/history.md)只放稳定出处，不重复维护当前队列。
-- **全部分支与遗漏候选：** [分支盘点](branch-inventory.md)，逐项记录 82 个远端分支，并恢复旧 N01–N21 音频问题的入口；分支存在、历史复现和当前可投稿分别判断。
+- **全部分支与遗漏候选：** [分支盘点](branch-inventory.md)，逐项记录 83 个远端分支，并恢复旧 N01–N21 音频问题的入口；分支存在、历史复现和当前可投稿分别判断。
 - **复现材料：** [真实 MIDI 验证](evidence/real-midi-20261030/README.md)，保留原来源、哈希和 94-byte 派生夹具，不含整曲／PCM／私有日志。
 - Skill 位于 todo，不会自动出现在代码分支。后续可从 todo worktree 读取；需要全局自动发现时，自行复制完整 skill 目录到 ~/.agents/skills/，再 /reload。这里不改用户全局配置。
 
@@ -17,17 +17,17 @@ Yikai-Liao 的 **27 个 PR：26 已合并，#1878 关闭未合并，当前没有
 
 ## 当前安排
 
-现有 PR 已处理完，可以选择下一项；本次只更新记录与选题，没有新开 PR。重新检查远端分支、100 个旧分支归档、旧 F/N 审计和性能报告后，建议如下。这里是下一轮工作的建议顺序，不代表恢复所有暂缓任务。
+现有 PR 已处理完；本次按用户安排保存了 N14 独立修复分支，尚未新开 PR。重新检查远端分支、100 个旧分支归档、旧 F/N 审计和性能报告后，建议如下。这里是下一轮工作的建议顺序，不代表恢复所有暂缓任务。
 
 | 建议顺序 | 主题与现有材料 | 为什么值得做／完成投稿前缺什么 |
 |---|---|---|
-| **修复首选：N14 跨 preset 排他类别** | 旧 todo 的 N14，尚无独立修复分支；不是 perf/dev-exclusive-* 的扫描优化 | 已有发布数据集完整 MIDI＋官方 MS Basic 的自然触发、身份对照和单事件因果对照。当前源码仍只比较 channel/class/note ID，没有 preset 边界。先在新上游重现，再明确 preset 身份的生命周期和自定义 loader 契约，做最小修复；不能只比较 channel 当前 program，因为旧 voice 属于先前 preset |
+| **N14 已保存独立修复** | [fix/dev-exclusive-preset-scope](https://github.com/Yikai-Liao/fluidsynth/tree/fix/dev-exclusive-preset-scope) @ 5809d164，基于 6d43acdd | 内部 preset 回调统一提供实际来源，voice 保存 SoundFont ID／bank／program，排他匹配限定同一来源。生产 +33/−4，聚焦回归 98 行；待用户 review，尚未提 PR，远端 CI 待核对 |
 | **性能首选复测：perf/iir-coeff-double @ e3341732** | 小型系数提升，历史生产 +12/−2；与已合并 #1867 的系数复用不同 | 无新索引／持久状态；历史 909.mid 渲染循环约降 4.1%，当前源码仍在 sample 循环使用 IIR_COEFF_T。需核对当前 GCC/Clang 汇编、float/double、多曲目完整进程收益和 fast-math 误差，不能照搬旧数字 |
 | **性能第二候选：perf/mixer-gain @ 8ff0c280** | 与 perf/mixer-stable-amp 同一稳定增益思路，含聚焦测试 | 旧普通 MIDI 有约 1.8%–3.0% GCC double 完整进程收益；#1910 已改变同一循环的向量化，必须先测新增分支的边际收益。复用已合并 test_rvoice_mixer，不能重复新增文件或恢复旧块下标 |
 | **值得恢复调查：N12／N11** | 主增益零后恢复仍丢音；chorus level setter 重置相位；两者均只有旧诊断，未有独立修复 | N12 另有 Qsynth v1.0.6 的 Master Gain 真实调用链，不能漏掉后续补充，也不能当现场复现；N11 属默认 chorus 的宿主实时控制。先验证新上游及真实操作路径、契约与修复成本，再决定是否超过已有修复候选 |
 | **已有分支的修复后备** | fix/dev-initial-rate-iir-table、fix/dev-mono-cc123-sustain、fix/dev-short-loop-interpolation | 分别是 JACK 启动换率、显式 Mono＋note-cut=2、短循环音色条件；有现成补丁和历史回归，仍需当前复现及实际素材。短循环和维护者 #1894 有区域重叠，先沟通范围 |
 
-N14 是从旧记录恢复的遗漏项，尚非可立即提交的补丁。若下一步要做一个正确性修复，先推进它；若选择性能工作，先独立复测 IIR 系数提升，再测稳定增益。不以“当前没有 open PR”作为批量投稿理由。其余候选及暂缓理由见[完整盘点](branch-inventory.md)。
+N14 已按用户安排完成独立开发分支，下一步先 review 此补丁。GCC Debug float／double、Clang Debug double 的 check 各 55/55；最终回归原版失败、修复通过。真实 Tegridy MIDI＋原哈希 MS Basic：完整曲目观测到的跨 preset 截断从 10 次降为 0，同 preset 截断保留；Etude／GM_Roland 负控 PCM 逐位相同。[本次验证摘要](evidence/exclusive-preset-scope-20261116/results.json)保留源码、输入身份与 PCM 结果。若另选性能工作，先独立复测 IIR 系数提升，再测稳定增益。不以“当前没有 open PR”作为批量投稿理由。其余候选及暂缓理由见[完整盘点](branch-inventory.md)。
 
 ## 已合并：mixer sample-relative indexing（#1910）
 

@@ -1,0 +1,295 @@
+{
+  "date": "2026-11-16",
+  "baseline": "6d43acddbdb0a8d3f1f3f09f90fa6de3d8938d8f",
+  "candidate": "5809d164e1de326ceb16df476754696564f96493",
+  "toolchains": {
+    "gcc": "16.2.1",
+    "clang": "23.1.4"
+  },
+  "configuration": {
+    "type": "Debug",
+    "platform": "Linux x86-64",
+    "openmp": false,
+    "signalsmith": false,
+    "sample_rate": 44100,
+    "synthesis_cores": 1,
+    "render_frames_per_call": 64,
+    "player_clock": "sample"
+  },
+  "check": {
+    "baseline_gcc_double": "54/54",
+    "candidate_gcc_double": "55/55",
+    "candidate_gcc_float": "55/55",
+    "candidate_clang_double": "55/55",
+    "final_regression_baseline": "failed at preserved release assertion",
+    "final_regression_candidate": "passed"
+  },
+  "input": {
+    "midi_source": "https://github.com/asigalov61/Tegridy-MIDI-Dataset/tree/0278ae2bff273c192cca0fa9f3f87999a1b86dc5/Mono-Melodies",
+    "zip_parts_sha256_concatenated": "643c4f4d354951721aafb3b98dfac21cfe3d17310cdf1daac126c175254ea851",
+    "zip_member": "Flute/063deb6ba2e0838b1b9f53ca45309b45.mid",
+    "midi_sha256": "418a2a09abac4340cba1e2ab45ebbc36ed0ed67c9b9d174dffa8ce6e605c70bf",
+    "soundfont_source": "https://github.com/musescore/MuseScore/blob/7a43b88219259fecc44a23cdeccd5489dc042fc8/share/sound/MS%20Basic.sf3",
+    "soundfont_sha256": "5ea2375e8bd7d8e71def1036978c1621e85b66934169b6a2744b27b9b3c2d99c"
+  },
+  "renders": [
+    {
+      "effects": 0,
+      "frames": 3831808,
+      "different_channel_samples": 1518034,
+      "first_frame": 336769,
+      "max_abs": 0.007956914603710175,
+      "rms": 0.0003066752548398453,
+      "pcm_sha256": {
+        "baseline": "42b684012d652eef27fbe7363f025d03684c4e078ca3144dd0b0f6a99a66d5d2",
+        "candidate": "ec19e4d4b0385a28899830ecbfd2115b81a3cc27a3739825f14dd5ea3687b201"
+      }
+    },
+    {
+      "effects": 1,
+      "frames": 3831808,
+      "different_channel_samples": 4098717,
+      "first_frame": 336769,
+      "max_abs": 0.007956155226565897,
+      "rms": 0.00031085863050022355,
+      "pcm_sha256": {
+        "baseline": "45801b38eec6e282d6b2c8d323e78e607f0c7723646da0a5555978b8f4c3af4c",
+        "candidate": "0afb17b383860536156de4b37a51304b9c8712858c95b54a6173a8a441d5ed3a"
+      }
+    }
+  ],
+  "causal_trace": {
+    "baseline": {
+      "cross_preset_cuts": 10,
+      "cuts": [
+        {
+          "frame_block": 336704,
+          "old_preset": [
+            1,
+            128,
+            0
+          ],
+          "new_preset": [
+            1,
+            128,
+            24
+          ],
+          "old_key": 42,
+          "new_key": 46,
+          "release": [
+            702.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 372864,
+          "old_preset": [
+            1,
+            128,
+            24
+          ],
+          "new_preset": [
+            1,
+            128,
+            0
+          ],
+          "old_key": 46,
+          "new_key": 42,
+          "release": [
+            5830.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 1106496,
+          "old_preset": [
+            1,
+            128,
+            0
+          ],
+          "new_preset": [
+            1,
+            128,
+            24
+          ],
+          "old_key": 42,
+          "new_key": 46,
+          "release": [
+            702.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 1142592,
+          "old_preset": [
+            1,
+            128,
+            24
+          ],
+          "new_preset": [
+            1,
+            128,
+            0
+          ],
+          "old_key": 46,
+          "new_key": 42,
+          "release": [
+            5830.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 1876224,
+          "old_preset": [
+            1,
+            128,
+            0
+          ],
+          "new_preset": [
+            1,
+            128,
+            24
+          ],
+          "old_key": 42,
+          "new_key": 46,
+          "release": [
+            702.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 1912320,
+          "old_preset": [
+            1,
+            128,
+            24
+          ],
+          "new_preset": [
+            1,
+            128,
+            0
+          ],
+          "old_key": 46,
+          "new_key": 42,
+          "release": [
+            5830.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 2646016,
+          "old_preset": [
+            1,
+            128,
+            0
+          ],
+          "new_preset": [
+            1,
+            128,
+            24
+          ],
+          "old_key": 42,
+          "new_key": 46,
+          "release": [
+            702.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 2682048,
+          "old_preset": [
+            1,
+            128,
+            24
+          ],
+          "new_preset": [
+            1,
+            128,
+            0
+          ],
+          "old_key": 46,
+          "new_key": 42,
+          "release": [
+            5830.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 3415744,
+          "old_preset": [
+            1,
+            128,
+            0
+          ],
+          "new_preset": [
+            1,
+            128,
+            24
+          ],
+          "old_key": 42,
+          "new_key": 46,
+          "release": [
+            702.0,
+            -2000.0
+          ]
+        },
+        {
+          "frame_block": 3451840,
+          "old_preset": [
+            1,
+            128,
+            24
+          ],
+          "new_preset": [
+            1,
+            128,
+            0
+          ],
+          "old_key": 46,
+          "new_key": 42,
+          "release": [
+            5830.0,
+            -2000.0
+          ]
+        }
+      ],
+      "observer_pcm_identical": true
+    },
+    "candidate": {
+      "cross_preset_cuts": 0,
+      "cuts": [],
+      "observer_pcm_identical": true
+    }
+  },
+  "control": {
+    "baseline": {
+      "frames": 5032192,
+      "sha256": "d7dc894d1c2fb3bc4e22d55af1a52db75defd1b421e2667e0f0f911741aebe2f",
+      "callback_errors": 5,
+      "error_events": {
+        "90/velocity=0": 5
+      }
+    },
+    "candidate": {
+      "frames": 5032192,
+      "sha256": "d7dc894d1c2fb3bc4e22d55af1a52db75defd1b421e2667e0f0f911741aebe2f",
+      "callback_errors": 5,
+      "error_events": {
+        "90/velocity=0": 5
+      }
+    },
+    "midi": "Etude.mid",
+    "soundfont": "GM_Roland.sf2",
+    "input_sha256": {
+      "Etude.mid": "433e35f1282987e212b9c8c352fa158a5558e47ce787bcf829dd5e6463819c41",
+      "GM_Roland.sf2": "b7b7abb9ece1ed9b169402b7eb76cc16286937683a548eedc2435a3b1804a1fb"
+    }
+  },
+  "limitations": [
+    "No listening test or claim of occurrence rate.",
+    "No Apple/Windows hardware or remote CI validation in this record.",
+    "All renders reached player DONE; original MIDI and SoundFont were not modified.",
+    "Baseline and candidate both had 89 failed velocity-zero NoteOn/NoteOff callbacks for the N14 MIDI; no new callback failures.",
+    "Temporary binaries, PCM, downloaded assets and logs were removed after validation."
+  ]
+}

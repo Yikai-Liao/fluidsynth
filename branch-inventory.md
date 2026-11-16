@@ -1,8 +1,8 @@
 # FluidSynth 分支盘点
 
-核对：2026-11-16；上游 `6d43acdd`。覆盖 fetch 后 origin 的 **82 个真实分支**（不计 HEAD 符号引用），归档 README 的 **100 个旧分支映射**、旧 todo 的 F 审计与 N01–N21、perf-inventory/progress，以及归档实验报告。所有本地分支提交均可从 origin 远端引用到达；本地 mixer-shared-source／mixer-contiguous-dev 是 #1910 旧实现，无额外未保存候选。
+核对：2026-11-16；上游 `6d43acdd`。覆盖 fetch 后 origin 的 **83 个真实分支**（不计 HEAD 符号引用），归档 README 的 **100 个旧分支映射**、旧 todo 的 F 审计与 N01–N21、perf-inventory/progress，以及归档实验报告。所有本地分支提交均可从 origin 远端引用到达；本地 mixer-shared-source／mixer-contiguous-dev 是 #1910 旧实现，无额外未保存候选。
 
-本次是分支／证据／当前源码盘点，未运行构建、MIDI 或性能测量。只对 README 首选及下文注明的源码入口作当前静态复核；其他“历史已复现”不等于本次复现，也没有对 82 分支全部重新证明正确性。当前建议顺序只在 [README](README.md#当前安排) 维护。
+分支盘点只核对证据和当前源码，没有做全分支构建或性能测量；随后按用户安排完成 N14 的独立修复、三配置 check 与真实 MIDI 对照。其他“历史已复现”不等于本次复现，也没有对 83 分支全部重新证明正确性。当前建议顺序只在 [README](README.md#当前安排) 维护。
 
 ## 当前远端分支逐项覆盖
 
@@ -24,6 +24,7 @@
 | `fix/dev-breath-sync-reset` | `41acd7a8` | 后放 | CC121 后气息同步漏起音；用户原决定：显式 Breath Sync Mono，低优先 |
 | `fix/dev-dattorro-sample-rate` | `6603116f` | 修复后备 | 默认混响引擎不支持换率；现有补丁重建状态并丢弃尾音，需确认预期与 JACK 实机路径 |
 | `fix/dev-dither-table-init` | `02da8b35` | 低优先 | 并发初始化共享 S16 dither 表；需当前竞态复现与线程初始化成本审查 |
+| `fix/dev-exclusive-preset-scope` | `5809d164` | 已保存独立修复 | N14；生产 +33/−4，回归98行；当前本地三配置 check 各55/55，真实曲目复现与因果状态对照完成，待用户 review／远端 CI核对 |
 | `fix/dev-fixed-velocity-zero` | `dea2b6d0` | 后放 | SF2 显式固定 velocity=0；保留用户低优先决定 |
 | `fix/dev-initial-rate-iir-table` | `a7d56827` | 修复后备 | JACK 初次协商改变采样率后 IIR 表未重建；当前仍缺该更新，需设备路径验证，独立于 Dattorro 换率 |
 | `fix/dev-jack-rate-change` | `2c82f2ef` | 修复后备 | 运行中换率时停止不匹配渲染；需 JACK 实机重现和停播契约，不与启动 IIR 表混算 |
@@ -91,11 +92,11 @@
 | `perf/sinc-phase-table-rebased` | `7491f437` | 维护者负责 | 用户决定 sinc 由维护者处理；三个堆叠版本不是三项独立投稿 |
 | `refactor/dev-dls-boundaries` | `77ee7d54` | 明确后放 | DLS 大重构，遵守 #1882 决定，不把 13 项审计拆成 13 个 PR |
 | `refactor/dev-dls-boundaries-minimal` | `52faea7f` | 明确后放 | DLS minimal 备选与失败处理，和原版比较后择范围 |
-| `todo` | `51554308` | 文档 | 本次盘点前的记录分支 head |
+| `todo` | `e2d55d2b` | 文档 | 本次盘点前的记录分支 head |
 
 ## 没有独立分支的音频候选：N01–N21
 
-这些只在 [490c2114 的旧 README](https://github.com/Yikai-Liao/fluidsynth/blob/490c2114d6bf2f53ed53cd2eef3d300f32b40ea2/README.md) 保存诊断和证据索引，不能因远端没有对应 fix 分支而漏掉。**N15 已由 #1912 合并，其他 20 项并不都是当前已重现、已修复或值得立刻投稿。**
+这些只在 [490c2114 的旧 README](https://github.com/Yikai-Liao/fluidsynth/blob/490c2114d6bf2f53ed53cd2eef3d300f32b40ea2/README.md) 保存诊断和证据索引，不能因远端没有对应 fix 分支而漏掉。**N15 已由 #1912 合并；N14 现已另开独立修复分支并完成本地验证，其余 19 项并不都是当前已重现或值得立刻投稿。**
 
 | 编号 | 问题与触发条件 | 本次建议／证据边界 |
 |---|---|---|
@@ -112,7 +113,7 @@
 | **N11** | 默认 chorus level setter 重置调制相位 | **恢复调查**；当前 set 仍无条件调用会初始化中心／振荡器的参数重建，旧 PCM 差异明确；CC93 只改发送量，不是同一触发入口 |
 | **N12** | synth gain=0 渲染后恢复，仍按住的音已被裁掉 | **恢复调查**；旧 double/float 复现；Qsynth v1.0.6 的 Master Gain 控件源码确有 set_gain 路径，未做 UI／设备复现。MuseScore 普通滑块走外部混音，不能套用。修复须权衡静音裁剪和 CPU 成本 |
 | N13 | 不同 transform 的合法 modulators 被当成相同身份合并 | 罕见音色／自定义 modulator 后备；无常用音源自然组合，先验证 loader 合并契约 |
-| **N14** | 换鼓组后，同 class 不同 preset 的旧尾音被截断 | **正确性首选**；见下方真实 MIDI 证据。当前匹配仍缺 preset 边界，尚无独立修复，不等于 exclusive 扫描优化 |
+| **N14** | 换鼓组后，同 class 不同 preset 的旧尾音被截断 | **独立修复待 review**；fix/dev-exclusive-preset-scope @ 5809d164，见 README 当前安排；不等于 exclusive 扫描优化 |
 | N15 | LFO 频率更新丢失下降方向 | **已合并 #1912**，不重复投稿；与旧 #1182/#1183 的负 absolute-cents 转换不同 |
 | N16 | CoreAudio 三对以上输出＋默认单 FX 组静音 | 平台候选；旧 Linux 抽取 callback 验证不是 Apple 硬件测试，先找 macOS 多输出验证条件 |
 | N17 | router 负倍率映射高一个半音 | 小型条件性后备；正常反向键盘规则60→68而预期67，有旧音频证据；不是默认直通规则问题 |
@@ -125,7 +126,7 @@
 
 [旧 N14 真实数据集补充](https://github.com/Yikai-Liao/fluidsynth/blob/490c2114d6bf2f53ed53cd2eef3d300f32b40ea2/README.md#n14-真实数据集补充2026-10-28-续查)使用 Tegridy 固定发布版本中的 `Flute/063deb6ba2e0838b1b9f53ca45309b45.mid`（SHA256 `418a2a09abac4340cba1e2ab45ebbc36ed0ed67c9b9d174dffa8ce6e605c70bf`），官方 MS Basic.sf3，完整原生 player 播放 88.891791 秒。身份对照 PCM 相同；只隔离自然 NoteOn 对不同 preset 旧声部的排他作用，效果关闭时 39,546 个声道样本不同，最大差 0.007956913，默认效果开启也有差异。它是发布的加工数据集成员，不是本轮改写输入；诊断参考是因果对照，不是生产修复或独立渲染器。
 
-当前 [exclusive-class 匹配](https://github.com/FluidSynth/fluidsynth/blob/6d43acddbdb0a8d3f1f3f09f90fa6de3d8938d8f/src/synth/fluid_synth.c#L5485)仍只比较声道、class 和 note-on ID。旧证据比纯构造更强，但仍只有单个已确认发布样本，没有总体发生率或听感严重性结论。先重现，随后检查 preset 身份跨 program change／SoundFont 卸载的生命周期，以及公开 custom loader 的 voice 启动入口，才能估计补丁成本。
+本轮修复前上游的 [exclusive-class 匹配](https://github.com/FluidSynth/fluidsynth/blob/6d43acddbdb0a8d3f1f3f09f90fa6de3d8938d8f/src/synth/fluid_synth.c#L5485)仍只比较声道、class 和 note-on ID。旧证据比纯构造更强，但仍只有单个已确认发布样本，没有总体发生率或听感严重性结论。本轮已在 6d43acdd 完整重放并保存修复；每个 voice 复制来源数值，不持有长期 preset 指针，正常 Note On 与 fluid_synth_start 均经统一内部回调入口。当前结果见 README 和专项验证摘要。
 
 ## 混合审计包里仍值得看的项目
 
