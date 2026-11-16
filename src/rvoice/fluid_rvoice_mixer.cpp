@@ -1029,10 +1029,9 @@ int fluid_rvoice_mixer_set_limiter(fluid_rvoice_mixer_t *mixer, fluid_real_t sam
     return mixer->limiter != NULL;
 }
 
-DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_set_limiter_param)
+void fluid_rvoice_mixer_set_limiter_param(fluid_rvoice_mixer_t *mixer, enum fluid_limiter_param param, fluid_real_t value)
 {
-    auto mixer = static_cast<fluid_rvoice_mixer_t *>(obj);
-    fluid_limiter_set(mixer->limiter, (enum fluid_limiter_param)param[0].i, param[1].real);
+    fluid_limiter_set(mixer->limiter, param, value);
 }
 #endif /* SIGNALSMITH_SUPPORT */
 

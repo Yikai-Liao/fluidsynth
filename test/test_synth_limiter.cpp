@@ -3,6 +3,83 @@
 #include "../src/rvoice/fluid_rvoice_mixer.cpp"
 #include <cmath>
 #include <array>
+#include <new>
+#include <cstdlib>
+#if !OSAL_embedded
+#include <atomic>
+#include <thread>
+#endif
+
+/* Signalsmith uses C++ heap allocation. Neither allocation nor destruction
+ * may migrate back into the audio path during future refactors. */
+static thread_local bool checking_render = false;
+static thread_local bool fail_control_allocation = false;
+void *operator new(std::size_t size)
+{
+    TEST_ASSERT(!checking_render);
+    if(fail_control_allocation)
+    {
+        fail_control_allocation = false;
+        throw std::bad_alloc();
+    }
+    if(auto ptr = std::malloc(size ? size : 1))
+    {
+        return ptr;
+    }
+    throw std::bad_alloc();
+}
+void operator delete(void *ptr) noexcept
+{
+    TEST_ASSERT(!ptr || !checking_render);
+    std::free(ptr);
+}
+void operator delete(void *ptr, std::size_t) noexcept
+{
+    ::operator delete(ptr);
+}
+void *operator new[](std::size_t size)
+{
+    return ::operator new(size);
+}
+void operator delete[](void *ptr) noexcept
+{
+    ::operator delete(ptr);
+}
+void operator delete[](void *ptr, std::size_t) noexcept
+{
+    ::operator delete(ptr);
+}
+void *operator new(std::size_t size, const std::nothrow_t &) noexcept
+{
+    try
+    {
+        return ::operator new(size);
+    }
+    catch(...)
+    {
+        return nullptr;
+    }
+}
+void *operator new[](std::size_t size, const std::nothrow_t &tag) noexcept
+{
+    return ::operator new(size, tag);
+}
+void operator delete(void *ptr, const std::nothrow_t &) noexcept
+{
+    ::operator delete(ptr);
+}
+void operator delete[](void *ptr, const std::nothrow_t &) noexcept
+{
+    ::operator delete(ptr);
+}
+
+/* Mark only actual audio processing, not control calls between blocks. */
+static void render_block(fluid_rvoice_mixer_t *mixer)
+{
+    checking_render = true;
+    fluid_rvoice_mixer_process_fx(mixer, 1);
+    checking_render = false;
+}
 
 /* Keep audio running across updates: silence before an assertion would hide a
  * cleared delay line. Bound steps by the input slope plus a 10 ms fade (and
@@ -42,7 +119,7 @@ static void check_live_transitions()
                         right[i] = 0.1 * std::sin(2 * M_PI * 613 * position / rate);
                     }
                 }
-                fluid_rvoice_mixer_process_fx(mixer, 1);
+                render_block(mixer);
                 for(int i = 0; i < FLUID_BUFSIZE; i++)
                 {
                     double values[] = {left[i], right[i]};
@@ -128,10 +205,54 @@ static std::array<double, 2> constant_output(fluid_synth_t *synth, int blocks,
     {
         std::fill_n(left, FLUID_BUFSIZE, left_value);
         std::fill_n(right, FLUID_BUFSIZE, right_value);
-        fluid_rvoice_mixer_process_fx(mixer, 1);
+        render_block(mixer);
     }
     return {left[FLUID_BUFSIZE - 1], right[FLUID_BUFSIZE - 1]};
 }
+
+#if !OSAL_embedded
+/* Race publication, retirement, helper exit/restart and destruction while
+ * keeping a below-threshold DC signal exactly unchanged. */
+static void check_concurrent_updates()
+{
+    for(int round = 0; round < 4; round++)
+    {
+        auto settings = new_fluid_settings();
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
+        TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.active", 1));
+        auto synth = new_fluid_synth(settings);
+        TEST_ASSERT(synth != NULL);
+        std::atomic<bool> started{false}, stop{false};
+        std::thread audio([&]
+        {
+            constant_output(synth, 500, 0.25, -0.125);
+            started.store(true);
+            while(!stop.load())
+            {
+                auto out = constant_output(synth, 1, 0.25, -0.125);
+                TEST_ASSERT(std::abs(out[0] - 0.25) < 1e-5);
+                TEST_ASSERT(std::abs(out[1] + 0.125) < 1e-5);
+            }
+        });
+        while(!started.load())
+        {
+            std::this_thread::yield();
+        }
+        for(int i = 0; i < 100; i++)
+        {
+            TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.attack", i % 2 ? 250 : 1));
+            TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.hold", i % 2 ? 250 : 0));
+            TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", i % 2 ? 0.9 : 0.6));
+            TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.active", i % 3 != 0));
+        }
+        stop.store(true);
+        audio.join();
+        delete_fluid_synth(synth);
+        delete_fluid_settings(settings);
+    }
+}
+#endif
 
 /* Measure gain recovery after a peak without bypassing the active DSP. */
 static double pulse_response(fluid_synth_t *synth, double probe_ms)
@@ -160,7 +281,7 @@ static void check_latency(fluid_synth_t *synth, int milliseconds, int hold)
             left[0] = 0.2;
             right[0] = -0.1;
         }
-        fluid_rvoice_mixer_process_fx(mixer, 1);
+        render_block(mixer);
         for(int i = 0; i < FLUID_BUFSIZE; i++)
         {
             bool impulse = block * FLUID_BUFSIZE + i == latency;
@@ -173,6 +294,9 @@ static void check_latency(fluid_synth_t *synth, int milliseconds, int hold)
 int main(void)
 {
     check_live_transitions();
+#if !OSAL_embedded
+    check_concurrent_updates();
+#endif
     auto settings = new_fluid_settings();
     TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
     TEST_SUCCESS(fluid_settings_setint(settings, "synth.chorus.active", 0));
@@ -221,6 +345,17 @@ int main(void)
     TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.smoothing-stages", 3));
     TEST_ASSERT(std::abs(pulse_response(synth, 20) - single_stage) < 1e-3);
     TEST_SUCCESS(fluid_settings_setint(settings, "synth.limiter.smoothing-stages", 1));
+    /* A failed preparation must restore the unconsumed request, not publish
+     * a partial processor or lose the previous accepted target. */
+    TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", 0.5));
+    fail_control_allocation = true;
+    TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", 0.25));
+    fail_control_allocation = false;
+    output = constant_output(synth, settling_blocks, 2, 0.1);
+    TEST_ASSERT(std::abs(output[0] - 0.5) < 1e-3);
+    TEST_SUCCESS(fluid_settings_setnum(settings, "synth.limiter.output-limit", 0.25));
+    output = constant_output(synth, settling_blocks, 2, 0.1);
+    TEST_ASSERT(std::abs(output[0] - 0.25) < 1e-3);
     check_latency(synth, 1, 0);
     check_latency(synth, 250, 250);
 

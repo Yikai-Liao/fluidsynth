@@ -5262,9 +5262,9 @@ static void fluid_synth_handle_limiter_num(void *data, const char *name, double 
     {
         param = FLUID_LIMITER_SMOOTHING_STAGES;
     }
-    fluid_synth_api_enter(synth);
-    fluid_synth_update_mixer(synth, fluid_rvoice_mixer_set_limiter_param, param, value);
-    fluid_synth_api_exit(synth);
+    /* Preparation can allocate. It must not hold the synth API lock, which
+     * render-side sample timers may need. The limiter serializes controls. */
+    fluid_rvoice_mixer_set_limiter_param(synth->eventhandler->mixer, param, value);
 }
 
 static void fluid_synth_handle_limiter_int(void *data, const char *name, int value)

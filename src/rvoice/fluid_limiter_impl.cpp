@@ -24,8 +24,10 @@
 #include "fluidsynth.h"
 #include "fluid_limiter.h"
 #include "fluid_limiter_impl.h"
+#include "fluid_sys.h"
 #include "signalsmith-basics/limiter.h"
 #include <algorithm>
+#include <atomic>
 #include <memory>
 
 #ifdef WITH_FLOAT
@@ -34,100 +36,255 @@ using Limiter = signalsmith::basics::LimiterFloat;
 using Limiter = signalsmith::basics::LimiterDouble;
 #endif
 
-/* The renderer owns both pending parameters and the DSP. Applying once per
- * run coalesces queued changes and keeps allocation proportional to the actual
- * lookahead, rather than reserving the maximum range for every instance. */
+/* A prepared node crosses the control/render boundary exactly once. */
+struct prepared_limiter
+{
+    std::unique_ptr<Limiter> dsp;
+    prepared_limiter *retired_next = nullptr;
+    int latency = 0;
+    int fade_length = 0;
+};
+
+/* Control and cleanup may lock; the renderer never takes this lock. */
+struct limiter_control_lock
+{
+    fluid_rec_mutex_t &mutex;
+    explicit limiter_control_lock(fluid_rec_mutex_t &mutex) : mutex(mutex)
+    {
+        fluid_rec_mutex_lock(mutex);
+    }
+    ~limiter_control_lock()
+    {
+        fluid_rec_mutex_unlock(mutex);
+    }
+};
+
 struct _fluid_limiter_t
 {
     fluid_limiter_settings_t settings;
     fluid_real_t sample_rate;
     unsigned int block_size;
     bool active;
-    bool dirty = true;
-    std::unique_ptr<Limiter> processor{};
-    std::unique_ptr<Limiter> pending{};
+    fluid_rec_mutex_t control_mutex;
+    fluid_thread_t *cleanup_thread = nullptr;
+    bool cleanup_running = false;
+    bool stopping = false;
+    std::atomic<prepared_limiter *> ready{nullptr};
+    std::atomic<prepared_limiter *> retired{nullptr};
+    std::atomic<bool> audio_busy{false};
+    prepared_limiter *current = nullptr;
+    prepared_limiter *pending = nullptr;
     int warmup = 0;
     int fade_remaining = 0;
     int fade_length = 0;
 
-    /* Initialize library parameters before configuring a replacement. */
-    static void assign(Limiter &lim, const fluid_limiter_settings_t &settings)
+    /* Initialize control state; no helper thread is needed for static users. */
+    _fluid_limiter_t(fluid_real_t rate, const fluid_limiter_settings_t &params,
+                     unsigned int size, bool enabled)
+        : settings(params), sample_rate(rate), block_size(size), active(enabled)
     {
-        lim.inputGain = settings.input_gain;
-        lim.outputLimit = settings.output_limit;
-        lim.attackMs = settings.attack_ms;
-        lim.holdMs = settings.hold_ms;
-        lim.releaseMs = settings.release_ms;
-        lim.smoothingStages = settings.smoothing_stages;
-        lim.linkChannels = settings.link_channels;
-    }
-
-    /* Compare the audible configuration with the latest requested values. */
-    bool matches() const
-    {
-        return processor && processor->config.sampleRate == sample_rate
-            && processor->inputGain == settings.input_gain
-            && processor->outputLimit == settings.output_limit
-            && processor->attackMs == settings.attack_ms
-            && processor->holdMs == settings.hold_ms
-            && processor->releaseMs == settings.release_ms
-            && processor->smoothingStages == settings.smoothing_stages
-            && processor->linkChannels == settings.link_channels;
-    }
-
-    /* Allocate only the capacity required by the requested lookahead. */
-    std::unique_ptr<Limiter> create_processor()
-    {
-        /* Peak-hold adds independently rounded attack and hold lengths;
-         * the smoothing filter needs one further sample. */
-        double samples = std::ceil(settings.attack_ms * 0.001 * sample_rate)
-                       + std::ceil(settings.hold_ms * 0.001 * sample_rate) + 1;
-        std::unique_ptr<Limiter> prepared(new Limiter(samples * 1000 / sample_rate));
-        assign(*prepared, settings);
-        if(!prepared->configure(sample_rate, block_size, FLUID_LIMITER_NUM_CHANNELS_AT_ONCE))
+        fluid_rec_mutex_init(control_mutex);
+#if !OSAL_embedded
+        if(!control_mutex)
         {
-            fluid_log(FLUID_WARN, "Limiter parameters were not accepted");
-            return nullptr;
+            throw std::bad_alloc();
         }
-        return prepared;
+#endif
     }
 
-    /* Start a transition after coalescing all currently queued settings. */
-    void apply()
+    /* Rendering must have stopped before destruction, as for the synth. */
+    ~_fluid_limiter_t()
     {
-        dirty = false;
-        /* Library parameters are not uniformly smoothed (e.g. stage 2 clamps
-         * gain immediately when the limit drops). Use one transition protocol
-         * for every actual configuration change. */
-        if(active && !matches())
+        fluid_thread_t *thread;
         {
-            pending = create_processor();
-            if(!pending)
+            limiter_control_lock lock(control_mutex);
+            stopping = true;
+            thread = cleanup_thread;
+            cleanup_thread = nullptr;
+        }
+        if(thread)
+        {
+            fluid_thread_join(thread);
+            delete_fluid_thread(thread);
+        }
+        reclaim();
+        delete current;
+        delete pending;
+        delete ready.exchange(nullptr);
+        fluid_rec_mutex_destroy(control_mutex);
+    }
+
+    /* Configure only on a control thread, including allocation and resets. */
+    static std::unique_ptr<prepared_limiter> prepare(const fluid_limiter_settings_t &params,
+                                                    fluid_real_t rate, unsigned int size, bool enabled)
+    {
+        std::unique_ptr<prepared_limiter> node(new prepared_limiter);
+        node->fade_length = (int)std::ceil(rate * 0.020);
+        if(enabled)
+        {
+            double samples = std::ceil(params.attack_ms * 0.001 * rate)
+                           + std::ceil(params.hold_ms * 0.001 * rate) + 1;
+            node->dsp.reset(new Limiter(samples * 1000 / rate));
+            auto &dsp = *node->dsp;
+            dsp.inputGain = params.input_gain;
+            dsp.outputLimit = params.output_limit;
+            dsp.attackMs = params.attack_ms;
+            dsp.holdMs = params.hold_ms;
+            dsp.releaseMs = params.release_ms;
+            dsp.smoothingStages = params.smoothing_stages;
+            dsp.linkChannels = params.link_channels;
+            if(!dsp.configure(rate, size, FLUID_LIMITER_NUM_CHANNELS_AT_ONCE))
             {
-                return;
+                fluid_log(FLUID_WARN, "Limiter parameters were not accepted");
+                return nullptr;
             }
-            /* Keep the old output audible until the new delay line is full.
-             * A fresh DSP's initial zeros must never enter the crossfade. */
-            warmup = pending->latencySamples();
-            fade_length = (int)std::ceil(sample_rate * pending->paramFadeMs() * 0.001);
-            fade_remaining = fade_length;
+            node->latency = dsp.latencySamples();
         }
-        else if(!active && processor)
+        return node;
+    }
+
+    /* Each exchange transfers an entire list to exactly one cleanup caller. */
+    void reclaim()
+    {
+        auto node = retired.exchange(nullptr, std::memory_order_acquire);
+        while(node)
         {
-            /* A null pending DSP represents the dry bypass path. */
-            fade_length = (int)std::ceil(sample_rate * processor->paramFadeMs() * 0.001);
-            fade_remaining = fade_length;
+            auto next = node->retired_next;
+            delete node;
+            node = next;
         }
     }
 
-    /* Keep the current path audible while warming and fading its replacement. */
+    /* Read in this order: ready's null exchange publishes audio_busy=true;
+     * audio_busy=false in turn publishes the completed retirement. */
+    bool has_work() const
+    {
+        auto request = ready.load(std::memory_order_acquire);
+        auto busy = audio_busy.load(std::memory_order_acquire);
+        auto garbage = retired.load(std::memory_order_acquire);
+        return request || busy || garbage;
+    }
+
+    /* Exit completely when idle; no permanent polling or idle thread remains. */
+    static fluid_thread_return_t cleanup(void *data)
+    {
+        auto lim = static_cast<fluid_limiter_t *>(data);
+        for(;;)
+        {
+            {
+                limiter_control_lock lock(lim->control_mutex);
+                if(lim->stopping)
+                {
+                    lim->cleanup_running = false;
+                    return FLUID_THREAD_RETURN_VALUE; /* Destructor owns the handle. */
+                }
+                /* Serialize reclamation with control-side preparation so
+                 * detached-but-not-yet-freed nodes do not inflate its bound. */
+                lim->reclaim();
+                if(!lim->has_work())
+                {
+                    lim->cleanup_running = false;
+                    return FLUID_THREAD_RETURN_VALUE;
+                }
+            }
+            fluid_msleep(5);
+        }
+    }
+
+    /* Publish only fully configured nodes; the old mailbox remains recoverable
+     * if allocation fails. Callers hold the control lock, never the synth lock. */
+    bool request(const fluid_limiter_settings_t &params, bool enabled,
+                 fluid_real_t rate, unsigned int size)
+    {
+        if(enabled || active)
+        {
+#if !OSAL_embedded
+            if(!cleanup_running)
+            {
+                /* Keep a joinable handle even after idle exit: destruction
+                 * must also wait for the thread's final library instructions. */
+                if(cleanup_thread)
+                {
+                    fluid_thread_join(cleanup_thread);
+                    delete_fluid_thread(cleanup_thread);
+                    cleanup_thread = nullptr;
+                }
+                cleanup_running = true;
+                cleanup_thread = new_fluid_thread("limiter-cleanup", cleanup, this, 0, FALSE);
+                if(!cleanup_thread)
+                {
+                    cleanup_running = false;
+                    return false;
+                }
+            }
+#endif
+            std::unique_ptr<prepared_limiter> superseded(ready.exchange(nullptr, std::memory_order_acq_rel));
+            reclaim();
+            try
+            {
+                auto next = prepare(params, rate, size, enabled);
+                if(!next)
+                {
+                    ready.store(superseded.release(), std::memory_order_release);
+                    return false;
+                }
+                ready.store(next.release(), std::memory_order_release);
+            }
+            catch(...)
+            {
+                ready.store(superseded.release(), std::memory_order_release);
+                throw;
+            }
+        }
+        settings = params;
+        active = enabled;
+        sample_rate = rate;
+        block_size = size;
+        return true;
+    }
+
+    /* Only the renderer pushes. Cleanup/control only detach lists, so a
+     * detached head can never be pushed back (no multiple-publisher ABA). */
+    void retire(prepared_limiter *node)
+    {
+        if(!node)
+        {
+            return;
+        }
+        auto head = retired.load(std::memory_order_relaxed);
+        do
+        {
+            node->retired_next = head;
+        }
+        /* Other threads can only change head to null. A strong CAS therefore
+         * needs at most one retry; there is no unbounded spin on the renderer. */
+        while(!retired.compare_exchange_strong(head, node, std::memory_order_release, std::memory_order_relaxed));
+    }
+
+    /* Consume prepared work without allocation, destruction, locking or
+     * notifications; keep old output audible until the new delay is full. */
     void process(fluid_real_t *bufs[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE], unsigned int count)
     {
+        if(!fade_remaining && ready.load(std::memory_order_acquire))
+        {
+            audio_busy.store(true, std::memory_order_release);
+            pending = ready.exchange(nullptr, std::memory_order_acq_rel);
+            if(pending)
+            {
+                warmup = pending->latency;
+                fade_length = pending->fade_length;
+                fade_remaining = fade_length;
+            }
+            else
+            {
+                audio_busy.store(false, std::memory_order_release);
+            }
+        }
         if(!fade_remaining)
         {
-            if(processor)
+            if(current && current->dsp)
             {
-                processor->process(bufs, count);
+                current->dsp->process(bufs, count);
             }
             return;
         }
@@ -138,13 +295,13 @@ struct _fluid_limiter_t
             next_bufs[channel] = samples[channel];
             std::copy_n(bufs[channel], count, next_bufs[channel]);
         }
-        if(processor)
+        if(current && current->dsp)
         {
-            processor->process(bufs, count);
+            current->dsp->process(bufs, count);
         }
-        if(pending)
+        if(pending->dsp)
         {
-            pending->process(next_bufs, count);
+            pending->dsp->process(next_bufs, count);
         }
         if(warmup > 0)
         {
@@ -162,27 +319,47 @@ struct _fluid_limiter_t
         fade_remaining = std::max(0, fade_remaining - (int)count);
         if(!fade_remaining)
         {
-            processor = std::move(pending);
+            retire(current);
+            current = pending;
+            pending = nullptr;
+            if(!current->dsp)
+            {
+                retire(current);
+                current = nullptr;
+            }
+            audio_busy.store(false, std::memory_order_release);
         }
     }
 };
 
-extern "C" void fluid_limiter_impl_set_sample_rate(fluid_limiter_t* lim, fluid_real_t sample_rate, unsigned int block_size)
-{
-    lim->sample_rate = sample_rate;
-    lim->block_size = block_size;
-    lim->dirty = true;
-}
-
-extern "C" fluid_limiter_t *fluid_limiter_impl_new(fluid_real_t sample_rate, fluid_limiter_settings_t* settings, unsigned int block_size, int active)
+extern "C" void fluid_limiter_impl_set_sample_rate(fluid_limiter_t *lim, fluid_real_t rate, unsigned int size)
 try
 {
-    std::unique_ptr<fluid_limiter_t> lim(new fluid_limiter_t{*settings, sample_rate, block_size, active != 0});
+    limiter_control_lock lock(lim->control_mutex);
+    if(lim->sample_rate == rate && lim->block_size == size)
+    {
+        return;
+    }
+    lim->request(lim->settings, lim->active, rate, size);
+}
+catch(const std::bad_alloc &)
+{
+    fluid_log(FLUID_ERR, "Out of memory updating limiter sample rate");
+}
+
+extern "C" fluid_limiter_t *fluid_limiter_impl_new(fluid_real_t rate, fluid_limiter_settings_t *settings, unsigned int size, int active)
+try
+{
+    std::unique_ptr<fluid_limiter_t> lim(new fluid_limiter_t(rate, *settings, size, active != 0));
     if(active)
     {
-        lim->processor = lim->create_processor();
+        auto initial = fluid_limiter_t::prepare(*settings, rate, size, true);
+        if(!initial)
+        {
+            return nullptr;
+        }
+        lim->current = initial.release();
     }
-    lim->dirty = false;
     return lim.release();
 }
 catch(const std::bad_alloc &)
@@ -191,47 +368,53 @@ catch(const std::bad_alloc &)
     return nullptr;
 }
 
-extern "C" void fluid_limiter_set(fluid_limiter_t *lim, enum fluid_limiter_param param, fluid_real_t value)
+/* Compare desired values on the control thread, not mutable renderer state. */
+template<class T> static bool change_limiter_value(T &field, T value)
 {
-    auto &settings = lim->settings;
-    switch(param)
+    if(field == value)
     {
-    case FLUID_LIMITER_ACTIVE: lim->active = value != 0; break;
-    case FLUID_LIMITER_OUTPUT_LIMIT: settings.output_limit = value; break;
-    case FLUID_LIMITER_ATTACK: settings.attack_ms = value; break;
-    case FLUID_LIMITER_HOLD: settings.hold_ms = value; break;
-    case FLUID_LIMITER_RELEASE: settings.release_ms = value; break;
-    case FLUID_LIMITER_SMOOTHING_STAGES: settings.smoothing_stages = (int)value; break;
-    case FLUID_LIMITER_LINK_CHANNELS: settings.link_channels = value; break;
+        return false;
     }
-    lim->dirty = true;
+    field = value;
+    return true;
 }
 
-extern "C" void fluid_limiter_impl_delete(fluid_limiter_t* lim)
+extern "C" void fluid_limiter_set(fluid_limiter_t *lim, enum fluid_limiter_param param, fluid_real_t value)
+try
+{
+    limiter_control_lock lock(lim->control_mutex);
+    auto settings = lim->settings;
+    auto active = lim->active;
+    bool changed = false;
+    switch(param)
+    {
+    case FLUID_LIMITER_ACTIVE: changed = change_limiter_value(active, value != 0); break;
+    case FLUID_LIMITER_OUTPUT_LIMIT: changed = change_limiter_value(settings.output_limit, value); break;
+    case FLUID_LIMITER_ATTACK: changed = change_limiter_value(settings.attack_ms, value); break;
+    case FLUID_LIMITER_HOLD: changed = change_limiter_value(settings.hold_ms, value); break;
+    case FLUID_LIMITER_RELEASE: changed = change_limiter_value(settings.release_ms, value); break;
+    case FLUID_LIMITER_SMOOTHING_STAGES: changed = change_limiter_value(settings.smoothing_stages, (int)value); break;
+    case FLUID_LIMITER_LINK_CHANNELS: changed = change_limiter_value(settings.link_channels, value); break;
+    }
+    if(changed)
+    {
+        lim->request(settings, active, lim->sample_rate, lim->block_size);
+    }
+}
+catch(const std::bad_alloc &)
+{
+    fluid_log(FLUID_ERR, "Out of memory updating limiter");
+}
+
+extern "C" void fluid_limiter_impl_delete(fluid_limiter_t *lim)
 {
     delete lim;
 }
 
-extern "C" void fluid_limiter_impl_process_buffers(
-    fluid_limiter_t *lim,
-    fluid_real_t *bufs[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE],
-    unsigned int block_size)
+extern "C" void fluid_limiter_impl_process_buffers(fluid_limiter_t *lim,
+    fluid_real_t *bufs[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE], unsigned int count)
 {
-    /* Serialize transitions and coalesce requests arriving during a fade.
-     * There can be at most two DSP instances, even under rapid automation. */
-    if(lim->dirty && !lim->fade_remaining)
-    {
-        try
-        {
-            lim->apply();
-        }
-        catch(const std::bad_alloc &)
-        {
-            /* Keep the previous DSP on failure; retry only on a new change. */
-            fluid_log(FLUID_ERR, "Out of memory updating limiter");
-        }
-    }
-    lim->process(bufs, block_size);
+    lim->process(bufs, count);
 }
 
 #endif /* SIGNALSMITH_SUPPORT */

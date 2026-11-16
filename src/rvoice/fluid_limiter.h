@@ -64,9 +64,9 @@ void delete_fluid_limiter(fluid_limiter_t* lim);
 
 int fluid_limiter_samplerate_change(fluid_limiter_t* lim, fluid_real_t sample_rate);
 
-/* Called on the rendering thread. Changes are coalesced at rendering
- * boundaries. A replacement first fills its lookahead, then crossfades from
- * the previous output. Allocation failure leaves the previous DSP in use. */
+/* Call on a control thread: this may allocate and block. Rendering takes only
+ * prepared nodes and retires old ones for off-thread cleanup. Unconsumed
+ * changes are coalesced; allocation failure preserves the previous request. */
 void fluid_limiter_set(fluid_limiter_t *lim, enum fluid_limiter_param param, fluid_real_t value);
 
 void fluid_limiter_run(fluid_limiter_t *lim, fluid_real_t *buf_l, fluid_real_t *buf_r, int block_count);
