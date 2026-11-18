@@ -26,7 +26,6 @@
 #include "fluid_limiter_impl.h"
 #include "fluid_sys.h"
 #include "signalsmith-basics/limiter.h"
-#include <algorithm>
 #include <atomic>
 #include <memory>
 
@@ -41,8 +40,6 @@ struct prepared_limiter
 {
     std::unique_ptr<Limiter> dsp;
     prepared_limiter *retired_next = nullptr;
-    int latency = 0;
-    int fade_length = 0;
 };
 
 /* Control and cleanup may lock; the renderer never takes this lock. */
@@ -73,10 +70,6 @@ struct _fluid_limiter_t
     std::atomic<prepared_limiter *> retired{nullptr};
     std::atomic<bool> audio_busy{false};
     prepared_limiter *current = nullptr;
-    prepared_limiter *pending = nullptr;
-    int warmup = 0;
-    int fade_remaining = 0;
-    int fade_length = 0;
 
     /* Initialize control state; no helper thread is needed for static users. */
     _fluid_limiter_t(fluid_real_t rate, const fluid_limiter_settings_t &params,
@@ -109,7 +102,6 @@ struct _fluid_limiter_t
         }
         reclaim();
         delete current;
-        delete pending;
         delete ready.exchange(nullptr);
         fluid_rec_mutex_destroy(control_mutex);
     }
@@ -119,9 +111,10 @@ struct _fluid_limiter_t
                                                     fluid_real_t rate, unsigned int size, bool enabled)
     {
         std::unique_ptr<prepared_limiter> node(new prepared_limiter);
-        node->fade_length = (int)std::ceil(rate * 0.020);
         if(enabled)
         {
+            /* Peak-hold rounds attack and hold separately; smoothing needs
+             * one additional sample beyond their sum. */
             double samples = std::ceil(params.attack_ms * 0.001 * rate)
                            + std::ceil(params.hold_ms * 0.001 * rate) + 1;
             node->dsp.reset(new Limiter(samples * 1000 / rate));
@@ -138,7 +131,6 @@ struct _fluid_limiter_t
                 fluid_log(FLUID_WARN, "Limiter parameters were not accepted");
                 return nullptr;
             }
-            node->latency = dsp.latencySamples();
         }
         return node;
     }
@@ -261,73 +253,26 @@ struct _fluid_limiter_t
         while(!retired.compare_exchange_strong(head, node, std::memory_order_release, std::memory_order_relaxed));
     }
 
-    /* Consume prepared work without allocation, destruction, locking or
-     * notifications; keep old output audible until the new delay is full. */
+    /* Runtime settings avoid rebuilding the synth and reloading SoundFonts.
+     * Reconfiguration resets the limiter history and may interrupt audio or
+     * change latency; this tradeoff is accepted in issue #1890.
+     * https://github.com/FluidSynth/fluidsynth/issues/1890#issuecomment-6954709411 */
     void process(fluid_real_t *bufs[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE], unsigned int count)
     {
-        if(!fade_remaining && ready.load(std::memory_order_acquire))
+        if(ready.load(std::memory_order_acquire))
         {
             audio_busy.store(true, std::memory_order_release);
-            pending = ready.exchange(nullptr, std::memory_order_acq_rel);
-            if(pending)
+            auto next = ready.exchange(nullptr, std::memory_order_acq_rel);
+            if(next)
             {
-                warmup = pending->latency;
-                fade_length = pending->fade_length;
-                fade_remaining = fade_length;
+                retire(current);
+                current = next;
             }
-            else
-            {
-                audio_busy.store(false, std::memory_order_release);
-            }
-        }
-        if(!fade_remaining)
-        {
-            if(current && current->dsp)
-            {
-                current->dsp->process(bufs, count);
-            }
-            return;
-        }
-        fluid_real_t samples[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE][FLUID_BUFSIZE];
-        fluid_real_t *next_bufs[FLUID_LIMITER_NUM_CHANNELS_AT_ONCE];
-        for(int channel = 0; channel < FLUID_LIMITER_NUM_CHANNELS_AT_ONCE; channel++)
-        {
-            next_bufs[channel] = samples[channel];
-            std::copy_n(bufs[channel], count, next_bufs[channel]);
+            audio_busy.store(false, std::memory_order_release);
         }
         if(current && current->dsp)
         {
             current->dsp->process(bufs, count);
-        }
-        if(pending->dsp)
-        {
-            pending->dsp->process(next_bufs, count);
-        }
-        if(warmup > 0)
-        {
-            warmup = std::max(0, warmup - (int)count);
-            return;
-        }
-        for(unsigned int i = 0; i < count; i++)
-        {
-            double mix = std::min(1.0, (double)(fade_length - fade_remaining + i + 1) / fade_length);
-            for(int channel = 0; channel < FLUID_LIMITER_NUM_CHANNELS_AT_ONCE; channel++)
-            {
-                bufs[channel][i] += mix * (next_bufs[channel][i] - bufs[channel][i]);
-            }
-        }
-        fade_remaining = std::max(0, fade_remaining - (int)count);
-        if(!fade_remaining)
-        {
-            retire(current);
-            current = pending;
-            pending = nullptr;
-            if(!current->dsp)
-            {
-                retire(current);
-                current = nullptr;
-            }
-            audio_busy.store(false, std::memory_order_release);
         }
     }
 };

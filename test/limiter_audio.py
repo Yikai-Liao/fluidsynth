@@ -248,11 +248,23 @@ def analyze(args):
         values = limiter_errors[2 * frame:2 * min(frame + window, end)]
         row.update(limiter_error_min=min(values), limiter_error_max=max(values),
                    oracle_checked_fraction=sum(checked[frame:min(frame + window, end)]) / (len(values) / 2))
+    reset_windows = oracle["reset_windows_frames"]
+    unexpected_gaps = []
+    for gap in rendered_metrics["near_zero_runs_at_least_2ms"]:
+        first = round(gap["start_s"] * rate)
+        last = first + round(gap["duration_ms"] * rate / 1000)
+        cursor = first
+        for start, stop in reset_windows:
+            if start <= cursor:
+                cursor = max(cursor, stop)
+        if cursor < last:
+            unexpected_gaps.append(gap)
+    rendered_metrics["unexpected_silence_gaps"] = unexpected_gaps
     render_over = sum(row["render_ns"] > row["frames"] * 1e9 / rate for row in measured)
     capture_over = sum(row["capture_ns"] > row["frames"] * 1e9 / rate for row in measured)
     checks = {**{"limiter_" + key: value for key, value in oracle["checks"].items()},
               "monitor_matches_rendered_output": (snr is None or snr >= args.min_snr) and peak_error <= args.max_error,
-              "no_detected_rendered_silence_gap": not rendered_metrics["near_zero_runs_at_least_2ms"],
+              "no_unexpected_rendered_silence_gap": not unexpected_gaps,
               "no_detected_monitor_dropout": dropout_windows == 0,
               "render_calls_within_frame_budget": render_over == 0,
               "probe_capture_within_frame_budget": capture_over == 0,

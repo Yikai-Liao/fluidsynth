@@ -33,19 +33,20 @@ including requests of 1, 7, 63, 64, 65, 127, 257, and 509 frames.
 | Scenario | Independent assertion |
 | --- | --- |
 | `static`, multitone/sine | Input delayed by `ceil(5 ms × sample_rate)`. |
-| `controls`, multitone/sine | The same delayed input, throughout every update. Input peaks are at most 0.09 and every threshold is at least 0.12, so changing gain-envelope settings must not change any sample. |
-| `delay`, multitone/sine | Stable samples match the requested delayed input. During each isolated change, both channels must share one bounded, monotone mixing coefficient with a 20 ms linear slope between the two known delayed inputs. Adoption time is bounded using setter frame ranges, callback buffering and lookahead. |
+| `controls`, multitone/sine | Delayed identity outside bounded reconfiguration windows. Grouped updates can reset the delay more than once; their intermediate adoption sequence is not modeled. Input peaks are at most 0.09 and every threshold is at least 0.12. |
+| `delay`, multitone/sine | Old delayed input until a processing-block boundary, zero while the new delay fills, then the requested delayed input. Both channels share one adoption block within the setter/callback frame bounds. Bypass has no delay. Every compared sample, including the interruption, is checked. |
 | `controls`/`delay`, DC | Settled output has the algebraic gain implied by threshold and channel link. For input `(0.6, -0.3)`, limit 0.12 gives `(0.12, -0.06)` with full linking and `(0.12, -0.12)` without linking. Envelope transients are excluded from this steady-state equation. |
 | `rapid`, multitone/sine | Initial identity and final convergence after requests stop. Exact intermediate coalesced request order is not modeled or claimed verified. |
 
 Analytic sample tolerance is 2e-7. The report gives actual waveform coverage;
 unchecked regions appear gray. The first and last 0.5 seconds are excluded from
-comparison. `expected.wav` is an exact delayed reference for static/controls
-tones; in other scenarios it contains stationary targets in checked regions,
-not a reference for transition timing or unchecked samples.
+comparison. `expected.wav` is an exact delayed reference for static tones. For isolated delay
+changes it includes the reset at a fitted, bounded adoption block. For grouped
+controls, rapid updates and DC, it contains stationary targets in checked regions;
+it is not a reference for unchecked transients.
 
 The analyzer's negative tests alter *both* rendered output and monitor capture
-with wrong gain, delay, limit and fade duration. The transport check still
+with wrong gain, delay, limit and excessive reset silence. The transport check still
 passes, while the independent limiter check must fail. Other cases inject
 silence, deleted/repeated frames, a one-sample click, nonfinite output, and an
 exceeded callback budget:
@@ -66,7 +67,7 @@ python3 test/limiter_audio.py record --driver pipewire --mode controls \
 It plays a quiet continuous stereo tone while changing settings. Each output
 directory must be new. Open its `report.html`, or listen to `audio-rendered.wav`
 and `capture.wav`. Use `expected.wav` for an independent listening reference in
-the static/controls tone cases. The raw float32 files retain full precision;
+the static tone case. The raw float32 files retain full precision;
 16-bit listening copies can differ by quantization and are clipped to ±1.
 
 Run the complete set **sequentially**, so recordings do not contaminate one
@@ -98,19 +99,29 @@ or `--seconds 300`, at idle and under representative load. The callback CSV
 records actual request sizes. Memory use grows with duration and sample rate
 because audio and timing storage are allocated and touched before playback.
 
-## Examine delay-change coloration
+## Inspect reconfiguration interruptions
+
+Runtime updates avoid rebuilding the synth and reloading SoundFonts. They reset
+the limiter's buffered audio and gain envelope, which can interrupt the output
+while the lookahead fills. Changing attack changes latency; disabling the limiter
+bypasses that delay. These settings support manual reconfiguration, with no
+promise of seamless DAW automation or automatic host delay compensation.
+
+The isolated `delay` scenario checks the complete reset waveform independently:
 
 ```sh
 python3 test/limiter_audio.py record --driver pipewire --mode delay --source sine \
-  --output build/scratch/limiter-audio/phase
+  --output build/scratch/limiter-audio/delay
 ```
 
-A 500 Hz sine can be opposite in phase at the old and new delays. A linear
-crossfade then has an amplitude dip even if the implementation follows its
-contract perfectly. The report measures fade energy relative to the weighted
-energy of the two branches, including the lowest 1 ms window. A passing contract
-check is **not** a claim of amplitude transparency. Eliminating that artifact
-would require a separate transition-policy decision.
+Silence detection allows gaps inside bounded reconfiguration windows. The oracle
+still rejects excessive silence in an isolated delay update. Grouped controls
+and rapid updates exclude their transient windows and require final convergence;
+C++ regression tests separately check block-boundary adoption and that settings
+do not discard SoundFonts or active voices.
+
+`plot_limiter_phase_case.py` is a historical tool for reports from commit
+`87a53f2c` and its crossfade experiment. It does not analyze this reset policy.
 
 ## Windows and macOS loopback
 

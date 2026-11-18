@@ -93,7 +93,7 @@ class AnalysisTest(unittest.TestCase):
         status, report = self.analyze()
         self.assertEqual(status, 1)
         self.assertTrue(report["checks"]["monitor_matches_rendered_output"])
-        self.assertFalse(report["checks"]["no_detected_rendered_silence_gap"])
+        self.assertFalse(report["checks"]["no_unexpected_rendered_silence_gap"])
 
     def test_deleted_frames(self):
         begin = 2 * (self.offset + self.rate * 3)
@@ -128,35 +128,35 @@ class AnalysisTest(unittest.TestCase):
         self.assertTrue(report["checks"]["monitor_matches_rendered_output"])
         self.assertFalse(report["checks"]["limiter_analytic_waveform_or_steady_gain_matches"])
 
-    def make_delay_transition(self, fade_ms):
+    def make_delay_transition(self, extra_silence=0):
         run = json.loads((self.folder / "run.json").read_text())
         run["mode"] = "delay"
         (self.folder / "run.json").write_text(json.dumps(run))
         (self.folder / "audio-events.csv").write_text(
             "before_frame,after_frame,setting,value,setter_ns\n16000,16128,synth.limiter.attack,250,1000\n")
-        start = 16000 + self.rate // 4
-        fade = round(fade_ms * 0.001 * self.rate)
+        start = 16064
+        delay = self.rate // 4
         self.reference = array.array("f")
         for frame in range(self.rate * 6):
-            alpha = max(0, min(1, (frame - start + 1) / fade))
-            old, new = source_sample(run, frame - 40), source_sample(run, frame - self.rate // 4)
-            self.reference.extend(old[c] + alpha * (new[c] - old[c]) for c in range(2))
+            target = (source_sample(run, frame - 40) if frame < start else
+                      (0, 0) if frame < start + delay + extra_silence else source_sample(run, frame - delay))
+            self.reference.extend(target)
         self.capture = array.array("f", [0] * (self.offset * 2))
         self.capture.extend(v * (0.5 if i % 2 == 0 else 0.25) for i, v in enumerate(self.reference))
         self.capture.extend([0] * (self.offset * 2))
 
-    def test_valid_isolated_delay_fade(self):
-        self.make_delay_transition(20)
+    def test_valid_isolated_delay_reset(self):
+        self.make_delay_transition()
         status, report = self.analyze()
         self.assertEqual(status, 0)
         self.assertEqual(report["limiter_oracle"]["waveform_coverage_fraction"], 1)
 
-    def test_both_recordings_have_wrong_fade_duration(self):
-        self.make_delay_transition(40)
+    def test_both_recordings_have_excessive_reset_silence(self):
+        self.make_delay_transition(extra_silence=128)
         status, report = self.analyze()
         self.assertEqual(status, 1)
         self.assertTrue(report["checks"]["monitor_matches_rendered_output"])
-        self.assertFalse(report["checks"]["limiter_isolated_crossfade_coefficient_is_valid"])
+        self.assertFalse(report["checks"]["limiter_analytic_waveform_or_steady_gain_matches"])
 
     def make_dc(self, amplitude):
         run = json.loads((self.folder / "run.json").read_text())

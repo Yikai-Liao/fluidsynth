@@ -35,5 +35,5 @@ REFERENCE_REF=HEAD~1 SNR_MIN=60 RMS_MAX=0.0001 ABS_MAX=0.01 test/run-manual-regr
 Additional CMake options can be provided via `REGRESSION_CMAKE_FLAGS`.
 Use `--allow-missing` (or `ALLOW_MISSING=1`) to keep going when file pairs are missing.
 
-For real-time limiter updates, independent analytic expectations, listening
+For runtime limiter reconfiguration, independent analytic expectations, listening
 files and audio-service loopback recording, see [limiter-audio.md](limiter-audio.md).
