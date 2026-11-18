@@ -27,11 +27,32 @@
 #include "fluid_limiter_impl.h"
 #include "fluid_sys.h"
 
+/* Read the complete limiter configuration for creation or a runtime update. */
+void
+fluid_limiter_get_settings(fluid_settings_t *settings, fluid_limiter_settings_t *params)
+{
+    double value;
+
+    fluid_settings_getint(settings, "synth.limiter.active", &params->active);
+    params->input_gain = 1.0;
+    fluid_settings_getnum(settings, "synth.limiter.output-limit", &value);
+    params->output_limit = value;
+    fluid_settings_getnum(settings, "synth.limiter.attack", &value);
+    params->attack_ms = value;
+    fluid_settings_getnum(settings, "synth.limiter.hold", &value);
+    params->hold_ms = value;
+    fluid_settings_getnum(settings, "synth.limiter.release", &value);
+    params->release_ms = value;
+    fluid_settings_getint(settings, "synth.limiter.smoothing-stages", &params->smoothing_stages);
+    fluid_settings_getnum(settings, "synth.limiter.link-channels", &value);
+    params->link_channels = value;
+}
+
 /*----------------------------------------------------------------------------
                             Limiter API
 -----------------------------------------------------------------------------*/
 /*
-* Creates a limiter with default parameters
+* Creates limiter control state and, if active, its DSP buffers.
 *
 * @param sample_rate actual sample rate needed in Hz.
 * @return pointer on the new limiter or NULL if memory error.

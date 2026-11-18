@@ -89,6 +89,7 @@ void fluid_rvoice_mixer_set_ladspa(fluid_rvoice_mixer_t *mixer,
 #endif
 #ifdef SIGNALSMITH_SUPPORT
 int fluid_rvoice_mixer_set_limiter(fluid_rvoice_mixer_t *mixer, fluid_real_t sample_rate, fluid_limiter_settings_t* settings);
+void fluid_rvoice_mixer_update_limiter(fluid_rvoice_mixer_t *mixer, fluid_settings_t *settings);
 #endif
 
 #ifdef __cplusplus

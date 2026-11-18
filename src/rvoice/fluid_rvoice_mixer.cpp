@@ -1028,6 +1028,11 @@ int fluid_rvoice_mixer_set_limiter(fluid_rvoice_mixer_t *mixer, fluid_real_t sam
 
     return mixer->limiter != NULL;
 }
+
+void fluid_rvoice_mixer_update_limiter(fluid_rvoice_mixer_t *mixer, fluid_settings_t *settings)
+{
+    fluid_limiter_set(mixer->limiter, settings);
+}
 #endif /* SIGNALSMITH_SUPPORT */
 
 /**

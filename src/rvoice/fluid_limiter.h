@@ -35,6 +35,7 @@ extern "C" {
 
 typedef struct
 {
+    int active;
     fluid_real_t input_gain;
     fluid_real_t output_limit;
     fluid_real_t attack_ms;
@@ -44,7 +45,7 @@ typedef struct
     fluid_real_t link_channels;
 } fluid_limiter_settings_t;
 
-typedef void fluid_limiter_t;
+typedef struct _fluid_limiter_t fluid_limiter_t;
 
 fluid_limiter_t *
 new_fluid_limiter(fluid_real_t sample_rate, fluid_limiter_settings_t* settings);
@@ -52,6 +53,14 @@ new_fluid_limiter(fluid_real_t sample_rate, fluid_limiter_settings_t* settings);
 void delete_fluid_limiter(fluid_limiter_t* lim);
 
 int fluid_limiter_samplerate_change(fluid_limiter_t* lim, fluid_real_t sample_rate);
+
+/* Call on a control thread: this may allocate and block. Rendering takes only
+ * prepared nodes and retires old ones for off-thread cleanup. Unconsumed
+ * changes are coalesced; allocation failure preserves the previous request.
+ * Retired nodes are reclaimed on later control calls or destruction. */
+void fluid_limiter_set(fluid_limiter_t *lim, fluid_settings_t *settings);
+
+void fluid_limiter_get_settings(fluid_settings_t *settings, fluid_limiter_settings_t *params);
 
 void fluid_limiter_run(fluid_limiter_t *lim, fluid_real_t *buf_l, fluid_real_t *buf_r, int block_count);
 
