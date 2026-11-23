@@ -32,10 +32,37 @@ using fluid_real_t = double;
 #include "fluid_limiter_impl.h"
 #include "signalsmith-basics/limiter.h"
 
+#include <exception>
+#include <memory>
+#include <new>
+#ifdef TRAP_ON_FPE
+#include <cfenv>
+#endif
+
 #ifdef WITH_FLOAT
 using Limiter = signalsmith::basics::LimiterFloat;
 #else
 using Limiter = signalsmith::basics::LimiterDouble;
+#endif
+
+#ifdef TRAP_ON_FPE
+namespace
+{
+/* Signalsmith's ChannelEnvelope default-constructs BoxFilter(0), which divides
+ * 1/0 before resizing during configure(). Mask traps only around configure(). */
+struct fpe_trap_guard
+{
+    std::fenv_t env;
+    fpe_trap_guard()
+    {
+        std::feholdexcept(&env);
+    }
+    ~fpe_trap_guard()
+    {
+        std::fesetenv(&env);
+    }
+};
+}
 #endif
 
 extern "C" void fluid_limiter_impl_set_sample_rate(fluid_limiter_t* lim, fluid_real_t sample_rate, unsigned int block_size)
@@ -45,29 +72,45 @@ extern "C" void fluid_limiter_impl_set_sample_rate(fluid_limiter_t* lim, fluid_r
 
 extern "C" fluid_limiter_t *fluid_limiter_impl_new(fluid_real_t sample_rate, fluid_limiter_settings_t* settings, unsigned int block_size)
 {
-    auto lim = new (std::nothrow) Limiter(settings->attack_ms + settings->hold_ms);
-    if(lim == nullptr)
+    try
+    {
+        std::unique_ptr<Limiter> lim(new Limiter(settings->attack_ms + settings->hold_ms));
+
+        lim->inputGain = settings->input_gain;
+        lim->outputLimit = settings->output_limit;
+        lim->attackMs = settings->attack_ms;
+        lim->holdMs = settings->hold_ms;
+        lim->releaseMs = settings->release_ms;
+        lim->smoothingStages = settings->smoothing_stages;
+        lim->linkChannels = settings->link_channels;
+
+#ifdef TRAP_ON_FPE
+        fpe_trap_guard fpe_guard;
+#endif
+        if(! lim->configure(sample_rate, block_size,
+                            FLUID_LIMITER_NUM_CHANNELS_AT_ONCE,
+                            FLUID_LIMITER_NUM_CHANNELS_AT_ONCE))
+        {
+            fluid_log(FLUID_WARN, "limiter parameters was not accepted");
+            return nullptr;
+        }
+
+        return lim.release();
+    }
+    catch(const std::bad_alloc &)
     {
         fluid_log(FLUID_PANIC, "out of memory allocating limiter");
-        return nullptr;
     }
-
-    lim->inputGain = settings->input_gain;
-    lim->outputLimit = settings->output_limit;
-    lim->attackMs = settings->attack_ms;
-    lim->holdMs = settings->hold_ms;
-    lim->releaseMs = settings->release_ms;
-    lim->smoothingStages = settings->smoothing_stages;
-    lim->linkChannels = settings->link_channels;
-
-    if(! lim->configure(sample_rate, block_size,
-                        FLUID_LIMITER_NUM_CHANNELS_AT_ONCE,
-                        FLUID_LIMITER_NUM_CHANNELS_AT_ONCE))
+    catch(const std::exception &exc)
     {
-        fluid_log(FLUID_WARN, "limiter parameters was not accepted");
+        fluid_log(FLUID_ERR, "limiter initialization failed: %s", exc.what());
+    }
+    catch(...)
+    {
+        fluid_log(FLUID_ERR, "limiter initialization failed: unexpected exception");
     }
 
-    return lim;
+    return nullptr;
 }
 
 extern "C" void fluid_limiter_impl_delete(fluid_limiter_t* lim)

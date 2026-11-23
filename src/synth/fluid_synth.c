@@ -143,6 +143,11 @@ static void fluid_synth_handle_important_channels(void *data, const char *name, 
 static void fluid_synth_handle_portamento_mode(void *data, const char *name, const char *value);
 static void fluid_synth_handle_reverb_chorus_num(void *data, const char *name, double value);
 static void fluid_synth_handle_reverb_chorus_int(void *data, const char *name, int value);
+#ifdef SIGNALSMITH_SUPPORT
+static void fluid_synth_get_limiter_settings_LOCAL(fluid_settings_t *settings, fluid_limiter_settings_t *params);
+static void fluid_synth_handle_limiter_num(void *data, const char *name, double value);
+static void fluid_synth_handle_limiter_int(void *data, const char *name, int value);
+#endif
 
 
 static void fluid_synth_reset_basic_channel_LOCAL(fluid_synth_t *synth, int chan, int nbr_chan);
@@ -721,7 +726,6 @@ new_fluid_synth(fluid_settings_t *settings)
     double sample_rate_min, sample_rate_max;
 #ifdef SIGNALSMITH_SUPPORT
     fluid_limiter_settings_t limiter_settings;
-    double limiter_value;
 #endif
 
     /* initialize all the conversion tables and other stuff */
@@ -1023,35 +1027,29 @@ new_fluid_synth(fluid_settings_t *settings)
 
     fluid_settings_getint(settings, "synth.limiter.active", &with_limiter);
 
+#ifdef SIGNALSMITH_SUPPORT
+    fluid_synth_get_limiter_settings_LOCAL(settings, &limiter_settings);
+
+    if(!fluid_rvoice_mixer_set_limiter(synth->eventhandler->mixer, synth->sample_rate,
+                                       &limiter_settings, with_limiter))
+    {
+        FLUID_LOG(FLUID_ERR, "Out of memory");
+        goto error_recovery;
+    }
+
+    fluid_settings_callback_int(settings, "synth.limiter.active", fluid_synth_handle_limiter_int, synth);
+    fluid_settings_callback_int(settings, "synth.limiter.smoothing-stages", fluid_synth_handle_limiter_int, synth);
+    fluid_settings_callback_num(settings, "synth.limiter.output-limit", fluid_synth_handle_limiter_num, synth);
+    fluid_settings_callback_num(settings, "synth.limiter.attack", fluid_synth_handle_limiter_num, synth);
+    fluid_settings_callback_num(settings, "synth.limiter.hold", fluid_synth_handle_limiter_num, synth);
+    fluid_settings_callback_num(settings, "synth.limiter.release", fluid_synth_handle_limiter_num, synth);
+    fluid_settings_callback_num(settings, "synth.limiter.link-channels", fluid_synth_handle_limiter_num, synth);
+#else /* SIGNALSMITH_SUPPORT */
     if(with_limiter)
     {
-#ifdef SIGNALSMITH_SUPPORT
-        limiter_settings.input_gain = 1.0;
-        if(fluid_settings_getnum(settings, "synth.limiter.output-limit", &limiter_value) == FLUID_OK) {
-            limiter_settings.output_limit = limiter_value;
-        }
-        if(fluid_settings_getnum(settings, "synth.limiter.attack", &limiter_value) == FLUID_OK) {
-            limiter_settings.attack_ms = limiter_value;
-        }
-        if(fluid_settings_getnum(settings, "synth.limiter.hold", &limiter_value) == FLUID_OK) {
-            limiter_settings.hold_ms = limiter_value;
-        }
-        if(fluid_settings_getnum(settings, "synth.limiter.release", &limiter_value) == FLUID_OK) {
-            limiter_settings.release_ms = limiter_value;
-        }
-        if(fluid_settings_getnum(settings, "synth.limiter.link-channels", &limiter_value) == FLUID_OK) {
-            limiter_settings.link_channels = limiter_value;
-        }
-        fluid_settings_getint(settings, "synth.limiter.smoothing-stages", &limiter_settings.smoothing_stages);
-
-        if (!fluid_rvoice_mixer_set_limiter(synth->eventhandler->mixer, synth->sample_rate, &limiter_settings)) {
-            FLUID_LOG(FLUID_ERR, "Out of memory");
-            goto error_recovery;
-        }
-#else /* SIGNALSMITH_SUPPORT */
         FLUID_LOG(FLUID_WARN, "FluidSynth has not been compiled with limiter support");
-#endif /* SIGNALSMITH_SUPPORT */
     }
+#endif /* SIGNALSMITH_SUPPORT */
 
 #ifdef ENABLE_NATIVE_DLS
     loader = new_fluid_dls_loader(synth, settings);
@@ -1267,6 +1265,15 @@ delete_fluid_synth(fluid_synth_t *synth)
                                 NULL, NULL);
     fluid_settings_callback_num(synth->settings, "synth.chorus.speed",
                                 NULL, NULL);
+#ifdef SIGNALSMITH_SUPPORT
+    fluid_settings_callback_int(synth->settings, "synth.limiter.active", NULL, NULL);
+    fluid_settings_callback_int(synth->settings, "synth.limiter.smoothing-stages", NULL, NULL);
+    fluid_settings_callback_num(synth->settings, "synth.limiter.output-limit", NULL, NULL);
+    fluid_settings_callback_num(synth->settings, "synth.limiter.attack", NULL, NULL);
+    fluid_settings_callback_num(synth->settings, "synth.limiter.hold", NULL, NULL);
+    fluid_settings_callback_num(synth->settings, "synth.limiter.release", NULL, NULL);
+    fluid_settings_callback_num(synth->settings, "synth.limiter.link-channels", NULL, NULL);
+#endif
 
     /* turn off all voices, needed to unload SoundFont data */
     if(synth->voice != NULL)
@@ -5211,6 +5218,73 @@ fluid_synth_render_blocks(fluid_synth_t *synth, int blockcount)
                   blockcount * FLUID_BUFSIZE);
     return blockcount;
 }
+
+#ifdef SIGNALSMITH_SUPPORT
+/* Read the six limiter DSP settings into a snapshot for creation or runtime updates. */
+static void fluid_synth_get_limiter_settings_LOCAL(fluid_settings_t *settings, fluid_limiter_settings_t *params)
+{
+    double value = 0.0;
+
+    FLUID_MEMSET(params, 0, sizeof(*params));
+    params->input_gain = FLUID_LIMITER_DEFAULT_INPUT_GAIN;
+    if(fluid_settings_getnum(settings, "synth.limiter.output-limit", &value) == FLUID_OK)
+    {
+        params->output_limit = value;
+    }
+    if(fluid_settings_getnum(settings, "synth.limiter.attack", &value) == FLUID_OK)
+    {
+        params->attack_ms = value;
+    }
+    if(fluid_settings_getnum(settings, "synth.limiter.hold", &value) == FLUID_OK)
+    {
+        params->hold_ms = value;
+    }
+    if(fluid_settings_getnum(settings, "synth.limiter.release", &value) == FLUID_OK)
+    {
+        params->release_ms = value;
+    }
+    fluid_settings_getint(settings, "synth.limiter.smoothing-stages", &params->smoothing_stages);
+    if(fluid_settings_getnum(settings, "synth.limiter.link-channels", &value) == FLUID_OK)
+    {
+        params->link_channels = value;
+    }
+}
+
+/* Push the complete limiter configuration snapshot to the mixer event queue. */
+static void fluid_synth_update_limiter(fluid_synth_t *synth)
+{
+    fluid_limiter_settings_t limiter_settings;
+    fluid_rvoice_param_t param[MAX_EVENT_PARAMS];
+    int active = 0;
+
+    fluid_return_if_fail(synth != NULL);
+    fluid_synth_api_enter(synth);
+    fluid_settings_getint(synth->settings, "synth.limiter.active", &active);
+    fluid_synth_get_limiter_settings_LOCAL(synth->settings, &limiter_settings);
+    param[0].i = active;
+    param[1].i = limiter_settings.smoothing_stages;
+    param[2].real = limiter_settings.output_limit;
+    param[3].real = limiter_settings.attack_ms;
+    param[4].real = limiter_settings.hold_ms;
+    param[5].real = limiter_settings.release_ms;
+    param[6].real = limiter_settings.link_channels;
+    fluid_rvoice_eventhandler_push(synth->eventhandler, fluid_rvoice_mixer_set_limiter_params,
+                                   synth->eventhandler->mixer, param);
+    fluid_synth_api_exit(synth);
+}
+
+/* Handler for synth.limiter.* double settings. */
+static void fluid_synth_handle_limiter_num(void *data, const char *name, double value)
+{
+    fluid_synth_update_limiter((fluid_synth_t *)data);
+}
+
+/* Handler for synth.limiter.* integer settings. */
+static void fluid_synth_handle_limiter_int(void *data, const char *name, int value)
+{
+    fluid_synth_update_limiter((fluid_synth_t *)data);
+}
+#endif
 
 /*
  * Handler for synth.reverb.* and synth.chorus.* double settings.

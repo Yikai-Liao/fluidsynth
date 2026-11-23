@@ -108,6 +108,10 @@ struct _fluid_rvoice_mixer_t
 
 #ifdef SIGNALSMITH_SUPPORT
     fluid_limiter_t *limiter;
+    fluid_limiter_settings_t limiter_settings;
+    fluid_real_t limiter_sample_rate;
+    int with_limiter;
+    int limiter_dirty;
 #endif
 
 #ifdef LADSPA
@@ -132,6 +136,31 @@ struct _fluid_rvoice_mixer_t
 #if ENABLE_MIXER_THREADS
 static void delete_rvoice_mixer_threads(fluid_rvoice_mixer_t *mixer);
 static int fluid_rvoice_mixer_set_threads(fluid_rvoice_mixer_t *mixer, int thread_count, int prio_level);
+#endif
+
+#ifdef SIGNALSMITH_SUPPORT
+/* Apply the current configuration, keeping the previous limiter if creation fails. */
+static bool fluid_rvoice_mixer_apply_limiter_settings(fluid_rvoice_mixer_t *mixer)
+{
+    mixer->limiter_dirty = 0;
+
+    fluid_limiter_t *next = NULL;
+    if(mixer->with_limiter)
+    {
+        next = new_fluid_limiter(mixer->limiter_sample_rate, &mixer->limiter_settings);
+        if(next == NULL)
+        {
+            return false;
+        }
+    }
+
+    if(mixer->limiter != NULL)
+    {
+        delete_fluid_limiter(mixer->limiter);
+    }
+    mixer->limiter = next;
+    return true;
+}
 #endif
 
 static FLUID_INLINE void
@@ -273,6 +302,11 @@ fluid_rvoice_mixer_process_fx(fluid_rvoice_mixer_t *mixer, int current_blockcoun
     }
 
 #ifdef SIGNALSMITH_SUPPORT
+    if(mixer->limiter_dirty)
+    {
+        fluid_rvoice_mixer_apply_limiter_settings(mixer);
+    }
+
     if(mixer->limiter)
     {
         fluid_real_t* buf_l = static_cast<fluid_real_t *>(fluid_align_ptr(mixer->buffers.left_buf, FLUID_DEFAULT_ALIGNMENT));
@@ -803,6 +837,7 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_set_samplerate)
     }
 
 #ifdef SIGNALSMITH_SUPPORT
+    mixer->limiter_sample_rate = samplerate;
     if(mixer->limiter != NULL)
     {
         fluid_limiter_samplerate_change(mixer->limiter, samplerate);
@@ -1022,11 +1057,34 @@ void fluid_rvoice_mixer_set_ladspa(fluid_rvoice_mixer_t *mixer,
 #endif
 
 #ifdef SIGNALSMITH_SUPPORT
-int fluid_rvoice_mixer_set_limiter(fluid_rvoice_mixer_t *mixer, fluid_real_t sample_rate, fluid_limiter_settings_t* settings)
+int fluid_rvoice_mixer_set_limiter(fluid_rvoice_mixer_t *mixer, fluid_real_t sample_rate,
+                                   fluid_limiter_settings_t *settings, int active)
 {
-    mixer->limiter = new_fluid_limiter(sample_rate, settings);
+    mixer->limiter_settings = *settings;
+    mixer->limiter_sample_rate = sample_rate;
+    mixer->with_limiter = (active != 0);
+    return fluid_rvoice_mixer_apply_limiter_settings(mixer);
+}
 
-    return mixer->limiter != NULL;
+/* Store updated limiter parameters and mark the limiter for rebuild on the next block. */
+DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_mixer_set_limiter_params)
+{
+    fluid_rvoice_mixer_t *mixer = static_cast<fluid_rvoice_mixer_t *>(obj);
+    int active = (param[0].i != 0);
+
+    mixer->limiter_settings.input_gain = FLUID_LIMITER_DEFAULT_INPUT_GAIN;
+    mixer->limiter_settings.smoothing_stages = param[1].i;
+    mixer->limiter_settings.output_limit = param[2].real;
+    mixer->limiter_settings.attack_ms = param[3].real;
+    mixer->limiter_settings.hold_ms = param[4].real;
+    mixer->limiter_settings.release_ms = param[5].real;
+    mixer->limiter_settings.link_channels = param[6].real;
+
+    if(active || mixer->with_limiter)
+    {
+        mixer->with_limiter = active;
+        mixer->limiter_dirty = 1;
+    }
 }
 #endif /* SIGNALSMITH_SUPPORT */
 
