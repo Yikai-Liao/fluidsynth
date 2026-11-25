@@ -4,6 +4,60 @@
 #include "fluid_rev.h"
 #include "fluid_synth.h"
 
+enum { ChorusFrames = 4096 };
+
+/* Render the chorus return with an optional level update during playback. */
+static void render_chorus(int update_level, double level, float output[2][ChorusFrames])
+{
+    fluid_settings_t *settings = new_fluid_settings();
+    fluid_synth_t *synth;
+    float reverb[2][ChorusFrames] = {{0}};
+    float *fx[] = { reverb[0], reverb[1], output[0], output[1] };
+
+    TEST_ASSERT(settings != NULL);
+    TEST_SUCCESS(fluid_settings_setint(settings, "synth.reverb.active", 0));
+    TEST_SUCCESS(fluid_settings_setnum(settings, "synth.chorus.level", 0.5));
+    synth = new_fluid_synth(settings);
+    TEST_ASSERT(synth != NULL);
+    TEST_SUCCESS(fluid_synth_sfload(synth, TEST_SOUNDFONT, 1));
+    TEST_SUCCESS(fluid_synth_cc(synth, 0, 93, 127));
+    TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+    TEST_SUCCESS(fluid_synth_process(synth, 2 * ChorusFrames, 0, NULL, 0, NULL));
+
+    if(update_level)
+    {
+        TEST_SUCCESS(fluid_synth_set_chorus_group_level(synth, 0, level));
+    }
+
+    TEST_SUCCESS(fluid_synth_process(synth, ChorusFrames, 4, fx, 0, NULL));
+    delete_fluid_synth(synth);
+    delete_fluid_settings(settings);
+}
+
+/* The chorus return scales with level while its delay and modulation continue. */
+static void test_chorus_level(void)
+{
+    float reference[2][ChorusFrames] = {{0}};
+    float unchanged[2][ChorusFrames] = {{0}};
+    float half[2][ChorusFrames] = {{0}};
+    int channel, i, audible = 0;
+
+    render_chorus(0, 0.5, reference);
+    render_chorus(1, 0.5, unchanged);
+    render_chorus(1, 0.25, half);
+
+    for(channel = 0; channel < 2; channel++)
+    {
+        for(i = 0; i < ChorusFrames; i++)
+        {
+            TEST_ASSERT(reference[channel][i] == unchanged[channel][i]);
+            TEST_ASSERT(reference[channel][i] * 0.5f == half[channel][i]);
+            audible += reference[channel][i] != 0;
+        }
+    }
+    TEST_ASSERT(audible > 0);
+}
+
 // this test should make sure that effects change (reverb, chorus) are handled correctly
 int main(void)
 {
@@ -225,6 +279,8 @@ int main(void)
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
 #endif
+
+    test_chorus_level();
 
     return EXIT_SUCCESS;
 }

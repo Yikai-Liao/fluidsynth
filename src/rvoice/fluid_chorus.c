@@ -788,8 +788,11 @@ fluid_chorus_set(fluid_chorus_t *chorus, int set, int nr, fluid_real_t level,
         chorus->level = 0.1;
     }
 
-    /* update parameters dependent of sample rate */
-    update_parameters_from_sample_rate(chorus);
+    /* Reinitialize modulation when its parameters are set. */
+    if(set & (FLUID_CHORUS_SET_NR | FLUID_CHORUS_SET_SPEED | FLUID_CHORUS_SET_DEPTH | FLUID_CHORUS_SET_TYPE))
+    {
+        update_parameters_from_sample_rate(chorus);
+    }
 
 #ifdef DEBUG_PRINT
     printf("lfo type:%d\n", chorus->type);
