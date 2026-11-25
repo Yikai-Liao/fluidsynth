@@ -28,6 +28,49 @@ static void stop_voice(fluid_synth_t *synth)
     TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
 }
 
+/* Render a held looping note through a period of zero master gain. */
+static void test_zero_gain(fluid_synth_t *synth, fluid_sample_t *sample, int muted_at_start)
+{
+    fluid_voice_t *voice;
+    float output[Channels][Frames];
+    int channel, frame, audible = 0;
+
+    fluid_synth_set_gain(synth, muted_at_start ? 0.0f : 0.2f);
+    voice = fluid_synth_alloc_voice(synth, sample, 0, 60, 127);
+    TEST_ASSERT(voice != NULL);
+    fluid_voice_gen_set(voice, GEN_SAMPLEMODE, 1);
+    fluid_synth_start_voice(synth, voice);
+    render(synth, output);
+
+    fluid_synth_set_gain(synth, 0.0f);
+    TEST_SUCCESS(fluid_synth_process(synth, 4096, 0, NULL, 0, NULL));
+    render(synth, output);
+    for(channel = 0; channel < Channels; channel++)
+    {
+        for(frame = 0; frame < Frames; frame++)
+        {
+            TEST_ASSERT(output[channel][frame] == 0.0f);
+        }
+    }
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 1);
+
+    fluid_synth_set_gain(synth, 0.2f);
+    render(synth, output);
+    for(channel = 0; channel < Channels; channel++)
+    {
+        for(frame = 0; frame < Frames; frame++)
+        {
+            audible += output[channel][frame] != 0;
+        }
+    }
+    TEST_ASSERT(audible > 0);
+
+    fluid_synth_set_gain(synth, 0.0f);
+    TEST_SUCCESS(fluid_synth_all_notes_off(synth, 0));
+    TEST_SUCCESS(fluid_synth_process(synth, 4096, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
+}
+
 int main(void)
 {
     fluid_settings_t *settings = new_fluid_settings();
@@ -95,6 +138,15 @@ int main(void)
     TEST_SUCCESS(fluid_synth_set_polyphony(synth, 1));
     render(synth, reused);
     stop_voice(synth);
+
+    /* Test held notes and natural sample completion with zero master gain. */
+    TEST_SUCCESS(fluid_sample_set_loop(sample, 32, SampleFrames - 32));
+    TEST_SUCCESS(fluid_voice_optimize_sample(sample));
+    test_zero_gain(synth, sample, 0);
+    test_zero_gain(synth, sample, 1);
+    start_voice(synth, sample, 0);
+    TEST_SUCCESS(fluid_synth_process(synth, 512, 0, NULL, 0, NULL));
+    TEST_ASSERT(fluid_synth_get_active_voice_count(synth) == 0);
 
     delete_fluid_synth(synth);
     delete_fluid_sample(sample);

@@ -349,8 +349,8 @@ fluid_voice_init(fluid_voice_t *voice, fluid_sample_t *sample,
 
     voice->synth_gain = gain;
 
-    /* avoid division by zero later*/
-    if(voice->synth_gain < 0.0000001f)
+    /* Bound positive gain for noise-floor calculations. */
+    if(voice->synth_gain > 0.0f && voice->synth_gain < 0.0000001f)
     {
         voice->synth_gain = 0.0000001f;
     }
@@ -1887,8 +1887,8 @@ int fluid_voice_set_gain(fluid_voice_t *voice, fluid_real_t gain)
 {
     fluid_real_t left, right, reverb, chorus;
 
-    /* avoid division by zero*/
-    if(gain < 0.0000001f)
+    /* Bound positive gain for noise-floor calculations. */
+    if(gain > 0.0f && gain < 0.0000001f)
     {
         gain = 0.0000001f;
     }

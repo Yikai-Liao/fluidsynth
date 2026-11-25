@@ -213,7 +213,9 @@ fluid_rvoice_check_sample_sanity(fluid_rvoice_t *voice)
                 && (int)voice->dsp.loopend <= (int)voice->dsp.sample->loopend)
         {
             /* Is there a valid peak amplitude available for the loop, and can we use it? */
-            if(voice->dsp.sample->amplitude_that_reaches_noise_floor_is_valid && voice->dsp.samplemode == FLUID_LOOP_DURING_RELEASE)
+            if(voice->dsp.sample->amplitude_that_reaches_noise_floor_is_valid
+                    && voice->dsp.samplemode == FLUID_LOOP_DURING_RELEASE
+                    && voice->dsp.synth_gain > 0.0f)
             {
                 voice->dsp.amplitude_that_reaches_noise_floor_loop = voice->dsp.sample->amplitude_that_reaches_noise_floor / voice->dsp.synth_gain;
             }
@@ -862,8 +864,9 @@ DECLARE_FLUID_RVOICE_FUNCTION(fluid_rvoice_set_synth_gain)
      * loop parameters are initialized (they may depend on modulators).
      * This value can be kept, it is a worst-case estimate.
      */
-    voice->dsp.amplitude_that_reaches_noise_floor_nonloop = FLUID_NOISE_FLOOR / value;
-    voice->dsp.amplitude_that_reaches_noise_floor_loop = FLUID_NOISE_FLOOR / value;
+    /* A muted voice continues playing until its envelope or sample ends. */
+    voice->dsp.amplitude_that_reaches_noise_floor_nonloop = value > 0.0f ? FLUID_NOISE_FLOOR / value : 0.0f;
+    voice->dsp.amplitude_that_reaches_noise_floor_loop = voice->dsp.amplitude_that_reaches_noise_floor_nonloop;
     voice->dsp.check_sample_sanity_flag |= FLUID_SAMPLESANITY_CHECK;
 }
 
