@@ -10,6 +10,55 @@
 // render enough samples to go past the release phase of the voice
 enum { SAMPLES=100*1024 };
 
+/* Compare notes played with the same RPN tuning and NRPN pan, with and without CC121. */
+static void test_rpn_nrpn_reset(fluid_synth_t *synth)
+{
+    enum { Frames = 1024 };
+    float output[2][2 * Frames];
+    int reset_cc, i, audible = 0;
+
+    TEST_SUCCESS(fluid_synth_reverb_on(synth, -1, 0));
+    TEST_SUCCESS(fluid_synth_chorus_on(synth, -1, 0));
+
+    for(reset_cc = 0; reset_cc <= 1; reset_cc++)
+    {
+        TEST_SUCCESS(fluid_synth_system_reset(synth));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, RPN_MSB, 0));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, RPN_LSB, RPN_CHANNEL_COARSE_TUNE));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, DATA_ENTRY_MSB, 76));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, RPN_LSB, RPN_CHANNEL_FINE_TUNE));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, DATA_ENTRY_MSB, 96));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, NRPN_MSB, 120));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, NRPN_LSB, GEN_PAN));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, DATA_ENTRY_LSB, 0));
+        TEST_SUCCESS(fluid_synth_cc(synth, 0, DATA_ENTRY_MSB, 65));
+
+        if(reset_cc)
+        {
+            TEST_SUCCESS(fluid_synth_cc(synth, 0, ALL_CTRL_OFF, 0));
+        }
+
+        TEST_SUCCESS(fluid_synth_noteon(synth, 0, 60, 100));
+        TEST_SUCCESS(fluid_synth_write_float(synth, Frames, output[reset_cc], 0, 2,
+                                            output[reset_cc], 1, 2));
+    }
+
+    for(i = 0; i < 2 * Frames; i++)
+    {
+        TEST_ASSERT(output[0][i] == output[1][i]);
+        audible += output[0][i] != 0;
+    }
+    TEST_ASSERT(audible > 0);
+
+    TEST_ASSERT(fluid_synth_get_gen(synth, 0, GEN_COARSETUNE) == 12);
+    TEST_ASSERT(fluid_synth_get_gen(synth, 0, GEN_FINETUNE) == 50);
+    TEST_ASSERT(fluid_synth_get_gen(synth, 0, GEN_PAN) == 128);
+    TEST_SUCCESS(fluid_synth_system_reset(synth));
+    TEST_ASSERT(fluid_synth_get_gen(synth, 0, GEN_COARSETUNE) == 0);
+    TEST_ASSERT(fluid_synth_get_gen(synth, 0, GEN_FINETUNE) == 0);
+    TEST_ASSERT(fluid_synth_get_gen(synth, 0, GEN_PAN) == 0);
+}
+
 static void test_sustain(fluid_synth_t* synth, int chan)
 {
     // depress sustain pedal
@@ -272,6 +321,7 @@ int main(void)
     }
     test_all_off_monolist(synth, 0);
     test_all_off_monolist(synth, 1);
+    test_rpn_nrpn_reset(synth);
     delete_fluid_synth(synth);
     delete_fluid_settings(settings);
 

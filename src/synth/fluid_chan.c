@@ -125,13 +125,6 @@ fluid_channel_init_ctrl(fluid_channel_t *chan, int is_all_ctrl_off)
     chan->channel_pressure = 0;
     chan->pitch_bend = 0x2000; /* Range is 0x4000, pitch bend wheel starts in centered position */
 
-    for(i = 0; i < GEN_LAST; i++)
-    {
-        chan->gen[i] = 0.0f;
-        chan->override_gen_default[i].flags = GEN_UNUSED;
-        chan->override_gen_default[i].val = 0.0f;
-    }
-
     if(is_all_ctrl_off)
     {
         for(i = 0; i < ALL_SOUND_OFF; i++)
@@ -159,6 +152,14 @@ fluid_channel_init_ctrl(fluid_channel_t *chan, int is_all_ctrl_off)
     }
     else
     {
+        /* Initialize RPN and NRPN parameter values on a full reset (RP-015). */
+        for(i = 0; i < GEN_LAST; i++)
+        {
+            chan->gen[i] = 0.0f;
+            chan->override_gen_default[i].flags = GEN_UNUSED;
+            chan->override_gen_default[i].val = 0.0f;
+        }
+
         for(i = 0; i < 128; i++)
         {
             fluid_channel_set_cc(chan, i, 0);
